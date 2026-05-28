@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
@@ -37,10 +38,25 @@ public class DuplicateService {
             }
 
             // 1. Collect all files
-            List<Path> allFiles;
-            try (java.util.stream.Stream<Path> stream = Files.walk(rootPath)) {
-                allFiles = stream.filter(Files::isRegularFile).collect(Collectors.toList());
-            }
+            List<Path> allFiles = new ArrayList<>();
+            Files.walkFileTree(rootPath, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                    String name = dir.getFileName() != null ? dir.getFileName().toString() : "";
+                    if (name.equals("node_modules") || name.equals(".git") || name.equals("target") || name.equals(".idea") || name.equals("build")) {
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    if (attrs.isRegularFile()) {
+                        allFiles.add(file);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
 
             int totalFiles = allFiles.size();
             reporter.reportProgress(0.0, "Discovered " + totalFiles + " files. Grouping by size...");

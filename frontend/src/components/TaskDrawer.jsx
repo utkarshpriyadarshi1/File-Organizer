@@ -8,6 +8,8 @@ const TaskDrawer = () => {
     const tasksList = Object.values(activeTasks);
     if (tasksList.length === 0) return null;
 
+    const visibleTasksList = tasksList.slice(0, 5);
+
     return (
         <div className="fixed bottom-4 right-4 z-40 max-w-md w-full">
             {/* Toggle Button */}
@@ -29,7 +31,7 @@ const TaskDrawer = () => {
             {isOpen && (
                 <div className="mt-2 bg-white/95 border border-gray-200 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-md max-h-96 overflow-y-auto transition-all duration-300">
                     <div className="p-4 space-y-4">
-                        {tasksList.map(task => (
+                        {visibleTasksList.map(task => (
                             <div key={task.taskId} className="bg-gray-50 border border-gray-100 rounded-xl p-3 shadow-sm">
                                 <div className="flex justify-between items-start mb-2">
                                     <div>
@@ -57,6 +59,12 @@ const TaskDrawer = () => {
                                 </div>
                             </div>
                         ))}
+
+                        {tasksList.length > 5 && (
+                            <div className="text-center text-[10px] text-gray-500 bg-gray-50 border border-gray-100 p-2.5 rounded-xl font-semibold select-none border-dashed">
+                                <span>+ {tasksList.length - 5} more running operations. View all under the Tasks tab.</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

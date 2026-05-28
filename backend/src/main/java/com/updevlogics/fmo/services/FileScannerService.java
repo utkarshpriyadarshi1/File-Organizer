@@ -33,6 +33,15 @@ public class FileScannerService {
         List<Path> paths = new ArrayList<>();
         Files.walkFileTree(folderPath, new SimpleFileVisitor<Path>() {
             @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                String name = dir.getFileName() != null ? dir.getFileName().toString() : "";
+                if (name.equals("node_modules") || name.equals(".git") || name.equals("target") || name.equals(".idea") || name.equals("build")) {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                 if (attrs.isRegularFile()) {
                     paths.add(file);

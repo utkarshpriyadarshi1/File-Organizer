@@ -39,6 +39,7 @@ public class BackgroundTaskManager {
 
     private final ExecutorService executorService = Executors.newFixedThreadPool(MAX_CONCURRENT_TASKS);
     private final Map<String, Future<?>> activeFutures = new ConcurrentHashMap<>();
+    private final Queue<String> localTaskQueue = new ConcurrentLinkedQueue<>();
     private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
     @FunctionalInterface
@@ -66,7 +67,12 @@ public class BackgroundTaskManager {
             backgroundTaskRepository.save(task);
         });
 
-        redisTemplate.opsForList().rightPush("task_queue", taskId);
+        try {
+            redisTemplate.opsForList().rightPush("task_queue", taskId);
+        } catch (Exception e) {
+            logger.warn("Redis is unavailable. Queueing task locally. Error: {}", e.getMessage());
+            localTaskQueue.add(taskId);
+        }
         broadcastStatus(taskId, taskType, "QUEUED", 0.0, "Task queued...");
 
         triggerNextTask(taskType, action);
@@ -76,17 +82,26 @@ public class BackgroundTaskManager {
 
     private void triggerNextTask(String taskType, TaskAction action) {
         executorService.submit(() -> {
-            String taskId = redisTemplate.opsForList().leftPop("task_queue");
+            String taskId = null;
+            try {
+                taskId = redisTemplate.opsForList().leftPop("task_queue");
+            } catch (Exception e) {
+                logger.warn("Redis leftPop failed, checking in-memory queue. Error: {}", e.getMessage());
+            }
+            if (taskId == null) {
+                taskId = localTaskQueue.poll();
+            }
             if (taskId == null) return;
 
+            final String finalTaskId = taskId;
             sqliteWriteQueueService.submitWrite(() -> {
-                backgroundTaskRepository.findById(taskId).ifPresent(task -> {
+                backgroundTaskRepository.findById(finalTaskId).ifPresent(task -> {
                     task.setStatus("RUNNING");
                     task.setSummary("Task started...");
                     backgroundTaskRepository.save(task);
                 });
             });
-            broadcastStatus(taskId, taskType, "RUNNING", 0.0, "Starting execution...");
+            broadcastStatus(finalTaskId, taskType, "RUNNING", 0.0, "Starting execution...");
 
             List<Object> resultList = Collections.synchronizedList(new ArrayList<>());
             TaskProgressReporter reporter = new TaskProgressReporter() {
@@ -95,8 +110,12 @@ public class BackgroundTaskManager {
 
                 @Override
                 public void reportProgress(double progress, String currentMessage) {
-                    redisTemplate.opsForValue().set("task:" + taskId + ":processed", String.valueOf((int) progress));
-                    broadcastStatus(taskId, taskType, "RUNNING", progress, currentMessage);
+                    try {
+                        redisTemplate.opsForValue().set("task:" + finalTaskId + ":processed", String.valueOf((int) progress));
+                    } catch (Exception e) {
+                        logger.warn("Redis progress report failed for task {}: {}", finalTaskId, e.getMessage());
+                    }
+                    broadcastStatus(finalTaskId, taskType, "RUNNING", progress, currentMessage);
                 }
 
                 @Override
@@ -112,7 +131,7 @@ public class BackgroundTaskManager {
 
                 @Override
                 public boolean isCancelled() {
-                    return taskCancellationManager.isCancelled(taskId);
+                    return taskCancellationManager.isCancelled(finalTaskId);
                 }
 
                 private synchronized void doCheckpoint() {
@@ -120,7 +139,7 @@ public class BackgroundTaskManager {
                     lastCheckpointTime = System.currentTimeMillis();
                     final int count = resultList.size();
                     sqliteWriteQueueService.submitWrite(() -> {
-                        backgroundTaskRepository.findById(taskId).ifPresent(task -> {
+                        backgroundTaskRepository.findById(finalTaskId).ifPresent(task -> {
                             task.setSummary("Processed " + count + " items so far...");
                             backgroundTaskRepository.save(task);
                         });
@@ -130,23 +149,23 @@ public class BackgroundTaskManager {
 
             Future<?> future = CompletableFuture.runAsync(() -> {
                 try {
-                    action.execute(taskId, reporter);
+                    action.execute(finalTaskId, reporter);
                     
                     if (reporter.isCancelled()) {
-                        handleCancellation(taskId, taskType, resultList);
+                        handleCancellation(finalTaskId, taskType, resultList);
                     } else {
-                        handleCompletion(taskId, taskType, resultList, null);
+                        handleCompletion(finalTaskId, taskType, resultList, null);
                     }
                 } catch (Exception e) {
-                    logger.error("Error executing task: {}", taskId, e);
-                    handleCompletion(taskId, taskType, resultList, e);
+                    logger.error("Error executing task: {}", finalTaskId, e);
+                    handleCompletion(finalTaskId, taskType, resultList, e);
                 } finally {
-                    activeFutures.remove(taskId);
-                    taskCancellationManager.cleanCancellationKey(taskId);
+                    activeFutures.remove(finalTaskId);
+                    taskCancellationManager.cleanCancellationKey(finalTaskId);
                 }
             });
 
-            activeFutures.put(taskId, future);
+            activeFutures.put(finalTaskId, future);
         });
     }
 

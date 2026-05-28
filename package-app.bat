@@ -4,6 +4,13 @@ echo Building and Packaging FBOSS Application...
 
 :: 1. Build Spring Boot Java Backend
 echo [1/3] Packaging Java backend using Maven...
+where mvn >nul 2>nul
+if %ERRORLEVEL% neq 0 (
+    if exist "C:\Program Files\JetBrains\IntelliJ IDEA 2026.1.2\plugins\maven\lib\maven3\bin" (
+        echo Adding IntelliJ bundled Maven to PATH...
+        set "PATH=C:\Program Files\JetBrains\IntelliJ IDEA 2026.1.2\plugins\maven\lib\maven3\bin;%PATH%"
+    )
+)
 cd backend
 cmd /c "mvn clean package"
 if %ERRORLEVEL% neq 0 (

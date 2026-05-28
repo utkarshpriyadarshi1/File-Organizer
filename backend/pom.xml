@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>ip.updev</groupId>
-    <artifactId>fmo</artifactId>
+    <artifactId>fboss</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>fmo</name>
-    <description>Standalone app for File Management and Organization</description>
+    <name>FBOSS</name>
+    <description>FBOSS - standalone application for File Backup, Organization, and Sync Suite</description>
     <url/>
     <licenses>
         <license/>
@@ -27,7 +27,7 @@
         <url/>
     </scm>
     <properties>
-        <java.version>23</java.version>
+        <java.version>21</java.version>
     </properties>
     <dependencies>
         <dependency>

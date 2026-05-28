@@ -1,5 +1,5 @@
 {
-  "name": "fmo-app",
+  "name": "fboss-app",
   "version": "0.1.0",
   "private": true,
   "main": "src/electron/app_on.js",
@@ -15,12 +15,11 @@
     "web-vitals": "^2.1.4"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.3.0",
     "autoprefixer": "^10.5.0",
     "concurrently": "^9.1.0",
     "electron": "^33.2.1",
     "postcss": "^8.5.15",
-    "tailwindcss": "^4.3.0",
+    "tailwindcss": "^3.4.19",
     "wait-on": "^8.0.1"
   },
   "scripts": {

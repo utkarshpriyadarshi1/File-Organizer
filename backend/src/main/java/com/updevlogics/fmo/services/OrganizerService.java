@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,10 +39,25 @@ public class OrganizerService {
             Path destPath = Paths.get(destinationFolder);
             Files.createDirectories(destPath);
 
-            List<Path> allFiles;
-            try (java.util.stream.Stream<Path> stream = Files.walk(sourcePath)) {
-                allFiles = stream.filter(Files::isRegularFile).collect(Collectors.toList());
-            }
+            List<Path> allFiles = new ArrayList<>();
+            Files.walkFileTree(sourcePath, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                    String name = dir.getFileName() != null ? dir.getFileName().toString() : "";
+                    if (name.equals("node_modules") || name.equals(".git") || name.equals("target") || name.equals(".idea") || name.equals("build")) {
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    if (attrs.isRegularFile()) {
+                        allFiles.add(file);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
 
             int total = allFiles.size();
             int count = 0;

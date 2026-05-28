@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -74,10 +75,25 @@ public class SyncService {
     }
 
     private void runOneWaySync(Path source, Path destination, BackgroundTaskManager.TaskProgressReporter reporter) throws IOException {
-        List<Path> allFiles;
-        try (java.util.stream.Stream<Path> stream = Files.walk(source)) {
-            allFiles = stream.filter(Files::isRegularFile).collect(Collectors.toList());
-        }
+        List<Path> allFiles = new ArrayList<>();
+        Files.walkFileTree(source, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                String name = dir.getFileName() != null ? dir.getFileName().toString() : "";
+                if (name.equals("node_modules") || name.equals(".git") || name.equals("target") || name.equals(".idea") || name.equals("build")) {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                if (attrs.isRegularFile()) {
+                    allFiles.add(file);
+                }
+                return FileVisitResult.CONTINUE;
+            }
+        });
 
         int total = allFiles.size();
         int count = 0;
@@ -124,10 +140,25 @@ public class SyncService {
         }
 
         // Delete target files not in source (mirroring)
-        List<Path> destFiles;
-        try (java.util.stream.Stream<Path> stream = Files.walk(destination)) {
-            destFiles = stream.filter(Files::isRegularFile).collect(Collectors.toList());
-        }
+        List<Path> destFiles = new ArrayList<>();
+        Files.walkFileTree(destination, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                String name = dir.getFileName() != null ? dir.getFileName().toString() : "";
+                if (name.equals("node_modules") || name.equals(".git") || name.equals("target") || name.equals(".idea") || name.equals("build")) {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                if (attrs.isRegularFile()) {
+                    destFiles.add(file);
+                }
+                return FileVisitResult.CONTINUE;
+            }
+        });
 
         for (Path target : destFiles) {
             if (reporter.isCancelled()) break;
@@ -149,15 +180,45 @@ public class SyncService {
     }
 
     private void runTwoWaySync(Path source, Path destination, BackgroundTaskManager.TaskProgressReporter reporter) throws IOException {
-        List<Path> sourceFiles;
-        try (java.util.stream.Stream<Path> stream = Files.walk(source)) {
-            sourceFiles = stream.filter(Files::isRegularFile).collect(Collectors.toList());
-        }
+        List<Path> sourceFiles = new ArrayList<>();
+        Files.walkFileTree(source, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                String name = dir.getFileName() != null ? dir.getFileName().toString() : "";
+                if (name.equals("node_modules") || name.equals(".git") || name.equals("target") || name.equals(".idea") || name.equals("build")) {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+                return FileVisitResult.CONTINUE;
+            }
 
-        List<Path> destFiles;
-        try (java.util.stream.Stream<Path> stream = Files.walk(destination)) {
-            destFiles = stream.filter(Files::isRegularFile).collect(Collectors.toList());
-        }
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                if (attrs.isRegularFile()) {
+                    sourceFiles.add(file);
+                }
+                return FileVisitResult.CONTINUE;
+            }
+        });
+
+        List<Path> destFiles = new ArrayList<>();
+        Files.walkFileTree(destination, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                String name = dir.getFileName() != null ? dir.getFileName().toString() : "";
+                if (name.equals("node_modules") || name.equals(".git") || name.equals("target") || name.equals(".idea") || name.equals("build")) {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                if (attrs.isRegularFile()) {
+                    destFiles.add(file);
+                }
+                return FileVisitResult.CONTINUE;
+            }
+        });
 
         int total = sourceFiles.size() + destFiles.size();
         int count = 0;
