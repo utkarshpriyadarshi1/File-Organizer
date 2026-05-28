@@ -14,7 +14,10 @@ app.whenReady().then(() => {
         },
     });
 
-    mainWindow.loadURL("http://localhost:3000");
+    const startUrl = !app.isPackaged && !process.argv.includes("--prod")
+        ? "http://localhost:3000"
+        : `file://${path.join(__dirname, "../../build/index.html")}`;
+    mainWindow.loadURL(startUrl);
 });
 
 ipcMain.handle("select-folder", async () => {

@@ -15,8 +15,12 @@
     "web-vitals": "^2.1.4"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.0",
+    "autoprefixer": "^10.5.0",
     "concurrently": "^9.1.0",
     "electron": "^33.2.1",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^4.3.0",
     "wait-on": "^8.0.1"
   },
   "scripts": {

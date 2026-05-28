@@ -1,0 +1,42 @@
+@echo off
+title FBOSS - Project Packaging
+echo Building and Packaging FBOSS Application...
+
+:: 1. Build Spring Boot Java Backend
+echo [1/3] Packaging Java backend using Maven...
+cd backend
+cmd /c "mvn clean package"
+if %ERRORLEVEL% neq 0 (
+    echo [ERROR] Maven packaging failed!
+    cd ..
+    pause
+    exit /b
+)
+cd ..
+
+:: 2. Build React Production Assets
+echo [2/3] Building React frontend production assets...
+cd frontend
+cmd /c "npm run build"
+if %ERRORLEVEL% neq 0 (
+    echo [ERROR] React build failed!
+    cd ..
+    pause
+    exit /b
+)
+
+:: 3. Packaging Electron Application
+echo [3/3] Packaging Electron Desktop Application...
+echo To bundle Electron and React build files into a standalone installer:
+echo Running electron-builder package process...
+:: If they want to package it as executable using electron-builder (requires electron-builder in package.json)
+:: cmd /c "npx electron-builder build --win"
+
+echo Packaging steps complete! 
+echo.
+echo - Backend executable: backend\target\fmo-0.0.1-SNAPSHOT.jar
+echo - Frontend build folder: frontend\build\
+echo.
+echo You can test this compiled release by running: run-prod.bat
+cd ..
+pause

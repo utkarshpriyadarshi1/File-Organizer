@@ -1,11 +1,11 @@
 # FBO App: SQLite Database Schema
 
-Below is a robust, scalable schema for your File Backup & Organizer (FBO) app, designed to efficiently handle millions of files, metadata, hashes, and backup operations.
+Below is the optimized schema for the File Backup & Organizer (FBO) app, designed to efficiently handle millions of files, metadata, hashes, backup versions, and task audits sequentially.
+
+---
 
 ### 1. **files**
-
 Stores core file properties and metadata.
-
 ```sql
 CREATE TABLE files (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,11 +28,8 @@ CREATE INDEX idx_files_category ON files(category);
 CREATE INDEX idx_files_subcategory ON files(subcategory);
 ```
 
-
 ### 2. **file_hashes**
-
 Stores file hashes for duplicate detection.
-
 ```sql
 CREATE TABLE file_hashes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,11 +43,8 @@ CREATE UNIQUE INDEX uq_file_hashes_hash_type ON file_hashes(hash, hash_type);
 CREATE INDEX idx_file_hashes_file_id ON file_hashes(file_id);
 ```
 
-
 ### 3. **tags** & **file_tags**
-
 Supports user-defined tags and many-to-many file-tag relationships.
-
 ```sql
 CREATE TABLE tags (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,11 +58,8 @@ CREATE TABLE file_tags (
 );
 ```
 
-
 ### 4. **file_versions**
-
 Tracks backup versions and history for each file.
-
 ```sql
 CREATE TABLE file_versions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -80,11 +71,8 @@ CREATE TABLE file_versions (
 );
 ```
 
-
 ### 5. **backup_jobs**
-
 Defines backup jobs, schedules, and status.
-
 ```sql
 CREATE TABLE backup_jobs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -99,11 +87,8 @@ CREATE TABLE backup_jobs (
 );
 ```
 
-
 ### 6. **sync_jobs**
-
 Defines synchronization jobs and their status.
-
 ```sql
 CREATE TABLE sync_jobs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -118,11 +103,35 @@ CREATE TABLE sync_jobs (
 );
 ```
 
+### 7. **background_tasks**
+Tracks background execution status, summaries, and external report paths.
+```sql
+CREATE TABLE background_tasks (
+    id TEXT PRIMARY KEY,
+    task_type TEXT NOT NULL,       -- 'DUPLICATE_SCAN', 'BACKUP', 'SYNC', 'ORGANIZE', 'REVERSAL'
+    status TEXT NOT NULL,          -- 'QUEUED', 'RUNNING', 'COMPLETED', 'COMPLETED_WITH_FAILURES', 'FAILED', 'CANCELED'
+    summary TEXT NOT NULL,         -- Short description of the run outcomes
+    report_file_path TEXT,         -- Path to external reports (Local AppData JSON)
+    created_at TEXT NOT NULL,
+    completed_at TEXT
+);
+```
 
-### 7. **activity_log**
+### 8. **file_reversals**
+Logs file movement/mutation mappings for undo triggers.
+```sql
+CREATE TABLE file_reversals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id TEXT NOT NULL REFERENCES background_tasks(id) ON DELETE CASCADE,
+    operation_type TEXT NOT NULL,  -- 'MOVE', 'COPY', 'DELETE'
+    source_path TEXT NOT NULL,      -- Current path
+    original_path TEXT NOT NULL,    -- Original location (target for reversal)
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+```
 
+### 9. **activity_log**
 Records all major actions for auditing and troubleshooting.
-
 ```sql
 CREATE TABLE activity_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -135,11 +144,10 @@ CREATE TABLE activity_log (
 CREATE INDEX idx_activity_log_timestamp ON activity_log(timestamp);
 ```
 
+---
 
 ## **Indexing and Performance Notes**
-
 - SQLite indexes are optimized for fast path and metadata lookups.
 - Foreign keys are configured to maintain database references cleanly.
-- The schema is designed for rapid transactions, suitable for offline-first usage.
-
-**This schema provides a strong foundation for your FBO app’s core features: file organization, duplicate detection, backup, sync, and restoration.**
+- Intermediate execution progress is captured in Redis; SQLite updates occur sequentially via the `SqliteWriteQueueService` at checkpoint intervals (every 500 files or 30 seconds) to avoid database lock exceptions (`SQLITE_BUSY`).
+- File-level transaction reports are externalized in `.json` files to protect the database from bloating.

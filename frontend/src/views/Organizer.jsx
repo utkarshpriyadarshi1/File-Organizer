@@ -1,10 +1,11 @@
 import axios from "axios";
-import { useState } from "react";
+import React, { useState } from "react";
+import { useTasks } from "../services/TaskContext";
 
 const Organizer = () => {
+    const { addToast, syncActiveTasks } = useTasks();
     const [sourceFolder, setSourceFolder] = useState("");
     const [destinationFolder, setDestinationFolder] = useState("");
-    const [progress, setProgress] = useState("");
 
     const selectFolder = async (setFolder) => {
         const selectedFolder = await window.electron.selectFolder();
@@ -17,31 +18,68 @@ const Organizer = () => {
             return;
         }
 
-        setProgress("Organizing files...");
-        await axios.post("http://localhost:8080/api/organize", {
-            sourceFolder,
-            destinationFolder,
-        });
-        setProgress("Organization complete!");
+        try {
+            const res = await axios.post("http://localhost:8080/api/organize", {
+                sourceFolder,
+                destinationFolder,
+            });
+            addToast("Organization task triggered! Task ID: " + res.data, "info");
+            syncActiveTasks();
+        } catch (e) {
+            addToast("Failed to initiate organization task.", "error");
+        }
     };
 
     return (
-        <div className="p-4 bg-gray-200 rounded-lg shadow-md text-center">
-            <button onClick={() => selectFolder(setSourceFolder)} className="bg-green-500 text-white p-2 rounded">
-                Select Folder to Organize
-            </button>
-            <p className="mt-2 text-gray-700">{sourceFolder || "No folder selected"}</p>
+        <div className="max-w-md mx-auto mt-10 bg-white p-6 rounded-2xl shadow border border-gray-100 text-center space-y-6">
+            <h2 className="text-xl font-bold text-gray-800">Automatic File Organizer</h2>
+            
+            <div className="space-y-3 text-left">
+                <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Source Directory</label>
+                    <div className="flex gap-2">
+                        <input 
+                            type="text" 
+                            value={sourceFolder} 
+                            readOnly
+                            placeholder="No directory selected"
+                            className="bg-gray-50 text-xs border border-gray-200 rounded-xl p-3 flex-grow focus:outline-none"
+                        />
+                        <button 
+                            onClick={() => selectFolder(setSourceFolder)} 
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-3 rounded-xl transition-all duration-200"
+                        >
+                            Select
+                        </button>
+                    </div>
+                </div>
 
-            <button onClick={() => selectFolder(setDestinationFolder)} className="bg-blue-500 text-white p-2 rounded mt-2">
-                Select Destination Folder
-            </button>
-            <p className="mt-2 text-gray-700">{destinationFolder || "No folder selected"}</p>
+                <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Destination Directory</label>
+                    <div className="flex gap-2">
+                        <input 
+                            type="text" 
+                            value={destinationFolder} 
+                            readOnly
+                            placeholder="No directory selected"
+                            className="bg-gray-50 text-xs border border-gray-200 rounded-xl p-3 flex-grow focus:outline-none"
+                        />
+                        <button 
+                            onClick={() => selectFolder(setDestinationFolder)} 
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-3 rounded-xl transition-all duration-200"
+                        >
+                            Select
+                        </button>
+                    </div>
+                </div>
+            </div>
 
-            <button onClick={startOrganization} className="bg-purple-500 text-white p-2 rounded mt-2">
-                Start Organizing
+            <button 
+                onClick={startOrganization} 
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm py-3 rounded-xl shadow-md transition-all duration-200"
+            >
+                Start File Organization
             </button>
-
-            <p className="mt-2 text-gray-700">{progress}</p>
         </div>
     );
 };

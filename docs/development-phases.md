@@ -2,9 +2,8 @@
 
 ## FBOSS Rapid Development Phases for Production Readiness
 
-### Phase 1: Foundation \& Core Setup
-
-- **Define Requirements \& Scope**
+### Phase 1: Foundation & Core Setup
+- **Define Requirements & Scope**
     - Finalize feature set, user flows, and offline constraints.
     - Clarify database schema, caching, and UI structure.
 - **Project Initialization**
@@ -12,66 +11,57 @@
     - Scaffold Electron + React app with Spring Boot (Java) backend.
 - **Core Infrastructure**
     - Integrate and configure SQLite and Redis (bundled for offline use).
-    - Implement schema migration and initial data models.
+    - Implement schema migrations, initial entities, and repositories.
 
+---
 
-### Phase 2: Core Functional Implementation
-
-- **File Indexing \& Metadata**
-    - Develop recursive directory scanning and metadata extraction.
-    - Batch insert file data into the database; cache hot data in Redis.
+### Phase 2: Core Functional Implementation & Task Engine
+- **Task Execution & Queuing Engine**
+    - Build `BackgroundTaskManager` to persistently queue jobs in Redis (`task_queue`) and manage thread pool limits.
+    - Set up WebSocket handlers emitting structured JSON task progress.
+- **Generic Crawler & Secure Storage**
+    - Implement `FileScannerService` for multi-threaded scanning and `SecureStorageService` for AES encryption and SHA-256 validation.
 - **Duplicate Detection**
-    - Implement chunked file hashing and hash-based grouping.
-    - Enable duplicate file listing and selection for user actions.
-- **Incremental Backup \& Restore**
-    - Build incremental backup logic with versioning.
-    - Support granular and full restore, with backup verification.
+    - Parallel duplicate scans with size-groupings, Redis-backed lookup sets, and aggressive deletion controls.
+- **Incremental Backup & Restore**
+    - Versioned backups copying new/changed files with integrity validation and granular restore routines.
 - **Document Locker Basic**
-    - Add upload and metadata entry UI.
-    - Store files and user-supplied metadata; enable basic search.
+    - Add category upload panels, metadata fields, secure file import, and metadata index search.
 
+---
 
-### Phase 3: User Experience \& Reliability
+### Phase 3: User Experience & Reliability (Settings & Controls)
+- **Advanced Search & Filtering**
+    - Implement full-text search on file details, filtering by categories, tags, types, and modification dates.
+- **Task History & Reversal (Undo) System**
+    - Add `background_tasks` and `file_reversals` SQLite tables.
+    - Implement polymorphic `GenericResultViewer` modals in the UI.
+    - Add skip-and-retry reversal logic to undo moves or restorations (skipping locked paths, logging errors, allowing subsequent retries).
+- **Settings Cache Management Panel**
+    - Add clean-up tools for completed reports, temp decryptions, and logs.
+    - Provide active task manager panels displaying running queue statistics, with checkboxes to trigger **bulk or partial task cancellations**.
+- **Frontend Websocket & Styling Resiliency**
+    - Build `TaskContext.jsx` handling WS reconnection sync (`GET /api/tasks/active`).
+    - Configure Tailwind CSS in the frontend.
 
-- **Advanced Search \& Filtering**
-    - Implement faceted and full-text search on metadata and attributes.
-    - Add filters for category, tags, date, and file type.
-- **Bulk Operations**
-    - Enable batch upload, edit, delete, and download in Document Locker and Organizer.
-- **Progress Tracking \& Notifications**
-    - Integrate real-time progress bars, task status, and notifications via Redis.
-- **Error Handling \& Logging**
-    - Add comprehensive error logging, retry logic, and audit trails.
-- **Accessibility \& Localization**
-    - Bundle multi-language support and accessibility features.
+---
 
-
-### Phase 4: Optimization \& Hardening
-
+### Phase 4: Optimization & Hardening
 - **Performance Tuning**
-    - Optimize batch operations, database indexes, and worker pool sizes.
-    - Profile and resolve any bottlenecks in scanning, hashing, or search.
-- **Data Integrity \& Security**
-    - Implement hash verification, atomic writes, and optional local encryption.
-    - Enforce permission checks and secure storage.
+    - **Chunked SQLite Checkpointing:** Flush Redis temporary lists to SQLite every 500 files or 30 seconds to bypass SQL write locking (`SQLITE_BUSY`).
+    - **Externalized Task Reports:** Write full transaction arrays to `.json` files on disk, storing only database summaries to prevent SQLite bloat.
+- **Data Integrity & Security**
+    - Enforce file permission audits and local encryption security.
 - **Automated Maintenance**
-    - Add scheduled index optimization and schema migration tools.
+    - Implement 30-day auto-purges for report files and temporary directories.
 
+---
 
-### Phase 5: Packaging \& Production Readiness
-
+### Phase 5: Packaging & Production Readiness
 - **Standalone Installer Creation**
-    - Bundle all dependencies, databases, and resources into a .msi or .exe installer.
-    - Test portable mode and ensure all features work fully offline.
+    - Bundle JRE, Electron, SQLite, Redis, and binaries into a standalone `.msi` or `.exe` installer.
+    - Test portable mode running fully offline from external volumes.
 - **Extensive Testing**
-    - Conduct functional, performance, and stress testing with large datasets.
-    - Validate backup/restore, duplicate detection, and search reliability.
-- **Documentation \& Support**
-    - Prepare user guides, in-app help, and troubleshooting documentation.
-    - Finalize support and feedback channels.
-- **Release \& Monitor**
-    - Launch production version.
-    - Monitor logs, gather user feedback, and plan for rapid bug fixes or feature updates.
-
-**Following these phased steps enables rapid, iterative development while ensuring FBOSS is robust, user-friendly, and production-ready from the start.**
-
+    - Conduct stress testing with large datasets, validating backup/restore, duplicate sweeps, and cancellation responsiveness.
+- **Documentation & Release**
+    - Package offline help guides, audit logging monitors, and prepare the production package.

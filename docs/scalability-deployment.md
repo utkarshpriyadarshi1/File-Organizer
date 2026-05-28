@@ -4,109 +4,64 @@
 
 ### Scalability Strategies
 
-**FBOSS** is designed to efficiently handle millions of files and metadata entries while maintaining fast performance and reliability. Here are the key strategies to ensure scalability:
+**FBOSS** is engineered to manage millions of files and metadata entries efficiently while maintaining fast performance and high UI responsiveness. Here are the core scalability and resource optimization strategies:
 
-#### 1. Efficient Data Storage and Indexing
+---
 
-- **Hybrid Storage:**
-    - Use SQLite for persistent storage of all metadata, hashes, versions, and logs—optimized with indexes for fast queries.
-    - Use Redis for in-memory caching of hot data (recent hashes, metadata), real-time progress, and task queues.
-- **Batch Operations:**
-    - Insert and update records in large batches to reduce transaction overhead and maximize throughput.
-    - Bulk file processing and database writes minimize I/O bottlenecks.
-- **Incremental Indexing:**
-    - Only scan and update metadata for new or changed files, reducing unnecessary workload and keeping the system responsive even as the dataset grows.
-- **Controlled Parallelism:**
-    - Limit the number of concurrent file operations and background workers to avoid exhausting system resources or hitting OS file handle limits.
-    - Dynamically adjust concurrency based on system load.
+#### 1. Hybrid SQLite-Redis Task Flow
+* **In-Memory Buffering:** During intensive file actions (scanning, hashing, copying, restoring), workers write real-time progress counters and temporary results lists directly to Redis.
+* **Checkpointing (Lock Prevention):** To prevent SQLite database write locks (`SQLITE_BUSY`), the accumulated Redis task logs are flushed to SQLite in a single transaction only when:
+  * **500 files** have been processed, **OR**
+  * **30 seconds** have elapsed since the last flush.
+* **Externalized JSON Reports:** Instead of saving long arrays of file changes in database rows (which causes SQLite bloating), detailed execution payloads are written as `.json` files under `AppData/Local/FBOSS/reports/`. SQLite only holds task summaries and report file pointers.
 
+---
 
-#### 2. Optimized Search and Retrieval
+#### 2. Persistent Task Queuing & Concurrency Control
+* **Redis Task Queue:** Submitted tasks are registered in Redis list `task_queue`.
+* **Gated Execution:** A concurrency limit (e.g. `MAX_CONCURRENT_TASKS = 2`) ensures that worker threads only pop tasks when slots open, protecting host file systems and CPU loads from starvation.
+* **Non-Blocking Execution:** The UI offloads long runs to a background drawer, allowing users to navigate and perform lightweight database operations (like browsing locker files) concurrently.
 
-- **Composite Indexes:**
-    - Index frequently queried fields (hash, path, tags, category, etc.) for rapid search and filtering.
-- **Faceted and Full-Text Search:**
-    - Support advanced search with multiple filters, leveraging database indexing for speed.
-- **Redis Caching:**
-    - Use Redis sets and hashes for instant duplicate detection and tag-based lookups.
+---
 
+#### 3. Task Cancellation & Interrupt Checkpoints
+* **Interrupt Flags:** Active tasks read a cancel indicator (`task:{id}:cancel`) in their file processing loops.
+* **Fast Halting:** When triggered, tasks stop processing files immediately, clean up open file streams, evict queued entries from Redis lists, and log a `CANCELED` state in SQLite.
 
-#### 3. Resource Management and Reliability
+---
 
-- **Worker Pool Pattern:**
-    - Use a fixed-size pool of background workers for scanning, hashing, and backup tasks, pulling from a shared queue.
-- **Backpressure and Throttling:**
-    - Slow down or pause processing if system resources are under heavy load, ensuring stability.
-- **Error Isolation:**
-    - Log and skip problematic files, never halting the entire operation on a single error.
+#### 4. Active Settings & Storage Management
+* **Completed Cache Cleanup:** Settings panel enables clearing task report JSONs, diagnostics, and temporary decryption folder files to recover disk space on storage-constrained environments.
+* **Active Protection:** Deleting reports associated with active/queued tasks is blocked in the API, showing live file usage sizes and file count statistics instead.
 
-
-#### 4. Maintenance and Extensibility
-
-- **Automated Index Optimization:**
-    - Regularly vacuum and optimize database indexes for sustained performance.
-- **Schema Migration Tools:**
-    - Use migration frameworks to safely update the database schema as features evolve.
-- **Modular Codebase:**
-    - Structure code for easy addition of new features and future enhancements.
-
+---
 
 ### Deployment Strategies
 
-FBOSS is intended as a fully offline, standalone Windows application. Here’s how to ensure smooth, scalable deployment:
+FBOSS is intended as a fully offline, standalone Windows application. Here is how deployment and environment requirements are met:
+
+---
 
 #### 1. Standalone Packaging
-
 - **Bundled Installer:**
-    - Package all dependencies (JRE/Java runtime, Electron, SQLite, Redis, libraries, language files) into a single installer (.msi or .exe).
-    - Ensure the installer configures all services and databases locally, requiring no internet access or external servers.
+    - Package all dependencies (JRE/Java runtime, Electron desktop shell, SQLite engine, Redis server, system binaries, language sets) into a single installer (`.msi` or `.exe`).
+    - Ensure the installer configures and spins up SQLite and Redis services locally on boot, requiring zero external server configuration or internet connections.
 - **Portable Mode:**
-    - Optionally allow users to run FBOSS from a USB drive, storing all data and settings locally for true portability.
+    - Allow users to deploy FBOSS from external volumes (e.g. USB flash drives), saving configuration and database files inside a relative `./data/` folder for true portability.
 
+#### 2. Settings & Clean-Up Routines
+- **System Detection:** On first start, detect host CPU cores, RAM capacities, and disk volumes to set default concurrency ceilings.
+- **Auto-Purging:** Schedule a background process to automatically clear AppData cache files and task reports older than 30 days.
 
-#### 2. Local-Only Operation
+---
 
-- **No Internet Dependency:**
-    - All features, resources, and documentation are bundled with the app; no cloud or online activation required.
-- **Local Storage:**
-    - All files, metadata, and indexes are stored securely on the user’s device.
-
-
-#### 3. Resource Configuration
-
-- **System Resource Detection:**
-    - On first run, detect available CPU, RAM, and disk space to set sensible defaults for worker pool size and cache limits.
-- **User Customization:**
-    - Allow users to adjust concurrency, cache size, and storage locations via the settings menu.
-
-
-#### 4. Upgrade and Maintenance
-
-- **Automated Upgrades:**
-    - Provide an offline upgrade path (e.g., downloadable installer for new versions) that preserves user data and settings.
-- **Schema Migration:**
-    - Use built-in migration tools to update the database schema during upgrades without data loss.
-
-
-#### 5. Security and Isolation
-
-- **Local Encryption:**
-    - Optionally encrypt sensitive files and metadata, with all keys and operations managed locally.
-- **Permission Checks:**
-    - Ensure only authorized access to files and folders, respecting Windows file system permissions.
-
-
-### Summary Table: FBOSS Scalability \& Deployment
+### Summary Table: FBOSS Scalability & Deployment
 
 | Area | Strategy |
 | :-- | :-- |
-| Data Storage | Hybrid SQLite + Redis, batch ops, incremental indexing |
-| Search \& Retrieval | Composite indexes, Redis caching, faceted/full-text search |
-| Resource Management | Controlled parallelism, worker pools, backpressure, error isolation |
-| Packaging | Standalone installer, all dependencies bundled, portable mode option |
-| Local Operation | No internet required, all data and resources stored locally |
-| Upgrades | Offline upgrade path, schema migration tools, data preservation |
-| Security | Local encryption, permission checks, audit logs |
-
-**FBOSS** is engineered for robust, scalable, and user-friendly operation—delivering high performance and reliability for individual users or organizations, entirely offline and with minimal maintenance.
-
+| **Data Storage** | Hybrid SQLite + Redis, chunked checkpointing (500 files / 30s), externalized JSON reports, composite indexing. |
+| **Task Control** | Persistent Redis task queue (FIFO), concurrent worker pools, non-blocking UI task drawer. |
+| **Task Cancellation** | Live interrupt check loops, bulk cancel REST endpoints, instant queue eviction. |
+| **Cache Management** | Folder-wise completed cache purge, active stats display, active report protection, 30-day auto-purge. |
+| **Local Operation** | Fully offline-first, no external API gateways, portable USB deployment option. |
+| **Packaging** | Bundled installers containing SQLite, Redis, JRE, and the Electron executable. |

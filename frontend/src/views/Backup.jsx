@@ -1,10 +1,11 @@
 import axios from "axios";
-import { useState } from "react";
+import React, { useState } from "react";
+import { useTasks } from "../services/TaskContext";
 
 const Backup = () => {
+    const { addToast, syncActiveTasks } = useTasks();
     const [sourceFolder, setSourceFolder] = useState("");
     const [backupFolder, setBackupFolder] = useState("");
-    const [status, setStatus] = useState("");
 
     const selectFolder = async (setFolder) => {
         const selectedFolder = await window.electron.selectFolder();
@@ -17,12 +18,16 @@ const Backup = () => {
             return;
         }
 
-        setStatus("Creating backup...");
-        const response = await axios.post("http://localhost:8080/api/backup/create", {
-            sourceFolder,
-            backupFolder,
-        });
-        setStatus(response.data);
+        try {
+            const res = await axios.post("http://localhost:8080/api/backup/create", {
+                sourceFolder,
+                backupFolder,
+            });
+            addToast("Backup task triggered! Task ID: " + res.data, "info");
+            syncActiveTasks();
+        } catch (e) {
+            addToast("Failed to initiate backup task.", "error");
+        }
     };
 
     const updateBackup = async () => {
@@ -31,35 +36,76 @@ const Backup = () => {
             return;
         }
 
-        setStatus("Updating backup...");
-        const response = await axios.post("http://localhost:8080/api/backup/update", {
-            sourceFolder,
-            backupFolder,
-        });
-        setStatus(response.data);
+        try {
+            const res = await axios.post("http://localhost:8080/api/backup/update", {
+                sourceFolder,
+                backupFolder,
+            });
+            addToast("Backup update task triggered! Task ID: " + res.data, "info");
+            syncActiveTasks();
+        } catch (e) {
+            addToast("Failed to initiate backup update task.", "error");
+        }
     };
 
     return (
-        <div className="p-4 bg-gray-200 rounded-lg shadow-md text-center">
-            <button onClick={() => selectFolder(setSourceFolder)} className="bg-green-500 text-white p-2 rounded">
-                Select Folder to Backup
-            </button>
-            <p className="mt-2 text-gray-700">{sourceFolder || "No folder selected"}</p>
+        <div className="max-w-md mx-auto mt-10 bg-white p-6 rounded-2xl shadow border border-gray-100 text-center space-y-6">
+            <h2 className="text-xl font-bold text-gray-800">Incremental Backup Manager</h2>
+            
+            <div className="space-y-3 text-left">
+                <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Source Directory</label>
+                    <div className="flex gap-2">
+                        <input 
+                            type="text" 
+                            value={sourceFolder} 
+                            readOnly
+                            placeholder="No directory selected"
+                            className="bg-gray-50 text-xs border border-gray-200 rounded-xl p-3 flex-grow focus:outline-none"
+                        />
+                        <button 
+                            onClick={() => selectFolder(setSourceFolder)} 
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-3 rounded-xl transition-all duration-200"
+                        >
+                            Select
+                        </button>
+                    </div>
+                </div>
 
-            <button onClick={() => selectFolder(setBackupFolder)} className="bg-blue-500 text-white p-2 rounded mt-2">
-                Select Backup Destination
-            </button>
-            <p className="mt-2 text-gray-700">{backupFolder || "No folder selected"}</p>
+                <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Backup Destination</label>
+                    <div className="flex gap-2">
+                        <input 
+                            type="text" 
+                            value={backupFolder} 
+                            readOnly
+                            placeholder="No directory selected"
+                            className="bg-gray-50 text-xs border border-gray-200 rounded-xl p-3 flex-grow focus:outline-none"
+                        />
+                        <button 
+                            onClick={() => selectFolder(setBackupFolder)} 
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-3 rounded-xl transition-all duration-200"
+                        >
+                            Select
+                        </button>
+                    </div>
+                </div>
+            </div>
 
-            <button onClick={startBackup} className="bg-purple-500 text-white p-2 rounded mt-2">
-                Start Backup
-            </button>
-
-            <button onClick={updateBackup} className="bg-yellow-500 text-white p-2 rounded mt-2">
-                Update Backup
-            </button>
-
-            <p className="mt-2 text-gray-700">{status}</p>
+            <div className="flex gap-2">
+                <button 
+                    onClick={startBackup} 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm py-3 rounded-xl shadow-md transition-all duration-200"
+                >
+                    Start Full Backup
+                </button>
+                <button 
+                    onClick={updateBackup} 
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm py-3 rounded-xl shadow-md transition-all duration-200"
+                >
+                    Update Backup
+                </button>
+            </div>
         </div>
     );
 };
