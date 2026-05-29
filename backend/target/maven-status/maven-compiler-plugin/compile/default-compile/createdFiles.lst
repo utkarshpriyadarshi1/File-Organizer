@@ -2,7 +2,6 @@ com\updevlogics\fmo\services\BackupService.class
 com\updevlogics\fmo\services\ErrorLoggingService.class
 com\updevlogics\fmo\entities\FileHash.class
 com\updevlogics\fmo\repositories\BackgroundTaskRepository.class
-com\updevlogics\fmo\config\CacheConfig$1.class
 com\updevlogics\fmo\entities\BackupJob.class
 com\updevlogics\fmo\entities\BackgroundTask.class
 com\updevlogics\fmo\services\SyncService$2.class
@@ -46,7 +45,6 @@ com\updevlogics\fmo\controller\LogsController.class
 com\updevlogics\fmo\controller\SyncController.class
 com\updevlogics\fmo\services\EncryptionService$1.class
 com\updevlogics\fmo\services\SyncService$3.class
-com\updevlogics\fmo\config\CacheConfig.class
 com\updevlogics\fmo\services\DirectoryStatsProvider$FolderStats$FolderStatsBuilder.class
 com\updevlogics\fmo\entities\BackupJob$BackupJobBuilder.class
 com\updevlogics\fmo\repositories\FileVersionRepository.class

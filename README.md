@@ -24,24 +24,18 @@ fboss/
 │   └── boilerplate-setup.md
 ├── schema/             # Core database schema scripts
 │   └── fboss_schema.sql # SQLite database schema definitions
-└── docker-compose.yml  # Local developer infrastructure (Redis Cache)
 ```
 
 ---
 
 ## Getting Started
 
-### 1. Cache Infrastructure
-Start Redis locally using Docker:
-```bash
-docker-compose up -d
-```
-*Port mappings are configured in `docker-compose.yml` to automatically match backend configs.*
+The project runs completely standalone offline with zero external dependencies (no Docker or external Redis required).
 
-### 2. Backend Server (Spring Boot)
-Build and run the Java backend using your IDE or Maven. By default, it runs fully local out-of-the-box using the SQLite file-based driver (creating a local `fboss.db` file in the working directory).
+### 1. Backend Server (Spring Boot)
+Build and run the Java backend using your IDE or Maven. It runs fully local out-of-the-box using an in-memory task queue/cache and the SQLite file-based database driver (creating a local `fboss.db` file in the working directory).
 
-### 3. Frontend & Electron Shell (React)
+### 2. Frontend & Electron Shell (React)
 Navigate to the frontend folder, install dependencies, and launch the development environment:
 ```bash
 cd frontend

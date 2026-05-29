@@ -11,7 +11,7 @@ import com.updevlogics.fmo.repositories.FileReversalRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.redis.core.StringRedisTemplate;
+
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Files;
@@ -35,7 +35,6 @@ public class BackgroundTaskManager {
     private final SqliteWriteQueueService sqliteWriteQueueService;
     private final SecureStorageService secureStorageService;
     private final RedisCacheService redisCacheService;
-    private final StringRedisTemplate redisTemplate;
 
     private final ExecutorService executorService = Executors.newFixedThreadPool(MAX_CONCURRENT_TASKS);
     private final Map<String, Future<?>> activeFutures = new ConcurrentHashMap<>();
@@ -67,12 +66,7 @@ public class BackgroundTaskManager {
             backgroundTaskRepository.save(task);
         });
 
-        try {
-            redisTemplate.opsForList().rightPush("task_queue", taskId);
-        } catch (Exception e) {
-            logger.warn("Redis is unavailable. Queueing task locally. Error: {}", e.getMessage());
-            localTaskQueue.add(taskId);
-        }
+        localTaskQueue.add(taskId);
         broadcastStatus(taskId, taskType, "QUEUED", 0.0, "Task queued...");
 
         triggerNextTask(taskType, action);
@@ -82,15 +76,7 @@ public class BackgroundTaskManager {
 
     private void triggerNextTask(String taskType, TaskAction action) {
         executorService.submit(() -> {
-            String taskId = null;
-            try {
-                taskId = redisTemplate.opsForList().leftPop("task_queue");
-            } catch (Exception e) {
-                logger.warn("Redis leftPop failed, checking in-memory queue. Error: {}", e.getMessage());
-            }
-            if (taskId == null) {
-                taskId = localTaskQueue.poll();
-            }
+            String taskId = localTaskQueue.poll();
             if (taskId == null) return;
 
             final String finalTaskId = taskId;
@@ -110,11 +96,6 @@ public class BackgroundTaskManager {
 
                 @Override
                 public void reportProgress(double progress, String currentMessage) {
-                    try {
-                        redisTemplate.opsForValue().set("task:" + finalTaskId + ":processed", String.valueOf((int) progress));
-                    } catch (Exception e) {
-                        logger.warn("Redis progress report failed for task {}: {}", finalTaskId, e.getMessage());
-                    }
                     broadcastStatus(finalTaskId, taskType, "RUNNING", progress, currentMessage);
                 }
 
@@ -225,7 +206,7 @@ public class BackgroundTaskManager {
     }
 
     public void cancelTask(String taskId) {
-        taskCancellationManager.evictFromQueue(taskId);
+        localTaskQueue.remove(taskId);
         taskCancellationManager.setCancelFlag(taskId);
 
         Future<?> future = activeFutures.get(taskId);
