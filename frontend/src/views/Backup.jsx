@@ -1,21 +1,29 @@
 import axios from "axios";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTasks } from "../services/TaskContext";
 
 const Backup = () => {
-    const { addToast, syncActiveTasks } = useTasks();
+    const { addToast, selectFolder, syncActiveTasks } = useTasks();
     const [sourceFolder, setSourceFolder] = useState("");
     const [backupFolder, setBackupFolder] = useState("");
 
-    const selectFolder = async (setFolder) => {
+    // Fetch default directory on load
+    useEffect(() => {
+        axios.get("http://localhost:8080/api/settings/default-path")
+            .then(res => {
+                if (res.data.defaultPath) {
+                    setSourceFolder(res.data.defaultPath);
+                }
+            })
+            .catch(err => console.error("[Backup] Failed to fetch default path:", err));
+    }, []);
+
+    const handleSelectFolder = async (setFolder) => {
         console.log("[Backup] Prompting user to select a folder...");
-        if (window.electron && window.electron.selectFolder) {
-            const selectedFolder = await window.electron.selectFolder();
+        const selectedFolder = await selectFolder();
+        if (selectedFolder) {
             console.log(`[Backup] Folder selected: "${selectedFolder}"`);
             setFolder(selectedFolder);
-        } else {
-            console.warn("[Backup] Electron API selectFolder not available in this window context.");
-            alert("Electron API is not available. Please run the application through run-dev.bat (Electron desktop window).");
         }
     };
 
@@ -86,7 +94,7 @@ const Backup = () => {
                                 className="bg-gray-50 text-xs border border-gray-200 rounded-xl p-3 flex-grow focus:outline-none font-medium text-gray-700"
                             />
                             <button 
-                                onClick={() => selectFolder(setSourceFolder)} 
+                                onClick={() => handleSelectFolder(setSourceFolder)} 
                                 className="bg-blue-600 hover:bg-blue-700 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-white text-xs font-bold px-4 py-3 rounded-xl transition-all duration-150 flex items-center gap-1.5 shadow-sm"
                             >
                                 <i className="fa-solid fa-folder-open"></i>
@@ -109,7 +117,7 @@ const Backup = () => {
                                 className="bg-gray-50 text-xs border border-gray-200 rounded-xl p-3 flex-grow focus:outline-none font-medium text-gray-700"
                             />
                             <button 
-                                onClick={() => selectFolder(setBackupFolder)} 
+                                onClick={() => handleSelectFolder(setBackupFolder)} 
                                 className="bg-blue-600 hover:bg-blue-700 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-white text-xs font-bold px-4 py-3 rounded-xl transition-all duration-150 flex items-center gap-1.5 shadow-sm"
                             >
                                 <i className="fa-solid fa-folder-open"></i>

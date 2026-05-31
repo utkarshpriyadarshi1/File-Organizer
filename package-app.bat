@@ -2,6 +2,10 @@
 title FBOSS - Project Packaging
 echo Building and Packaging FBOSS Application...
 
+:: 0. Auto-increment version
+echo [0/3] Auto-incrementing version...
+python scripts\increment_version.py
+
 :: 1. Build Spring Boot Java Backend
 echo [1/3] Packaging Java backend using Maven...
 where mvn >nul 2>nul
@@ -41,9 +45,11 @@ echo Running electron-builder package process...
 
 echo Packaging steps complete! 
 echo.
-echo - Backend executable: backend\target\fmo-0.0.1-SNAPSHOT.jar
+echo - Backend executable: backend\target\fboss-*.jar
 echo - Frontend build folder: frontend\build\
 echo.
 echo You can test this compiled release by running: run-prod.bat
 cd ..
 pause
+
+

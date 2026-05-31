@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useTasks } from "../services/TaskContext";
 
 const Duplicates = () => {
-    const { activeTasks, addToast, syncActiveTasks } = useTasks();
+    const { activeTasks, addToast, selectFolder, syncActiveTasks } = useTasks();
     const [folderPath, setFolderPath] = useState("");
     const [scanTaskId, setScanTaskId] = useState(null);
     const [duplicates, setDuplicates] = useState([]);
@@ -11,11 +11,79 @@ const Duplicates = () => {
     const [status, setStatus] = useState("");
     const [dupSearch, setDupSearch] = useState("");
     const [dupSort, setDupSort] = useState("countDesc");
+    const [skipFolder, setSkipFolder] = useState("");
+    const [targetFolder, setTargetFolder] = useState("");
+    const [dryRun, setDryRun] = useState(false);
+
+    // Fetch default directory on load
+    useEffect(() => {
+        axios.get("http://localhost:8080/api/settings/default-path")
+            .then(res => {
+                if (res.data.defaultPath) {
+                    setFolderPath(res.data.defaultPath);
+                }
+            })
+            .catch(err => console.error("[Duplicates] Failed to fetch default path:", err));
+    }, []);
+
+    const autoSelectDuplicates = (strategy) => {
+        if (strategy === "selectAll") {
+            const confirmAll = window.confirm("WARNING: Selecting ALL copies of duplicate files will delete every single copy, leaving zero files. Are you sure you want to proceed?");
+            if (!confirmAll) return;
+        }
+
+        let toSelect = [];
+        duplicates.forEach(group => {
+            if (group.files.length <= 1) return;
+
+            const filterEligible = (file) => {
+                const pathLower = file.path.toLowerCase();
+                if (skipFolder.trim() && pathLower.includes(skipFolder.trim().toLowerCase())) {
+                    return false;
+                }
+                if (targetFolder.trim() && !pathLower.includes(targetFolder.trim().toLowerCase())) {
+                    return false;
+                }
+                return true;
+            };
+
+            if (strategy === "selectAll") {
+                group.files.forEach(f => {
+                    if (filterEligible(f)) {
+                        toSelect.push(f.path);
+                    }
+                });
+            } else if (strategy === "clearAll") {
+                // Will clear everything since toSelect remains empty
+            } else {
+                const sorted = [...group.files].sort((a, b) => {
+                    const timeA = a.modifiedAt ? new Date(a.modifiedAt).getTime() : 0;
+                    const timeB = b.modifiedAt ? new Date(b.modifiedAt).getTime() : 0;
+                    return timeA - timeB;
+                });
+
+                if (strategy === "keepOldest") {
+                    for (let i = 1; i < sorted.length; i++) {
+                        if (filterEligible(sorted[i])) {
+                            toSelect.push(sorted[i].path);
+                        }
+                    }
+                } else if (strategy === "keepLatest") {
+                    for (let i = 0; i < sorted.length - 1; i++) {
+                        if (filterEligible(sorted[i])) {
+                            toSelect.push(sorted[i].path);
+                        }
+                    }
+                }
+            }
+        });
+        setSelectedFiles(toSelect);
+    };
 
     const getFilteredDuplicates = () => {
         return duplicates.filter(group => {
             if (!dupSearch.trim()) return true;
-            return group.files.some(file => file.toLowerCase().includes(dupSearch.toLowerCase())) || 
+            return group.files.some(file => file.path.toLowerCase().includes(dupSearch.toLowerCase())) || 
                    group.hash.toLowerCase().includes(dupSearch.toLowerCase());
         });
     };
@@ -29,15 +97,12 @@ const Duplicates = () => {
         });
     };
 
-    const selectFolder = async () => {
+    const handleSelectFolder = async () => {
         console.log("[Duplicates] Prompting user to select target folder...");
-        if (window.electron && window.electron.selectFolder) {
-            const selectedFolder = await window.electron.selectFolder();
+        const selectedFolder = await selectFolder();
+        if (selectedFolder) {
             console.log(`[Duplicates] Target folder selected: "${selectedFolder}"`);
             setFolderPath(selectedFolder);
-        } else {
-            console.warn("[Duplicates] Electron API selectFolder not available in this window context.");
-            alert("Electron API is not available. Please run the application through run-dev.bat (Electron desktop window).");
         }
     };
 
@@ -101,27 +166,29 @@ const Duplicates = () => {
     };
 
     const removeSelected = async () => {
-        console.log(`[Duplicates] Preparing duplicate deletion task for files:`, selectedFiles);
+        console.log(`[Duplicates] Preparing duplicate deletion task for files:`, selectedFiles, `Dry Run: ${dryRun}`);
         if (selectedFiles.length === 0) {
             console.warn("[Duplicates] Deletion request rejected because no files are selected.");
             alert("No files selected for deletion.");
             return;
         }
 
-        setStatus("Removing duplicates...");
+        setStatus(dryRun ? "Simulating duplicate removal..." : "Removing duplicates...");
         try {
-            const response = await axios.post("http://localhost:8080/api/duplicates/remove", { filesToDelete: selectedFiles });
+            const response = await axios.post("http://localhost:8080/api/duplicates/remove", { filesToDelete: selectedFiles, dryRun });
             console.info(`[Duplicates] Duplicate removal task triggered successfully. Server Task ID: ${response.data}`);
-            addToast("Duplicate removal task triggered! Task ID: " + response.data, "info");
+            addToast((dryRun ? "Dry run simulation triggered! " : "Duplicate removal task triggered! ") + "Task ID: " + response.data, "info");
             syncActiveTasks();
             
             // Clean up state locally
-            setDuplicates(duplicates.map(d => ({ ...d, files: d.files.filter(f => !selectedFiles.includes(f)) })));
+            if (!dryRun) {
+                setDuplicates(duplicates.map(d => ({ ...d, files: d.files.filter(f => !selectedFiles.includes(f.path)) })));
+            }
             setSelectedFiles([]);
             setStatus("");
         } catch (e) {
             console.error("[Duplicates] Failed to run duplicate removal task.", e);
-            addToast("Failed to remove duplicates.", "error");
+            addToast(dryRun ? "Failed to run dry run simulation." : "Failed to remove duplicates.", "error");
             setStatus("");
         }
     };
@@ -149,7 +216,7 @@ const Duplicates = () => {
                                 className="bg-gray-50 text-xs border border-gray-200 rounded-xl p-3 flex-grow focus:outline-none font-medium text-gray-700"
                             />
                             <button 
-                                onClick={selectFolder} 
+                                onClick={handleSelectFolder} 
                                 className="bg-blue-600 hover:bg-blue-700 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-white text-xs font-bold px-4 py-3 rounded-xl transition-all duration-150 flex items-center gap-1.5 shadow-sm"
                             >
                                 <i className="fa-solid fa-folder-open"></i>
@@ -206,48 +273,128 @@ const Duplicates = () => {
                             </select>
                         </div>
                     </div>
+
+                    {/* Auto-Select and Folder Pattern Controls */}
+                    <div className="p-4 bg-slate-50/70 border-b border-gray-150 space-y-3 text-left">
+                        <div className="flex flex-col md:flex-row md:items-center gap-3">
+                            <div className="flex-grow flex items-center gap-2">
+                                <label className="text-[11px] font-bold text-gray-500 uppercase shrink-0 w-24 flex items-center gap-1">
+                                    <i className="fa-solid fa-filter-circle-xmark text-rose-400"></i>
+                                    Skip Folder:
+                                </label>
+                                <input 
+                                    type="text"
+                                    value={skipFolder}
+                                    onChange={(e) => setSkipFolder(e.target.value)}
+                                    placeholder="e.g. KeepThisFolder"
+                                    className="w-full border border-gray-200 rounded-lg p-2 bg-white text-gray-755 focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs font-medium"
+                                />
+                            </div>
+                            <div className="flex-grow flex items-center gap-2">
+                                <label className="text-[11px] font-bold text-gray-500 uppercase shrink-0 w-24 flex items-center gap-1">
+                                    <i className="fa-solid fa-filter-circle-dollar text-green-400"></i>
+                                    Target Only:
+                                </label>
+                                <input 
+                                    type="text"
+                                    value={targetFolder}
+                                    onChange={(e) => setTargetFolder(e.target.value)}
+                                    placeholder="e.g. DeleteThisFolder"
+                                    className="w-full border border-gray-200 rounded-lg p-2 bg-white text-gray-755 focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs font-medium"
+                                />
+                            </div>
+                        </div>
+                        
+                        <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-dashed border-gray-200">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mr-1">Selection Helper:</span>
+                                <button 
+                                    onClick={() => autoSelectDuplicates("keepOldest")}
+                                    className="bg-white hover:bg-slate-100 border border-gray-200 px-3 py-1.5 rounded-lg active:scale-95 transition-all text-[11px] font-bold text-blue-600 hover:text-blue-700 shadow-sm flex items-center gap-1 cursor-pointer"
+                                >
+                                    <i className="fa-solid fa-clock-rotate-left"></i> Keep Oldest
+                                </button>
+                                <button 
+                                    onClick={() => autoSelectDuplicates("keepLatest")}
+                                    className="bg-white hover:bg-slate-100 border border-gray-200 px-3 py-1.5 rounded-lg active:scale-95 transition-all text-[11px] font-bold text-indigo-600 hover:text-indigo-700 shadow-sm flex items-center gap-1 cursor-pointer"
+                                >
+                                    <i className="fa-solid fa-clock"></i> Keep Latest
+                                </button>
+                                <button 
+                                    onClick={() => autoSelectDuplicates("selectAll")}
+                                    className="bg-white hover:bg-slate-100 border border-gray-200 px-3 py-1.5 rounded-lg active:scale-95 transition-all text-[11px] font-bold text-rose-600 hover:text-rose-700 shadow-sm flex items-center gap-1 cursor-pointer"
+                                >
+                                    <i className="fa-solid fa-check-double"></i> Select All
+                                </button>
+                                <button 
+                                    onClick={() => autoSelectDuplicates("clearAll")}
+                                    className="bg-white hover:bg-slate-100 border border-gray-200 px-3 py-1.5 rounded-lg active:scale-95 transition-all text-[11px] font-bold text-gray-600 hover:text-gray-805 shadow-sm flex items-center gap-1 cursor-pointer"
+                                >
+                                    <i className="fa-solid fa-circle-xmark"></i> Clear
+                                </button>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-3 ml-auto">
+                                <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                                    <input 
+                                        type="checkbox" 
+                                        id="duplicateDryRun"
+                                        checked={dryRun} 
+                                        onChange={(e) => setDryRun(e.target.checked)} 
+                                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4 cursor-pointer"
+                                    />
+                                    <span className="text-xs text-gray-600 font-semibold flex items-center gap-1">
+                                        <i className="fa-solid fa-flask text-amber-500"></i>
+                                        Dry Run
+                                    </span>
+                                </label>
+                                <span className="text-xs font-semibold text-gray-500 flex items-center gap-1.5">
+                                    <i className="fa-solid fa-square-check text-rose-500"></i>
+                                    {selectedFiles.length} selected
+                                </span>
+                                <button 
+                                    onClick={removeSelected} 
+                                    className="bg-red-500 hover:bg-red-600 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500/20 text-white font-semibold text-xs px-3.5 py-1.5 rounded-xl transition-colors duration-150 flex items-center gap-1.5 shadow-sm"
+                                >
+                                    <i className="fa-solid fa-trash-can"></i>
+                                    Remove Selected
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                     
-                    <div className="p-4 space-y-4 max-h-96 overflow-y-auto">
+                    <div className="p-4 space-y-4 max-h-96 overflow-y-auto overflow-x-auto">
                         {getSortedDuplicates().length === 0 ? (
                             <p className="text-xs text-gray-400 text-center py-6">No duplicate sets match your search filter.</p>
                         ) : getSortedDuplicates().map((dup, index) => (
-                            <div key={index} className="border border-gray-150 rounded-xl p-3 bg-slate-50">
+                            <div key={index} className="border border-gray-150 rounded-xl p-3 bg-slate-50 overflow-x-auto">
                                 <p className="text-xs font-mono text-gray-500 mb-2 truncate flex items-center gap-1.5">
                                     <i className="fa-solid fa-hashtag text-gray-400"></i>
                                     Hash: {dup.hash}
                                 </p>
                                 <div className="space-y-1.5">
                                     {dup.files.map((file, i) => (
-                                        <div key={i} className="flex items-center gap-2">
-                                            <input
-                                                type="checkbox"
-                                                onChange={() => toggleSelection(file)}
-                                                checked={selectedFiles.includes(file)}
-                                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                            />
-                                            <span className="text-xs text-gray-700 truncate max-w-lg flex items-center gap-1.5">
-                                                <i className="fa-solid fa-file text-slate-400 text-[10px]"></i>
-                                                {file}
+                                        <div key={i} className="flex items-center justify-between gap-4 p-1.5 rounded hover:bg-gray-100 transition-colors">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <input
+                                                    type="checkbox"
+                                                    onChange={() => toggleSelection(file.path)}
+                                                    checked={selectedFiles.includes(file.path)}
+                                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                />
+                                                <span className="text-xs text-gray-700 truncate flex items-center gap-1.5" title={file.path}>
+                                                    <i className="fa-solid fa-file text-slate-400 text-[10px]"></i>
+                                                    {file.path}
+                                                </span>
+                                            </div>
+                                            <span className="text-[10px] text-gray-400 font-medium shrink-0">
+                                                {file.modifiedAt ? new Date(file.modifiedAt.replace("T", " ")).toLocaleString() : "Unknown date"}
                                             </span>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         ))}
-                    </div>
-                    
-                    <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
-                        <span className="text-xs font-semibold text-gray-500 flex items-center gap-1.5">
-                            <i className="fa-solid fa-square-check text-rose-500"></i>
-                            {selectedFiles.length} files selected for deletion
-                        </span>
-                        <button 
-                            onClick={removeSelected} 
-                            className="bg-red-500 hover:bg-red-600 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500/20 text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition-colors duration-150 flex items-center gap-1.5 shadow-sm"
-                        >
-                            <i className="fa-solid fa-trash-can"></i>
-                            Remove Selected
-                        </button>
                     </div>
                 </div>
             )}

@@ -1,0 +1,42 @@
+export const translations = {
+    en: {
+        operations: "Operations",
+        dashboardStats: "Dashboard / Stats",
+        fileOrganizer: "File Organizer",
+        backupRestore: "Backup & Restore",
+        duplicateCleaner: "Duplicate Cleaner",
+        syncVersioning: "Sync & Versioning",
+        monitoring: "Monitoring",
+        tasks: "Tasks",
+        systemLogs: "Logs",
+        notifications: "Notifications",
+        settings: "Settings",
+        status: "Status",
+        online: "Online",
+        appVersion: "App Version",
+        languagePreference: "Language Preference",
+        selectLanguage: "Select your preferred user interface language.",
+        english: "English",
+        spanish: "Spanish"
+    },
+    es: {
+        operations: "Operaciones",
+        dashboardStats: "Tablero / Estadísticas",
+        fileOrganizer: "Organizador de Archivos",
+        backupRestore: "Copia de Seguridad y Restauración",
+        duplicateCleaner: "Limpiador de Duplicados",
+        syncVersioning: "Sincronización y Versiones",
+        monitoring: "Monitoreo",
+        tasks: "Tareas",
+        systemLogs: "Registros",
+        notifications: "Notificaciones",
+        settings: "Ajustes",
+        status: "Estado",
+        online: "En línea",
+        appVersion: "Versión de la aplicación",
+        languagePreference: "Preferencia de Idioma",
+        selectLanguage: "Seleccione su idioma de interfaz de usuario preferido.",
+        english: "Inglés",
+        spanish: "Español"
+    }
+};

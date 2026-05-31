@@ -1,0 +1,23 @@
+export const TaskType = {
+    ORGANIZE: "ORGANIZE",
+    BACKUP: "BACKUP",
+    DUPLICATE_SCAN: "DUPLICATE_SCAN",
+    DUPLICATE_CLEAN: "DUPLICATE_CLEAN",
+    SYNC: "SYNC",
+    RESTORE: "RESTORE",
+    REVERSAL: "REVERSAL"
+};
+
+export const TaskStatus = {
+    QUEUED: "QUEUED",
+    RUNNING: "RUNNING",
+    COMPLETED: "COMPLETED",
+    COMPLETED_WITH_FAILURES: "COMPLETED_WITH_FAILURES",
+    FAILED: "FAILED",
+    CANCELED: "CANCELED"
+};
+
+export const SyncType = {
+    ONE_WAY: "ONE_WAY",
+    TWO_WAY: "TWO_WAY"
+};

@@ -1,13 +1,12 @@
+import { TaskType, TaskStatus } from "../enums/SystemTypes";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useTasks } from "../services/TaskContext";
 import GenericResultViewer from "../components/GenericResultViewer";
 
 const Tasks = () => {
-    const { cancelTasksBulk } = useTasks();
-
-    // Active tasks states
-    const [activeList, setActiveList] = useState([]);
+    const { cancelTasksBulk, activeTasks, syncActiveTasks } = useTasks();
+    const activeList = Object.values(activeTasks || {});
     const [selectedTasks, setSelectedTasks] = useState([]);
     const [activeFilter, setActiveFilter] = useState("ALL");
     const [activeSort, setActiveSort] = useState("timeDesc");
@@ -23,16 +22,7 @@ const Tasks = () => {
     // Loading states
     const [historyLoading, setHistoryLoading] = useState(false);
 
-    // Fetch Active Tasks
-    const fetchActiveList = () => {
-        console.log("[Tasks] Fetching active/queued background tasks...");
-        axios.get("http://localhost:8080/api/tasks/active")
-            .then(res => {
-                console.log(`[Tasks] Loaded ${res.data.length} active/queued tasks.`);
-                setActiveList(res.data);
-            })
-            .catch(err => console.error("[Tasks] Failed to fetch active list:", err));
-    };
+
 
     // Fetch Completed History
     const fetchHistory = () => {
@@ -51,12 +41,7 @@ const Tasks = () => {
     };
 
     useEffect(() => {
-        fetchActiveList();
         fetchHistory();
-
-        // Polling active tasks every 5 seconds
-        const interval = setInterval(fetchActiveList, 5000);
-        return () => clearInterval(interval);
     }, []);
 
     // Toggle single active task selection
@@ -92,7 +77,7 @@ const Tasks = () => {
         await cancelTasksBulk(selectedTasks);
         setSelectedTasks([]);
         setTimeout(() => {
-            fetchActiveList();
+            syncActiveTasks();
             fetchHistory();
         }, 1000);
     };
@@ -144,15 +129,15 @@ const Tasks = () => {
     // Icons mapping for operations
     const getTaskIcon = (taskType) => {
         switch (taskType) {
-            case "ORGANIZE":
+            case TaskType.ORGANIZE:
                 return <i className="fa-solid fa-folder-tree text-blue-500 mr-2"></i>;
-            case "BACKUP":
+            case TaskType.BACKUP:
                 return <i className="fa-solid fa-shield-halved text-amber-500 mr-2"></i>;
-            case "DUPLICATE_SCAN":
+            case TaskType.DUPLICATE_SCAN:
                 return <i className="fa-solid fa-copy text-rose-500 mr-2"></i>;
-            case "SYNC":
+            case TaskType.SYNC:
                 return <i className="fa-solid fa-arrows-rotate text-blue-500 mr-2"></i>;
-            case "RESTORE":
+            case TaskType.RESTORE:
                 return <i className="fa-solid fa-cloud-arrow-up text-emerald-500 mr-2"></i>;
             default:
                 return <i className="fa-solid fa-gears text-gray-500 mr-2"></i>;
@@ -162,17 +147,17 @@ const Tasks = () => {
     // Status styling mapping
     const getStatusColor = (status) => {
         switch (status) {
-            case "COMPLETED":
+            case TaskStatus.COMPLETED:
                 return "bg-green-50 text-green-700 border border-green-200";
-            case "COMPLETED_WITH_FAILURES":
+            case TaskStatus.COMPLETED_WITH_FAILURES:
                 return "bg-amber-50 text-amber-700 border border-amber-200";
-            case "FAILED":
+            case TaskStatus.FAILED:
                 return "bg-red-50 text-red-700 border border-red-200";
-            case "CANCELED":
+            case TaskStatus.CANCELED:
                 return "bg-gray-50 text-gray-700 border border-gray-200";
-            case "RUNNING":
+            case TaskStatus.RUNNING:
                 return "bg-blue-50 text-blue-700 border border-blue-200 animate-pulse";
-            case "QUEUED":
+            case TaskStatus.QUEUED:
                 return "bg-purple-50 text-purple-700 border border-purple-200";
             default:
                 return "bg-gray-50 text-gray-700 border border-gray-200";
@@ -182,6 +167,21 @@ const Tasks = () => {
     const sortedActive = getSortedActiveTasks();
     const sortedHistory = getSortedHistoryTasks().slice(0, 1000);
     const allActiveVisibleSelected = sortedActive.length > 0 && sortedActive.every(t => selectedTasks.includes(t.id));
+
+    if (selectedTask) {
+        return (
+            <div className="max-w-6xl mx-auto space-y-8 mt-4 pb-12">
+                <GenericResultViewer 
+                    task={selectedTask} 
+                    onClose={() => {
+                        console.log("[Tasks] Navigating backward from task result viewer");
+                        setSelectedTask(null);
+                        fetchHistory();
+                    }} 
+                />
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-6xl mx-auto space-y-8 mt-4 pb-12">
@@ -199,7 +199,7 @@ const Tasks = () => {
                 </div>
                 <button 
                     onClick={() => {
-                        fetchActiveList();
+                        syncActiveTasks();
                         fetchHistory();
                     }}
                     className="p-3 bg-gray-50 hover:bg-gray-100 hover:shadow-sm text-gray-600 rounded-xl transition-all cursor-pointer flex items-center gap-2 text-xs font-bold active:scale-95 border border-gray-200"
@@ -241,13 +241,13 @@ const Tasks = () => {
                             className="border border-gray-200 rounded-lg p-2 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                         >
                             <option value="ALL">All Active</option>
-                            <option value="RUNNING">Running</option>
-                            <option value="QUEUED">Queued</option>
-                            <option value="BACKUP">Backup</option>
-                            <option value="DUPLICATE_SCAN">Duplicate Check</option>
-                            <option value="ORGANIZE">Organizer</option>
-                            <option value="SYNC">Sync</option>
-                            <option value="RESTORE">Restore</option>
+                            <option value={TaskStatus.RUNNING}>Running</option>
+                            <option value={TaskStatus.QUEUED}>Queued</option>
+                            <option value={TaskType.BACKUP}>Backup</option>
+                            <option value={TaskType.DUPLICATE_SCAN}>Duplicate Check</option>
+                            <option value={TaskType.ORGANIZE}>Organizer</option>
+                            <option value={TaskType.SYNC}>Sync</option>
+                            <option value={TaskType.RESTORE}>Restore</option>
                         </select>
                     </div>
 
@@ -301,8 +301,24 @@ const Tasks = () => {
                                             {task.status}
                                         </span>
                                     </div>
-                                    <p className="text-[10px] text-gray-400 font-mono mt-1 truncate">ID: {task.id}</p>
-                                    <p className="text-xs text-gray-600 mt-1 font-medium italic truncate">{task.summary}</p>
+                                    <p className="text-[10px] text-gray-400 font-mono mt-1 truncate">ID: {task.id || task.taskId}</p>
+                                    <p className="text-xs text-gray-600 mt-1 font-medium italic truncate">{task.summary || task.message || "Working..."}</p>
+                                    
+                                    {/* Real-time Progress Bar */}
+                                    {task.progress !== undefined && task.progress !== null && task.progress > 0 && (
+                                        <div className="mt-2.5 max-w-md">
+                                            <div className="flex justify-between text-[10px] text-gray-505 font-semibold mb-1">
+                                                <span>Progress</span>
+                                                <span>{task.progress.toFixed(0)}%</span>
+                                            </div>
+                                            <div className="w-full bg-gray-250 h-2 rounded-full overflow-hidden">
+                                                <div 
+                                                    className="bg-blue-600 h-2 rounded-full transition-all duration-305"
+                                                    style={{ width: `${task.progress}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             <div className="flex flex-col items-end gap-2 shrink-0 ml-4">
@@ -367,11 +383,11 @@ const Tasks = () => {
                                 className="border border-gray-200 rounded-lg p-2 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                             >
                                 <option value="ALL">All Types</option>
-                                <option value="ORGANIZE">Organizer</option>
-                                <option value="BACKUP">Backup</option>
-                                <option value="DUPLICATE_SCAN">Duplicate Check</option>
-                                <option value="SYNC">Sync</option>
-                                <option value="RESTORE">Restore</option>
+                                <option value={TaskType.ORGANIZE}>Organizer</option>
+                                <option value={TaskType.BACKUP}>Backup</option>
+                                <option value={TaskType.DUPLICATE_SCAN}>Duplicate Check</option>
+                                <option value={TaskType.SYNC}>Sync</option>
+                                <option value={TaskType.RESTORE}>Restore</option>
                             </select>
 
                             <span className="text-gray-400 uppercase text-[10px] tracking-wider font-bold ml-2">Status:</span>
@@ -477,17 +493,6 @@ const Tasks = () => {
                 </div>
             </div>
 
-            {/* Task Detail Report Modal */}
-            {selectedTask && (
-                <GenericResultViewer 
-                    task={selectedTask} 
-                    onClose={() => {
-                        console.log("[Tasks] Closing task result viewer modal");
-                        setSelectedTask(null);
-                        fetchHistory();
-                    }} 
-                />
-            )}
         </div>
     );
 };

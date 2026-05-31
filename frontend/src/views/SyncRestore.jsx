@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useTasks } from "../services/TaskContext";
 
 const SyncRestore = () => {
-    const { addToast, syncActiveTasks } = useTasks();
+    const { addToast, selectFolder, syncActiveTasks } = useTasks();
 
     // Sync state
     const [sourceFolder, setSourceFolder] = useState("");
@@ -53,15 +53,12 @@ const SyncRestore = () => {
         });
     };
 
-    const selectFolder = async (setFolder) => {
+    const handleSelectFolder = async (setFolder) => {
         console.log("[SyncRestore] Prompting user to select a folder...");
-        if (window.electron && window.electron.selectFolder) {
-            const selectedFolder = await window.electron.selectFolder();
+        const selectedFolder = await selectFolder();
+        if (selectedFolder) {
             console.log(`[SyncRestore] Folder selected: "${selectedFolder}"`);
             setFolder(selectedFolder);
-        } else {
-            console.warn("[SyncRestore] Electron API selectFolder not available in this window context.");
-            alert("Electron API is not available. Please run the application through run-dev.bat (Electron desktop window).");
         }
     };
 
@@ -77,6 +74,13 @@ const SyncRestore = () => {
 
     useEffect(() => {
         fetchSyncJobs();
+        axios.get("http://localhost:8080/api/settings/default-path")
+            .then(res => {
+                if (res.data.defaultPath) {
+                    setSourceFolder(res.data.defaultPath);
+                }
+            })
+            .catch(err => console.error("[SyncRestore] Failed to fetch default path:", err));
     }, []);
 
     const handleCreateSyncJob = async () => {
@@ -185,7 +189,7 @@ const SyncRestore = () => {
                                     className="bg-gray-50 text-xs border border-gray-200 rounded-xl p-2.5 flex-grow focus:outline-none font-medium text-gray-700"
                                 />
                                 <button 
-                                    onClick={() => selectFolder(setSourceFolder)}
+                                    onClick={() => handleSelectFolder(setSourceFolder)}
                                     className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition-all flex items-center gap-1 shadow-sm"
                                 >
                                     <i className="fa-solid fa-folder-open"></i>
@@ -208,7 +212,7 @@ const SyncRestore = () => {
                                     className="bg-gray-50 text-xs border border-gray-200 rounded-xl p-2.5 flex-grow focus:outline-none font-medium text-gray-700"
                                 />
                                 <button 
-                                    onClick={() => selectFolder(setDestinationFolder)}
+                                    onClick={() => handleSelectFolder(setDestinationFolder)}
                                     className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition-all flex items-center gap-1 shadow-sm"
                                 >
                                     <i className="fa-solid fa-folder-open"></i>
@@ -277,11 +281,11 @@ const SyncRestore = () => {
                             </select>
                         </div>
                     </div>
-                    <div className="space-y-2 max-h-48 overflow-y-auto flex-grow">
+                    <div className="space-y-2 max-h-48 overflow-y-auto overflow-x-auto flex-grow">
                         {getSortedJobs().length === 0 ? (
                             <p className="text-xs text-gray-400 text-center py-4 bg-gray-50 border border-dashed rounded-xl">No sync jobs matching filters.</p>
                         ) : getSortedJobs().map(job => (
-                            <div key={job.id} className="bg-gray-50 border border-gray-150 rounded-xl p-3 flex justify-between items-center text-xs">
+                            <div key={job.id} className="bg-gray-50 border border-gray-150 rounded-xl p-3 flex justify-between items-center text-xs overflow-x-auto">
                                 <div>
                                     <p className="font-bold text-gray-800 flex items-center gap-1">
                                         <i className="fa-solid fa-shuffle text-blue-500"></i>
@@ -331,40 +335,49 @@ const SyncRestore = () => {
 
                         {fileVersions.length > 0 && (
                             <div className="space-y-3">
-                                <div className="flex items-center justify-between">
+                                <div className="flex flex-wrap items-center justify-between gap-2.5">
                                     <label className="block text-xs font-bold text-gray-400 uppercase flex items-center gap-1.5">
                                         <i className="fa-solid fa-list text-slate-500"></i>
                                         Select Restore Version
                                     </label>
-                                    <div className="flex items-center gap-1.5 text-[10px] font-semibold text-gray-500">
-                                        <span className="text-[9px] uppercase font-bold text-gray-400">Sort:</span>
-                                        <select 
-                                            onChange={(e) => setVersionsSort(e.target.value)}
-                                            value={versionsSort}
-                                            className="border border-gray-200 rounded-lg p-1 bg-white text-gray-700 cursor-pointer focus:outline-none text-[10px]"
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <div className="flex items-center gap-1.5 text-[10px] font-semibold text-gray-500">
+                                            <span className="text-[9px] uppercase font-bold text-gray-400">Sort:</span>
+                                            <select 
+                                                onChange={(e) => setVersionsSort(e.target.value)}
+                                                value={versionsSort}
+                                                className="border border-gray-200 rounded-lg p-1 bg-white text-gray-700 cursor-pointer focus:outline-none text-[10px]"
+                                            >
+                                                <option value="numberDesc">Version: Newest</option>
+                                                <option value="numberAsc">Version: Oldest</option>
+                                                <option value="dateDesc">Date: Newest</option>
+                                                <option value="dateAsc">Date: Oldest</option>
+                                            </select>
+                                        </div>
+                                        <button 
+                                            onClick={handleRestoreVersion}
+                                            className="bg-green-500 hover:bg-green-600 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-500/20 text-white font-bold text-[10px] px-2.5 py-1 rounded-lg transition-all duration-150 shadow-sm flex items-center gap-1"
                                         >
-                                            <option value="numberDesc">Version: Newest</option>
-                                            <option value="numberAsc">Version: Oldest</option>
-                                            <option value="dateDesc">Date: Newest</option>
-                                            <option value="dateAsc">Date: Oldest</option>
-                                        </select>
+                                            <i className="fa-solid fa-cloud-arrow-up text-[9px]"></i>
+                                            Restore Selected Version
+                                        </button>
                                     </div>
                                 </div>
-                                <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-100 p-2 rounded-xl bg-gray-50">
+                                <div className="space-y-2 max-h-48 overflow-y-auto overflow-x-auto border border-gray-100 p-2 rounded-xl bg-gray-50">
                                     {getSortedVersions().map(ver => (
                                         <div 
                                             key={ver.id}
                                             onClick={() => setSelectedVersionId(ver.id)}
-                                            className={`p-2.5 rounded-lg text-xs cursor-pointer border flex justify-between items-center transition-all ${selectedVersionId === ver.id ? "bg-blue-50 border-blue-500 text-blue-900 font-bold" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"}`}
+                                            className={`p-2.5 rounded-lg text-xs cursor-pointer border flex justify-between items-center transition-all overflow-x-auto ${selectedVersionId === ver.id ? "bg-blue-50 border-blue-500 text-blue-900 font-bold" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"}`}
                                         >
-                                            <div className="flex items-center gap-2.5">
-                                                <i className="fa-solid fa-clock text-slate-400"></i>
-                                                <div>
+                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                <i className="fa-solid fa-clock text-slate-400 shrink-0"></i>
+                                                <div className="min-w-0">
                                                     <p>Version #{ver.versionNumber}</p>
                                                     <p className="text-[10px] text-gray-500 truncate max-w-[200px] mt-0.5">{ver.backupPath}</p>
                                                 </div>
                                             </div>
-                                            <span className="text-[10px] text-gray-500 font-mono flex items-center gap-1">
+                                            <span className="text-[10px] text-gray-500 font-mono flex items-center gap-1 shrink-0">
                                                 <i className="fa-solid fa-calendar text-[9px]"></i>
                                                 {new Date(ver.backedUpAt).toLocaleDateString()}
                                             </span>
@@ -385,14 +398,6 @@ const SyncRestore = () => {
                                         className="w-full bg-gray-50 text-xs border border-gray-200 rounded-xl p-2.5 focus:outline-none text-gray-800 font-semibold"
                                     />
                                 </div>
-
-                                <button 
-                                    onClick={handleRestoreVersion}
-                                    className="w-full bg-green-500 hover:bg-green-600 active:scale-[0.98] cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-500/20 text-white font-semibold text-xs py-2.5 rounded-xl transition-all duration-150 shadow-md flex items-center justify-center gap-1.5 mt-4"
-                                >
-                                    <i className="fa-solid fa-cloud-arrow-up"></i>
-                                    Restore Selected Version
-                                </button>
                             </div>
                         )}
                     </div>

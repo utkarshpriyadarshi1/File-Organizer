@@ -10,6 +10,92 @@ const GenericResultViewer = ({ task, onClose }) => {
     const [resSearch, setResSearch] = useState("");
     const [resSort, setResSort] = useState("");
     const [resStatusFilter, setResStatusFilter] = useState("ALL");
+    const [skipFolder, setSkipFolder] = useState("");
+    const [targetFolder, setTargetFolder] = useState("");
+
+    const autoSelectDuplicates = (strategy) => {
+        if (strategy === "selectAll") {
+            const confirmAll = window.confirm("WARNING: Selecting ALL copies of duplicate files will delete every single copy, leaving zero files. Are you sure you want to proceed?");
+            if (!confirmAll) return;
+        }
+
+        let toSelect = [];
+        payload.forEach(group => {
+            if (group.files.length <= 1) return;
+
+            const filterEligible = (file) => {
+                const filePath = typeof file === "string" ? file : file.path;
+                const pathLower = filePath.toLowerCase();
+                if (skipFolder.trim() && pathLower.includes(skipFolder.trim().toLowerCase())) {
+                    return false;
+                }
+                if (targetFolder.trim() && !pathLower.includes(targetFolder.trim().toLowerCase())) {
+                    return false;
+                }
+                return true;
+            };
+
+            if (strategy === "selectAll") {
+                group.files.forEach(f => {
+                    if (filterEligible(f)) {
+                        const filePath = typeof f === "string" ? f : f.path;
+                        toSelect.push(filePath);
+                    }
+                });
+            } else if (strategy === "clearAll") {
+                // toSelect remains empty
+            } else {
+                const sorted = [...group.files].sort((a, b) => {
+                    const timeA = (a.modifiedAt ? new Date(a.modifiedAt).getTime() : 0);
+                    const timeB = (b.modifiedAt ? new Date(b.modifiedAt).getTime() : 0);
+                    return timeA - timeB;
+                });
+
+                if (strategy === "keepOldest") {
+                    for (let i = 1; i < sorted.length; i++) {
+                        if (filterEligible(sorted[i])) {
+                            const filePath = typeof sorted[i] === "string" ? sorted[i] : sorted[i].path;
+                            toSelect.push(filePath);
+                        }
+                    }
+                } else if (strategy === "keepLatest") {
+                    for (let i = 0; i < sorted.length - 1; i++) {
+                        if (filterEligible(sorted[i])) {
+                            const filePath = typeof sorted[i] === "string" ? sorted[i] : sorted[i].path;
+                            toSelect.push(filePath);
+                        }
+                    }
+                }
+            }
+        });
+        setSelectedFiles(toSelect);
+    };
+
+    const autoSelectFiles = (action) => {
+        if (action === "clearAll") {
+            setSelectedFiles([]);
+            return;
+        }
+
+        let toSelect = [];
+        payload.forEach(item => {
+            const filePath = task.taskType === "ORGANIZE" 
+                ? (item.organizedPath || item.newPath) 
+                : (item.sourcePath || item.path);
+
+            if (!filePath) return;
+
+            const pathLower = filePath.toLowerCase();
+            if (skipFolder.trim() && pathLower.includes(skipFolder.trim().toLowerCase())) {
+                return;
+            }
+            if (targetFolder.trim() && !pathLower.includes(targetFolder.trim().toLowerCase())) {
+                return;
+            }
+            toSelect.push(filePath);
+        });
+        setSelectedFiles(toSelect);
+    };
 
     // Filter and Sort for DUPLICATE_SCAN
     const getFilteredDuplicates = () => {
@@ -17,7 +103,10 @@ const GenericResultViewer = ({ task, onClose }) => {
         return payload.filter(group => {
             if (!resSearch.trim()) return true;
             return group.hash.toLowerCase().includes(resSearch.toLowerCase()) ||
-                   group.files.some(f => f.toLowerCase().includes(resSearch.toLowerCase()));
+                   group.files.some(f => {
+                       const filePath = typeof f === "string" ? f : f.path;
+                       return filePath.toLowerCase().includes(resSearch.toLowerCase());
+                   });
         });
     };
 
@@ -157,7 +246,7 @@ const GenericResultViewer = ({ task, onClose }) => {
             case "DUPLICATE_SCAN": {
                 const sortedDups = getSortedDuplicates().slice(0, 500);
                 return (
-                    <div className="space-y-4">
+                    <div className="space-y-4 text-left">
                         {payload.length > 500 && (
                             <div className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-3 mb-2 font-semibold flex items-center gap-2">
                                 <i className="fa-solid fa-circle-info text-amber-605 text-sm"></i>
@@ -183,32 +272,105 @@ const GenericResultViewer = ({ task, onClose }) => {
                             </select>
                         </div>
 
-                        {sortedDups.length === 0 ? (
-                            <p className="text-center text-xs text-gray-500 py-6">No duplicate groups match filters.</p>
-                        ) : sortedDups.map((group, idx) => (
-                            <div key={idx} className="bg-gray-50 border border-gray-100 rounded-xl p-3">
-                                <p className="text-xs text-gray-500 font-mono mb-2 flex items-center gap-1.5">
-                                    <i className="fa-solid fa-hashtag text-gray-400"></i>
-                                    <span>Hash: {group.hash}</span>
-                                </p>
-                                <div className="space-y-1.5">
-                                    {group.files.map((file, fIdx) => (
-                                        <div key={fIdx} className="flex items-center gap-2">
-                                            <input 
-                                                type="checkbox"
-                                                checked={selectedFiles.includes(file)}
-                                                onChange={() => toggleFileSelection(file)}
-                                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                            />
-                                            <span className="text-sm text-gray-700 truncate max-w-lg flex items-center gap-1.5">
-                                                <i className="fa-solid fa-file text-slate-400 text-xs"></i>
-                                                {file}
-                                            </span>
-                                        </div>
-                                    ))}
+                        {/* Auto-Select and Folder Pattern Controls */}
+                        <div className="p-3 bg-gray-50 border border-gray-150 rounded-xl space-y-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                                <div className="flex-grow flex items-center gap-2">
+                                    <label className="text-[10px] font-bold text-gray-500 uppercase shrink-0 w-20 flex items-center gap-1">
+                                        <i className="fa-solid fa-filter-circle-xmark text-rose-400"></i>
+                                        Skip Folder:
+                                    </label>
+                                    <input 
+                                        type="text"
+                                        value={skipFolder}
+                                        onChange={(e) => setSkipFolder(e.target.value)}
+                                        placeholder="e.g. KeepThisFolder"
+                                        className="w-full border border-gray-200 rounded-lg p-1.5 bg-white text-gray-755 focus:outline-none focus:ring-1 focus:ring-blue-500 text-[11px] font-medium"
+                                    />
+                                </div>
+                                <div className="flex-grow flex items-center gap-2">
+                                    <label className="text-[10px] font-bold text-gray-500 uppercase shrink-0 w-20 flex items-center gap-1">
+                                        <i className="fa-solid fa-filter-circle-dollar text-green-400"></i>
+                                        Target Only:
+                                    </label>
+                                    <input 
+                                        type="text"
+                                        value={targetFolder}
+                                        onChange={(e) => setTargetFolder(e.target.value)}
+                                        placeholder="e.g. DeleteThisFolder"
+                                        className="w-full border border-gray-200 rounded-lg p-1.5 bg-white text-gray-755 focus:outline-none focus:ring-1 focus:ring-blue-500 text-[11px] font-medium"
+                                    />
                                 </div>
                             </div>
-                        ))}
+                            
+                            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-dashed border-gray-200">
+                                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mr-1">Auto-Select:</span>
+                                <button 
+                                    onClick={() => autoSelectDuplicates("keepOldest")}
+                                    className="bg-white hover:bg-slate-100 border border-gray-200 px-2 py-1 rounded-md active:scale-95 transition-all text-[10px] font-bold text-blue-600 hover:text-blue-700 shadow-sm flex items-center gap-1 cursor-pointer"
+                                >
+                                    <i className="fa-solid fa-clock-rotate-left"></i> Keep Oldest
+                                </button>
+                                <button 
+                                    onClick={() => autoSelectDuplicates("keepLatest")}
+                                    className="bg-white hover:bg-slate-100 border border-gray-200 px-2 py-1 rounded-md active:scale-95 transition-all text-[10px] font-bold text-indigo-600 hover:text-indigo-700 shadow-sm flex items-center gap-1 cursor-pointer"
+                                >
+                                    <i className="fa-solid fa-clock"></i> Keep Latest
+                                </button>
+                                <button 
+                                    onClick={() => autoSelectDuplicates("selectAll")}
+                                    className="bg-white hover:bg-slate-100 border border-gray-200 px-2 py-1 rounded-md active:scale-95 transition-all text-[10px] font-bold text-rose-600 hover:text-rose-700 shadow-sm flex items-center gap-1 cursor-pointer"
+                                >
+                                    <i className="fa-solid fa-check-double"></i> Select All
+                                </button>
+                                <button 
+                                    onClick={() => autoSelectDuplicates("clearAll")}
+                                    className="bg-white hover:bg-slate-100 border border-gray-200 px-2 py-1 rounded-md active:scale-95 transition-all text-[10px] font-bold text-gray-600 hover:text-gray-805 shadow-sm flex items-center gap-1 cursor-pointer"
+                                >
+                                    <i className="fa-solid fa-circle-xmark"></i> Clear
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4 max-h-96 overflow-y-auto overflow-x-auto">
+                            {sortedDups.length === 0 ? (
+                                <p className="text-center text-xs text-gray-500 py-6">No duplicate groups match filters.</p>
+                            ) : sortedDups.map((group, idx) => (
+                                <div key={idx} className="bg-gray-50 border border-gray-100 rounded-xl p-3 overflow-x-auto">
+                                    <p className="text-xs text-gray-500 font-mono mb-2 flex items-center gap-1.5">
+                                        <i className="fa-solid fa-hashtag text-gray-400"></i>
+                                        <span>Hash: {group.hash}</span>
+                                    </p>
+                                    <div className="space-y-1.5">
+                                        {group.files.map((file, fIdx) => {
+                                            const filePath = typeof file === "string" ? file : file.path;
+                                            const fileDate = typeof file === "string" ? null : file.modifiedAt;
+                                            return (
+                                                <div key={fIdx} className="flex items-center justify-between gap-4 p-1.5 rounded hover:bg-gray-100 transition-colors">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <input 
+                                                            type="checkbox"
+                                                            checked={selectedFiles.includes(filePath)}
+                                                            onChange={() => toggleFileSelection(filePath)}
+                                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                                        />
+                                                        <span className="text-xs text-gray-700 truncate flex items-center gap-1.5" title={filePath}>
+                                                            <i className="fa-solid fa-file text-slate-400 text-[10px]"></i>
+                                                            {filePath}
+                                                        </span>
+                                                    </div>
+                                                    {fileDate && (
+                                                        <span className="text-[10px] text-gray-400 font-medium shrink-0">
+                                                            {new Date(fileDate.replace("T", " ")).toLocaleString()}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 );
             }
@@ -241,6 +403,63 @@ const GenericResultViewer = ({ task, onClose }) => {
                                 <option value="destAsc">Organized Path: A to Z</option>
                                 <option value="destDesc">Organized Path: Z to A</option>
                             </select>
+                        </div>
+
+                        {/* Auto-Select and Folder Pattern Controls */}
+                        <div className="p-3 bg-gray-50 border border-gray-150 rounded-xl space-y-3 text-left mb-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                                <div className="flex-grow flex items-center gap-2">
+                                    <label className="text-[10px] font-bold text-gray-500 uppercase shrink-0 w-20 flex items-center gap-1">
+                                        <i className="fa-solid fa-filter-circle-xmark text-rose-400"></i>
+                                        Skip Folder:
+                                    </label>
+                                    <input 
+                                        type="text"
+                                        value={skipFolder}
+                                        onChange={(e) => setSkipFolder(e.target.value)}
+                                        placeholder="e.g. KeepThisFolder"
+                                        className="w-full border border-gray-200 rounded-lg p-1.5 bg-white text-gray-755 focus:outline-none focus:ring-1 focus:ring-blue-500 text-[11px] font-medium"
+                                    />
+                                </div>
+                                <div className="flex-grow flex items-center gap-2">
+                                    <label className="text-[10px] font-bold text-gray-500 uppercase shrink-0 w-20 flex items-center gap-1">
+                                        <i className="fa-solid fa-filter-circle-dollar text-green-400"></i>
+                                        Target Only:
+                                    </label>
+                                    <input 
+                                        type="text"
+                                        value={targetFolder}
+                                        onChange={(e) => setTargetFolder(e.target.value)}
+                                        placeholder="e.g. DeleteThisFolder"
+                                        className="w-full border border-gray-200 rounded-lg p-1.5 bg-white text-gray-755 focus:outline-none focus:ring-1 focus:ring-blue-500 text-[11px] font-medium"
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-dashed border-gray-200">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mr-1">Auto-Select:</span>
+                                    <button 
+                                        onClick={() => autoSelectFiles("selectAll")}
+                                        className="bg-white hover:bg-slate-100 border border-gray-200 px-3 py-1 rounded-md active:scale-95 transition-all text-[10px] font-bold text-blue-600 hover:text-blue-755 shadow-sm flex items-center gap-1 cursor-pointer"
+                                    >
+                                        <i className="fa-solid fa-check-double"></i> Select All Eligible
+                                    </button>
+                                    <button 
+                                        onClick={() => autoSelectFiles("clearAll")}
+                                        className="bg-white hover:bg-slate-100 border border-gray-200 px-3 py-1 rounded-md active:scale-95 transition-all text-[10px] font-bold text-gray-600 hover:text-gray-805 shadow-sm flex items-center gap-1 cursor-pointer"
+                                    >
+                                        <i className="fa-solid fa-circle-xmark"></i> Clear
+                                    </button>
+                                </div>
+                                <button 
+                                    onClick={() => handleReversalAction("REVERT_MOVES")}
+                                    className="bg-blue-600 hover:bg-blue-700 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-white font-semibold text-xs px-3.5 py-1.5 rounded-xl transition-all duration-150 flex items-center gap-1.5 shadow-sm ml-auto"
+                                >
+                                    <i className="fa-solid fa-rotate-left"></i>
+                                    Undo Selected Moves
+                                </button>
+                            </div>
                         </div>
 
                         {sortedOrg.length === 0 ? (
@@ -335,6 +554,63 @@ const GenericResultViewer = ({ task, onClose }) => {
                             </select>
                         </div>
 
+                        {/* Auto-Select and Folder Pattern Controls */}
+                        <div className="p-3 bg-gray-50 border border-gray-150 rounded-xl space-y-3 text-left mb-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                                <div className="flex-grow flex items-center gap-2">
+                                    <label className="text-[10px] font-bold text-gray-500 uppercase shrink-0 w-20 flex items-center gap-1">
+                                        <i className="fa-solid fa-filter-circle-xmark text-rose-400"></i>
+                                        Skip Folder:
+                                    </label>
+                                    <input 
+                                        type="text"
+                                        value={skipFolder}
+                                        onChange={(e) => setSkipFolder(e.target.value)}
+                                        placeholder="e.g. KeepThisFolder"
+                                        className="w-full border border-gray-200 rounded-lg p-1.5 bg-white text-gray-755 focus:outline-none focus:ring-1 focus:ring-blue-500 text-[11px] font-medium"
+                                    />
+                                </div>
+                                <div className="flex-grow flex items-center gap-2">
+                                    <label className="text-[10px] font-bold text-gray-500 uppercase shrink-0 w-20 flex items-center gap-1">
+                                        <i className="fa-solid fa-filter-circle-dollar text-green-400"></i>
+                                        Target Only:
+                                    </label>
+                                    <input 
+                                        type="text"
+                                        value={targetFolder}
+                                        onChange={(e) => setTargetFolder(e.target.value)}
+                                        placeholder="e.g. DeleteThisFolder"
+                                        className="w-full border border-gray-200 rounded-lg p-1.5 bg-white text-gray-755 focus:outline-none focus:ring-1 focus:ring-blue-500 text-[11px] font-medium"
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-dashed border-gray-200">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mr-1">Auto-Select:</span>
+                                    <button 
+                                        onClick={() => autoSelectFiles("selectAll")}
+                                        className="bg-white hover:bg-slate-100 border border-gray-200 px-3 py-1 rounded-md active:scale-95 transition-all text-[10px] font-bold text-blue-600 hover:text-blue-755 shadow-sm flex items-center gap-1 cursor-pointer"
+                                    >
+                                        <i className="fa-solid fa-check-double"></i> Select All Eligible
+                                    </button>
+                                    <button 
+                                        onClick={() => autoSelectFiles("clearAll")}
+                                        className="bg-white hover:bg-slate-100 border border-gray-200 px-3 py-1 rounded-md active:scale-95 transition-all text-[10px] font-bold text-gray-600 hover:text-gray-805 shadow-sm flex items-center gap-1 cursor-pointer"
+                                    >
+                                        <i className="fa-solid fa-circle-xmark"></i> Clear
+                                    </button>
+                                </div>
+                                <button 
+                                    onClick={() => handleReversalAction("RESTORE_FILES")}
+                                    className="bg-blue-600 hover:bg-blue-700 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-white font-semibold text-xs px-3.5 py-1.5 rounded-xl transition-all duration-150 flex items-center gap-1.5 shadow-sm ml-auto"
+                                >
+                                    <i className="fa-solid fa-cloud-arrow-up"></i>
+                                    Restore Selected
+                                </button>
+                            </div>
+                        </div>
+
                         {sortedBkp.length === 0 ? (
                             <p className="text-center text-xs text-gray-550 py-6">No backed up files match filters.</p>
                         ) : (
@@ -404,33 +680,54 @@ const GenericResultViewer = ({ task, onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in">
-            <div className="bg-white border border-gray-100 shadow-2xl rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden">
-                {/* Header */}
-                <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg">
-                            <i className="fa-solid fa-file-waveform"></i>
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-bold text-gray-800">Task Log Details</h3>
-                            <p className="text-xs text-gray-500 font-semibold">{task.taskType} • {task.id}</p>
-                        </div>
-                    </div>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 hover:bg-slate-100 rounded-lg text-xl font-bold p-2 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-100">
-                        <i className="fa-solid fa-xmark"></i>
+        <div className="w-full bg-white border border-gray-150 shadow-sm rounded-3xl flex flex-col overflow-hidden animate-fade-in">
+            {/* Header */}
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={onClose} 
+                        className="mr-2 bg-slate-50 hover:bg-slate-100 text-gray-605 text-xs font-bold px-3.5 py-2 rounded-xl border border-gray-200 transition-all flex items-center gap-1.5 shadow-sm cursor-pointer active:scale-95"
+                    >
+                        <i className="fa-solid fa-arrow-left"></i>
+                        Back to Tasks
                     </button>
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg shadow-inner">
+                        <i className="fa-solid fa-file-waveform"></i>
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-800">Task Log Details</h3>
+                        <p className="text-xs text-gray-500 font-semibold">{task.taskType} • {task.id}</p>
+                    </div>
                 </div>
+            </div>
 
                 {/* Body */}
                 <div className="p-6 overflow-y-auto flex-grow">
-                    {task.status === "COMPLETED_WITH_FAILURES" && (
-                        <div className="bg-amber-50 border-l-4 border-amber-500 text-amber-950 p-4 rounded-xl mb-4 text-xs flex items-start gap-2.5">
-                            <i className="fa-solid fa-circle-exclamation text-amber-500 mt-0.5 text-sm"></i>
+                    {task.summary && task.summary.includes("[Dry Run]") && (
+                        <div className="bg-amber-50 border-l-4 border-amber-500 text-amber-950 p-4 rounded-xl mb-4 text-xs flex items-center gap-2.5 shadow-sm">
+                            <i className="fa-solid fa-circle-exclamation text-amber-500 text-sm"></i>
                             <div>
-                                <h4 className="font-bold mb-1">Reversal Warning: Some operations failed.</h4>
-                                <p>You can unlock/free the target files on your system and click <strong>"Retry Failed Operations"</strong> below to re-process them.</p>
+                                <h4 className="font-bold mb-1">Dry Run Simulation</h4>
+                                <p>This operation was executed in simulation mode. No files were deleted, moved, or modified on disk.</p>
                             </div>
+                        </div>
+                    )}
+                    {task.status === "COMPLETED_WITH_FAILURES" && (
+                        <div className="bg-amber-50 border-l-4 border-amber-500 text-amber-950 p-4 rounded-xl mb-4 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="flex items-start gap-2.5">
+                                <i className="fa-solid fa-circle-exclamation text-amber-500 mt-0.5 text-sm"></i>
+                                <div>
+                                    <h4 className="font-bold mb-1">Reversal Warning: Some operations failed.</h4>
+                                    <p>You can unlock/free the target files on your system and retry them.</p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => handleReversalAction("RETRY_FAILED")}
+                                className="bg-amber-500 hover:bg-amber-600 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition-all duration-150 flex items-center gap-1.5 shadow-sm shrink-0"
+                            >
+                                <i className="fa-solid fa-arrows-rotate"></i>
+                                Retry Failed Operations
+                            </button>
                         </div>
                     )}
                     {renderSubView()}
@@ -443,44 +740,16 @@ const GenericResultViewer = ({ task, onClose }) => {
                         {selectedFiles.length} files selected
                     </span>
                     <div className="flex gap-2">
-                        {task.taskType === "ORGANIZE" && (
-                            <button 
-                                onClick={() => handleReversalAction("REVERT_MOVES")}
-                                className="bg-blue-600 hover:bg-blue-700 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition-all duration-150 flex items-center gap-1.5 shadow-sm"
-                            >
-                                <i className="fa-solid fa-rotate-left"></i>
-                                Undo Selected Moves
-                            </button>
-                        )}
-                        {task.taskType === "BACKUP" && (
-                            <button 
-                                onClick={() => handleReversalAction("RESTORE_FILES")}
-                                className="bg-blue-600 hover:bg-blue-700 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition-all duration-150 flex items-center gap-1.5 shadow-sm"
-                            >
-                                <i className="fa-solid fa-cloud-arrow-up"></i>
-                                Restore Selected
-                            </button>
-                        )}
-                        {task.status === "COMPLETED_WITH_FAILURES" && (
-                            <button 
-                                onClick={() => handleReversalAction("RETRY_FAILED")}
-                                className="bg-amber-500 hover:bg-amber-600 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition-all duration-150 flex items-center gap-1.5 shadow-sm"
-                            >
-                                <i className="fa-solid fa-arrows-rotate"></i>
-                                Retry Failed Operations
-                            </button>
-                        )}
                         <button 
                             onClick={onClose}
                             className="bg-white hover:bg-gray-100 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-200 text-gray-700 border border-gray-200 font-semibold text-xs px-4 py-2.5 rounded-xl transition-all duration-150 flex items-center gap-1.5"
                         >
-                            <i className="fa-solid fa-xmark"></i>
-                            Close
+                            <i className="fa-solid fa-arrow-left"></i>
+                            Back to Tasks
                         </button>
                     </div>
                 </div>
             </div>
-        </div>
     );
 };
 

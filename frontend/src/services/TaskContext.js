@@ -1,17 +1,109 @@
-import React, { createContext, useState, useEffect, useContext } from "react";
+import { TaskStatus } from "../enums/SystemTypes";
+import React, { createContext, useState, useEffect, useContext, useCallback } from "react";
 import axios from "axios";
+import AlertDialog from "../components/AlertDialog";
+import FolderSelectorDialog from "../components/FolderSelectorDialog";
 
 const TaskContext = createContext();
 
 export const TaskProvider = ({ children }) => {
     const [activeTasks, setActiveTasks] = useState({});
     const [toastQueue, setToastQueue] = useState([]);
+    const [alertConfig, setAlertConfig] = useState(null);
+    const [folderSelectorConfig, setFolderSelectorConfig] = useState(null);
+    const [notificationsHistory, setNotificationsHistory] = useState(() => {
+        try {
+            const saved = localStorage.getItem("fboss_notifications_history");
+            return saved ? JSON.parse(saved) : [];
+        } catch (e) {
+            return [];
+        }
+    });
 
-    const addToast = (message, type = "info") => {
+    useEffect(() => {
+        try {
+            localStorage.setItem("fboss_notifications_history", JSON.stringify(notificationsHistory));
+        } catch (e) {
+            console.error("Failed to save notifications to localStorage:", e);
+        }
+    }, [notificationsHistory]);
+
+    const addNotification = (message, title = "System Update", type = "info", metadata = null) => {
+        const id = Math.random().toString(36).substr(2, 9);
+        const newNotification = {
+            id,
+            title,
+            message,
+            type,
+            timestamp: new Date().toISOString(),
+            read: false,
+            metadata
+        };
+        setNotificationsHistory(prev => [newNotification, ...prev]);
+    };
+
+    const markAllNotificationsAsRead = useCallback(() => {
+        setNotificationsHistory(prev => prev.map(n => n.read ? n : { ...n, read: true }));
+    }, []);
+
+    const markSingleAsRead = (id) => {
+        setNotificationsHistory(prev => prev.map(n => n.id === id && !n.read ? { ...n, read: true } : n));
+    };
+
+    const clearAllNotifications = () => {
+        setNotificationsHistory([]);
+    };
+
+    const removeSingleNotification = (id) => {
+        setNotificationsHistory(prev => prev.filter(n => n.id !== id));
+    };
+
+    const showFolderSelector = (initialPath = "") => {
+        return new Promise((resolve) => {
+            setFolderSelectorConfig({
+                initialPath,
+                onSelect: (selectedPath) => {
+                    setFolderSelectorConfig(null);
+                    resolve(selectedPath);
+                },
+                onClose: () => {
+                    setFolderSelectorConfig(null);
+                    resolve("");
+                }
+            });
+        });
+    };
+
+    const selectFolder = (initialPath = "") => {
+        return showFolderSelector(initialPath);
+    };
+
+    const showAlert = (message, title = "System Notification", type = "info") => {
+        addNotification(message, title, type);
+        return new Promise((resolve) => {
+            setAlertConfig({
+                message,
+                title,
+                type,
+                onClose: () => {
+                    setAlertConfig(null);
+                    resolve();
+                }
+            });
+        });
+    };
+
+    const addToast = (message, type = "info", metadata = null) => {
         const id = Math.random().toString(36).substr(2, 9);
         console.log(`[Toast] Added notification (${type}): "${message}"`);
         setToastQueue(prev => [...prev, { id, message, type }]);
         setTimeout(() => dismissToast(id), 6000);
+
+        let title = "System Notification";
+        if (type === "success") title = "Action Completed";
+        else if (type === "error") title = "Error Occurred";
+        else if (type === "warning") title = "System Warning";
+        addNotification(message, title, type, metadata);
     };
 
     const dismissToast = (id) => {
@@ -27,11 +119,14 @@ export const TaskProvider = ({ children }) => {
                 const tasksObj = {};
                 res.data.forEach(task => {
                     tasksObj[task.id] = {
+                        id: task.id,
                         taskId: task.id,
                         taskType: task.taskType,
                         status: task.status,
                         progress: 0.0,
-                        message: task.summary
+                        summary: task.summary,
+                        message: task.summary,
+                        createdAt: task.createdAt
                     };
                 });
                 setActiveTasks(tasksObj);
@@ -40,6 +135,25 @@ export const TaskProvider = ({ children }) => {
     };
 
     useEffect(() => {
+        const nativeAlert = window.alert;
+        window.alert = (message) => {
+            console.log(`[Alert Override] Intercepted native alert: "${message}"`);
+            let title = "System Alert";
+            let type = "warning";
+            const msgLower = String(message).toLowerCase();
+            if (msgLower.includes("fail") || msgLower.includes("error")) {
+                title = "Error Encountered";
+                type = "error";
+            } else if (msgLower.includes("not available") || msgLower.includes("first") || msgLower.includes("select") || msgLower.includes("no tasks") || msgLower.includes("no files")) {
+                title = "Attention Required";
+                type = "warning";
+            } else if (msgLower.includes("success") || msgLower.includes("completed")) {
+                title = "Action Successful";
+                type = "success";
+            }
+            showAlert(message, title, type);
+        };
+
         syncActiveTasks();
 
         let socket;
@@ -56,19 +170,28 @@ export const TaskProvider = ({ children }) => {
                     if (data.taskId) {
                         console.log(`[WebSocket] Task Event: ID=${data.taskId}, Type=${data.taskType}, Status=${data.status}, Progress=${data.progress}%`);
                         
-                        if (["COMPLETED", "COMPLETED_WITH_FAILURES", "FAILED", "CANCELED"].includes(data.status)) {
+                        if ([TaskStatus.COMPLETED, TaskStatus.COMPLETED_WITH_FAILURES, TaskStatus.FAILED, TaskStatus.CANCELED].includes(data.status)) {
                             console.log(`[WebSocket] Task terminated. Cleaning local context trace: ${data.taskId}`);
                             setActiveTasks(prev => {
                                 const updated = { ...prev };
                                 delete updated[data.taskId];
                                 return updated;
                             });
-                            addToast(`Task ${data.taskType} ${data.status.replace(/_/g, " ")}: ${data.message}`, data.status.toLowerCase().includes("fail") ? "error" : "success");
+                            const toastType = data.status === TaskStatus.FAILED 
+                                ? "error" 
+                                : (data.status === TaskStatus.COMPLETED_WITH_FAILURES ? "warning" : "success");
+                            addToast(`Task ${data.taskType} ${data.status.replace(/_/g, " ")}: ${data.message}`, toastType, { taskId: data.taskId, taskType: data.taskType });
                         } else {
                             setActiveTasks(prev => {
+                                const taskData = {
+                                    ...data,
+                                    id: data.taskId,
+                                    summary: data.message,
+                                    createdAt: prev[data.taskId]?.createdAt || new Date().toISOString()
+                                };
                                 return {
                                     ...prev,
-                                    [data.taskId]: data
+                                    [data.taskId]: taskData
                                 };
                             });
                         }
@@ -91,6 +214,7 @@ export const TaskProvider = ({ children }) => {
                 console.log("[WebSocket] Cleaning socket connection on unmount.");
                 socket.close();
             }
+            window.alert = nativeAlert;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -117,9 +241,28 @@ export const TaskProvider = ({ children }) => {
         }
     };
 
+    const unreadCount = notificationsHistory.filter(n => !n.read).length;
+
     return (
-        <TaskContext.Provider value={{ activeTasks, toastQueue, cancelTask, cancelTasksBulk, addToast, dismissToast, syncActiveTasks }}>
+        <TaskContext.Provider value={{ 
+            activeTasks, 
+            toastQueue, 
+            cancelTask, 
+            cancelTasksBulk, 
+            addToast, 
+            dismissToast, 
+            syncActiveTasks, 
+            selectFolder,
+            notificationsHistory,
+            unreadCount,
+            markAllNotificationsAsRead,
+            markSingleAsRead,
+            clearAllNotifications,
+            removeSingleNotification
+        }}>
             {children}
+            <AlertDialog config={alertConfig} />
+            <FolderSelectorDialog config={folderSelectorConfig} />
         </TaskContext.Provider>
     );
 };
