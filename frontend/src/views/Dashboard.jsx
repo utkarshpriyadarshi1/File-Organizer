@@ -56,49 +56,48 @@ const Dashboard = () => {
                             <i className="fa-solid fa-server"></i>
                         </div>
                         <div>
-                            <span className="text-sm font-black tracking-wider block text-white">FBOSS CONTROL</span>
-                            <span className="text-[9px] font-bold text-sky-400 uppercase tracking-widest block mt-0.5">File Engine Client</span>
+                            <span className="text-sm font-black tracking-wider block text-white">FBOSS</span>
                         </div>
                     </div>
 
                     {/* Navigation Items */}
                     <nav className="p-4 space-y-1.5">
                         <p className="px-3 text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">{t("operations")}</p>
-                        
-                        <button 
-                            onClick={() => setActiveTab("dashboard")} 
+
+                        <button
+                            onClick={() => setActiveTab("dashboard")}
                             className={`w-full px-3.5 py-2.5 rounded-xl transition-all duration-150 flex items-center gap-3 text-xs font-bold cursor-pointer active:scale-95 ${activeTab === "dashboard" ? "bg-blue-600 text-white shadow-md shadow-blue-500/10" : "hover:bg-slate-800 text-slate-400 hover:text-slate-200"}`}
                         >
                             <i className="fa-solid fa-table-columns text-[13px] w-4 text-center"></i>
                             {t("dashboardStats")}
                         </button>
-                        
-                        <button 
-                            onClick={() => setActiveTab("organizer")} 
+
+                        <button
+                            onClick={() => setActiveTab("organizer")}
                             className={`w-full px-3.5 py-2.5 rounded-xl transition-all duration-150 flex items-center gap-3 text-xs font-bold cursor-pointer active:scale-95 ${activeTab === "organizer" ? "bg-blue-600 text-white shadow-md shadow-blue-500/10" : "hover:bg-slate-800 text-slate-400 hover:text-slate-200"}`}
                         >
                             <i className="fa-solid fa-folder-tree text-[13px] w-4 text-center"></i>
                             {t("fileOrganizer")}
                         </button>
 
-                        <button 
-                            onClick={() => setActiveTab("backup")} 
+                        <button
+                            onClick={() => setActiveTab("backup")}
                             className={`w-full px-3.5 py-2.5 rounded-xl transition-all duration-150 flex items-center gap-3 text-xs font-bold cursor-pointer active:scale-95 ${activeTab === "backup" ? "bg-blue-600 text-white shadow-md shadow-blue-500/10" : "hover:bg-slate-800 text-slate-400 hover:text-slate-200"}`}
                         >
                             <i className="fa-solid fa-shield-halved text-[13px] w-4 text-center"></i>
                             {t("backupRestore")}
                         </button>
 
-                        <button 
-                            onClick={() => setActiveTab("duplicates")} 
+                        <button
+                            onClick={() => setActiveTab("duplicates")}
                             className={`w-full px-3.5 py-2.5 rounded-xl transition-all duration-150 flex items-center gap-3 text-xs font-bold cursor-pointer active:scale-95 ${activeTab === "duplicates" ? "bg-blue-600 text-white shadow-md shadow-blue-500/10" : "hover:bg-slate-800 text-slate-400 hover:text-slate-200"}`}
                         >
                             <i className="fa-solid fa-copy text-[13px] w-4 text-center"></i>
                             {t("duplicateCleaner")}
                         </button>
 
-                        <button 
-                            onClick={() => setActiveTab("sync")} 
+                        <button
+                            onClick={() => setActiveTab("sync")}
                             className={`w-full px-3.5 py-2.5 rounded-xl transition-all duration-150 flex items-center gap-3 text-xs font-bold cursor-pointer active:scale-95 ${activeTab === "sync" ? "bg-blue-600 text-white shadow-md shadow-blue-500/10" : "hover:bg-slate-800 text-slate-400 hover:text-slate-200"}`}
                         >
                             <i className="fa-solid fa-shuffle text-[13px] w-4 text-center"></i>
@@ -109,8 +108,8 @@ const Dashboard = () => {
                             <p className="px-3 text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">{t("monitoring")}</p>
                         </div>
 
-                        <button 
-                            onClick={() => setActiveTab("tasks")} 
+                        <button
+                            onClick={() => setActiveTab("tasks")}
                             className={`w-full px-3.5 py-2.5 rounded-xl transition-all duration-150 flex items-center justify-between text-xs font-bold cursor-pointer active:scale-95 ${activeTab === "tasks" ? "bg-blue-600 text-white shadow-md shadow-blue-500/10" : "hover:bg-slate-800 text-slate-400 hover:text-slate-200"}`}
                         >
                             <span className="flex items-center gap-3">
@@ -124,16 +123,16 @@ const Dashboard = () => {
                             )}
                         </button>
 
-                         <button 
-                            onClick={() => setActiveTab("logs")} 
+                        <button
+                            onClick={() => setActiveTab("logs")}
                             className={`w-full px-3.5 py-2.5 rounded-xl transition-all duration-150 flex items-center gap-3 text-xs font-bold cursor-pointer active:scale-95 ${activeTab === "logs" ? "bg-blue-600 text-white shadow-md shadow-blue-500/10" : "hover:bg-slate-800 text-slate-400 hover:text-slate-200"}`}
                         >
                             <i className="fa-solid fa-terminal text-[13px] w-4 text-center"></i>
                             {t("systemLogs")}
                         </button>
 
-                        <button 
-                            onClick={() => setActiveTab("notifications")} 
+                        <button
+                            onClick={() => setActiveTab("notifications")}
                             className={`w-full px-3.5 py-2.5 rounded-xl transition-all duration-150 flex items-center justify-between text-xs font-bold cursor-pointer active:scale-95 ${activeTab === "notifications" ? "bg-blue-600 text-white shadow-md shadow-blue-500/10" : "hover:bg-slate-800 text-slate-400 hover:text-slate-200"}`}
                         >
                             <span className="flex items-center gap-3">
@@ -147,8 +146,8 @@ const Dashboard = () => {
                             )}
                         </button>
 
-                        <button 
-                            onClick={() => setActiveTab("settings")} 
+                        <button
+                            onClick={() => setActiveTab("settings")}
                             className={`w-full px-3.5 py-2.5 rounded-xl transition-all duration-150 flex items-center gap-3 text-xs font-bold cursor-pointer active:scale-95 ${activeTab === "settings" ? "bg-blue-600 text-white shadow-md shadow-blue-500/10" : "hover:bg-slate-800 text-slate-400 hover:text-slate-200"}`}
                         >
                             <i className="fa-solid fa-sliders text-[13px] w-4 text-center"></i>

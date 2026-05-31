@@ -6,13 +6,13 @@ const Logs = () => {
     const [dbLogs, setDbLogs] = useState([]);
     const consoleContainerRef = useRef(null);
     const consoleEndRef = useRef(null);
-    
+
     // Filtering and sorting states
     const [levelFilter, setLevelFilter] = useState("ALL");
     const [typeFilter, setTypeFilter] = useState("ALL");
     const [searchQuery, setSearchQuery] = useState("");
     const [sortOrder, setSortOrder] = useState("oldToNew");
-    
+
     // Interactive states
     const [showScrollBottom, setShowScrollBottom] = useState(false);
     const [expandedLogIndex, setExpandedLogIndex] = useState(null);
@@ -96,9 +96,9 @@ const Logs = () => {
                         raw: data
                     };
                 }
-            } catch (e) {}
+            } catch (e) { }
         }
-        
+
         if (typeof logText === "string" && logText.startsWith("[")) {
             const match = logText.match(/^\[([^\]]+)\]\s+\[([^\]]+)\]\s+(.*)$/);
             if (match) {
@@ -108,8 +108,8 @@ const Logs = () => {
                     if (!isNaN(dt.getTime())) {
                         timeStr = dt.toLocaleTimeString();
                     }
-                } catch (e) {}
-                
+                } catch (e) { }
+
                 const type = match[2];
                 const level = type.toUpperCase().includes("ERROR") || type.toUpperCase().includes("FAIL") ? "ERROR" : "INFO";
                 return {
@@ -140,8 +140,8 @@ const Logs = () => {
         return rawCombinedLogs.filter(log => {
             const matchesLevel = levelFilter === "ALL" || log.level === levelFilter;
             const matchesType = typeFilter === "ALL" || log.type === typeFilter;
-            const matchesSearch = !searchQuery.trim() || 
-                log.message.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            const matchesSearch = !searchQuery.trim() ||
+                log.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 log.type.toLowerCase().includes(searchQuery.toLowerCase());
             return matchesLevel && matchesType && matchesSearch;
         });
@@ -162,7 +162,7 @@ const Logs = () => {
         if (!query.trim()) return text;
         const regex = new RegExp(`(${query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, "gi");
         const parts = text.split(regex);
-        return parts.map((part, index) => 
+        return parts.map((part, index) =>
             regex.test(part) ? (
                 <mark key={index} className="bg-emerald-500/30 text-emerald-200 px-0.5 rounded font-bold">
                     {part}
@@ -181,14 +181,14 @@ const Logs = () => {
                 <div>
                     <h2 className="text-2xl font-black text-gray-800 flex items-center gap-2">
                         <i className="fa-solid fa-terminal text-blue-600"></i>
-                        Diagnostic Logs Console
+                        Logs
                     </h2>
                     <p className="text-xs text-gray-500 font-semibold mt-0.5">Real-time system event logs streaming and historical console diagnostic reporting.</p>
                 </div>
-                
+
                 {/* Console actions */}
                 <div className="flex gap-2">
-                    <button 
+                    <button
                         onClick={downloadLogs}
                         disabled={filteredAndSortedLogs.length === 0}
                         className="bg-white hover:bg-gray-50 active:scale-95 text-gray-700 text-xs font-bold px-3.5 py-2 rounded-xl transition-all duration-150 flex items-center gap-1.5 border border-gray-200 cursor-pointer shadow-sm disabled:opacity-50"
@@ -197,7 +197,7 @@ const Logs = () => {
                         <i className="fa-solid fa-download text-blue-550"></i>
                         Export Logs
                     </button>
-                    <button 
+                    <button
                         onClick={clearConsole}
                         disabled={filteredAndSortedLogs.length === 0}
                         className="bg-white hover:bg-red-50 hover:text-red-700 hover:border-red-200 active:scale-95 text-gray-700 text-xs font-bold px-3.5 py-2 rounded-xl transition-all duration-150 flex items-center gap-1.5 border border-gray-200 cursor-pointer shadow-sm disabled:opacity-50"
@@ -230,41 +230,37 @@ const Logs = () => {
             </div>
 
             {/* Main Terminal Window */}
-            <div className="bg-slate-950 border border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden h-[540px] relative select-none">
+            <div className=" border border-gray-150 rounded-xl shadow-2xl flex flex-col overflow-hidden h-[540px] relative select-none">
                 {/* Window Topbar */}
-                <div className="bg-slate-950 px-5 py-3 flex justify-between items-center border-b border-slate-900">
-                    <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-rose-500 inline-block shadow shadow-rose-500/20"></span>
-                        <span className="w-3 h-3 rounded-full bg-amber-500 inline-block shadow shadow-amber-500/20"></span>
-                        <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block shadow shadow-emerald-500/20"></span>
-                    </div>
+                <div className=" px-5 py-3 flex justify-between items-center border-b border-slate-900">
+
                     <div className="flex items-center gap-2 text-slate-400 text-xs font-bold font-mono">
                         <i className="fa-solid fa-terminal text-emerald-450"></i>
-                        <span className="tracking-wide text-slate-205">console_terminal.log</span>
+                        <span className="tracking-wide text-slate-205">log</span>
                     </div>
                     <div className="w-12"></div>
                 </div>
 
                 {/* Sub-header Controls */}
-                <div className="bg-slate-950/80 px-5 py-2.5 flex flex-wrap gap-3 items-center justify-between border-b border-slate-900 text-[10px] font-bold text-slate-450 font-mono">
+                <div className=" px-5 py-2.5 flex flex-wrap gap-3 items-center justify-between border-b border-slate-900 text-[10px] font-bold text-slate-450 font-mono">
                     <div className="flex flex-wrap gap-2.5 items-center">
                         <div className="relative flex items-center">
                             <i className="fa-solid fa-magnifying-glass absolute left-2 text-[9px] text-slate-500"></i>
-                            <input 
+                            <input
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Search console..."
-                                className="bg-slate-900 border border-slate-800 rounded-lg pl-6 pr-2.5 py-1 text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 w-40 text-[10px] font-bold"
+                                className=" border border-gray-150 rounded-lg pl-6 pr-2.5 py-1 text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 w-40 text-[10px] font-bold"
                             />
                         </div>
-                        
+
                         <div className="flex items-center gap-1">
                             <span className="text-slate-500 text-[9px]">Level:</span>
-                            <select 
+                            <select
                                 onChange={(e) => setLevelFilter(e.target.value)}
                                 value={levelFilter}
-                                className="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-slate-305 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-[10px] font-bold"
+                                className=" border border-gray-150 rounded-lg px-2 py-1 text-slate-305 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-[10px] font-bold"
                             >
                                 <option value="ALL">All Levels</option>
                                 <option value="INFO">INFO</option>
@@ -274,10 +270,10 @@ const Logs = () => {
 
                         <div className="flex items-center gap-1">
                             <span className="text-slate-500 text-[9px]">Source:</span>
-                            <select 
+                            <select
                                 onChange={(e) => setTypeFilter(e.target.value)}
                                 value={typeFilter}
-                                className="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-slate-305 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-[10px] font-bold"
+                                className=" border border-gray-150 rounded-lg px-2 py-1 text-slate-305 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-[10px] font-bold"
                             >
                                 <option value="ALL">All Sources</option>
                                 {logTypes.map(t => (
@@ -289,10 +285,10 @@ const Logs = () => {
 
                     <div className="flex items-center gap-1.5">
                         <span className="text-slate-500 text-[9px]">Sort:</span>
-                        <select 
+                        <select
                             onChange={(e) => setSortOrder(e.target.value)}
                             value={sortOrder}
-                            className="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-slate-305 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-[10px] font-bold"
+                            className=" border border-gray-150 rounded-lg px-2 py-1 text-slate-305 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-[10px] font-bold"
                         >
                             <option value="oldToNew">Oldest First</option>
                             <option value="newToOld">Newest First</option>
@@ -301,10 +297,10 @@ const Logs = () => {
                 </div>
 
                 {/* Console Output Screen */}
-                <div 
+                <div
                     ref={consoleContainerRef}
                     onScroll={handleScroll}
-                    className="flex-grow p-5 overflow-y-auto font-mono text-[11px] space-y-2 bg-slate-950 text-slate-100 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent text-left"
+                    className="flex-grow p-5 overflow-y-auto font-mono text-[11px] space-y-2  text-slate-100 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent text-left"
                 >
                     {filteredAndSortedLogs.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-slate-600 gap-2">
@@ -315,12 +311,12 @@ const Logs = () => {
                         filteredAndSortedLogs.map((log, index) => {
                             const isError = log.level === "ERROR";
                             const isExpanded = expandedLogIndex === index;
-                            
+
                             return (
-                                <div 
+                                <div
                                     key={index}
                                     onClick={() => setExpandedLogIndex(isExpanded ? null : index)}
-                                    className={`flex flex-col hover:bg-slate-900/55 p-1.5 rounded transition-all duration-100 cursor-pointer ${isExpanded ? "bg-slate-900/40 border border-slate-800/40" : "border border-transparent"}`}
+                                    className={`flex flex-col hover:/55 p-1.5 rounded transition-all duration-100 cursor-pointer ${isExpanded ? "/40 border border-gray-150/40" : "border border-transparent"}`}
                                 >
                                     <div className="flex items-start gap-2.5">
                                         {/* Timestamp */}
@@ -329,7 +325,7 @@ const Logs = () => {
                                                 [{log.timestamp}]
                                             </span>
                                         )}
-                                        
+
                                         {/* Severity Badge */}
                                         <span className={`shrink-0 flex items-center gap-1 font-extrabold text-[10px] tracking-wide ${isError ? "text-rose-500" : "text-emerald-500"}`}>
                                             {isError ? (
@@ -358,11 +354,11 @@ const Logs = () => {
 
                                     {/* Expand details display */}
                                     {isExpanded && (
-                                        <div className="mt-2.5 ml-8 p-3 rounded-xl bg-slate-900 border border-slate-850 text-[10px] text-slate-400 select-text leading-relaxed font-mono">
-                                            <p className="font-bold text-slate-500 mb-1 border-b border-slate-800 pb-1 uppercase tracking-wider">Raw Log Event Data:</p>
+                                        <div className="mt-2.5 ml-8 p-3 border border-slate-850 text-[10px] text-slate-400 select-text leading-relaxed font-mono">
+                                            <p className="font-bold text-slate-500 mb-1 border-b border-gray-150 pb-1 uppercase tracking-wider">Raw Log Event Data:</p>
                                             <pre className="overflow-x-auto whitespace-pre-wrap">
-                                                {typeof log.raw === "object" 
-                                                    ? JSON.stringify(log.raw, null, 2) 
+                                                {typeof log.raw === "object"
+                                                    ? JSON.stringify(log.raw, null, 2)
                                                     : String(log.raw)
                                                 }
                                             </pre>
@@ -377,7 +373,7 @@ const Logs = () => {
 
                 {/* Floating Scroll To Bottom Button */}
                 {showScrollBottom && (
-                    <button 
+                    <button
                         onClick={scrollToBottom}
                         className="absolute bottom-12 right-6 bg-blue-600 hover:bg-blue-700 hover:scale-105 active:scale-95 text-white text-[10px] font-bold px-3 py-2 rounded-full shadow-lg shadow-blue-500/20 transition-all flex items-center gap-1 border border-blue-500 cursor-pointer animate-bounce"
                     >
@@ -387,7 +383,7 @@ const Logs = () => {
                 )}
 
                 {/* Terminal Window Footer */}
-                <div className="bg-slate-950 px-5 py-2.5 border-t border-slate-900 text-[10px] text-slate-500 font-mono flex justify-between items-center select-none">
+                <div className=" px-5 py-2.5 border-t border-slate-900 text-[10px] text-slate-500 font-mono flex justify-between items-center select-none">
                     <span className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow shadow-emerald-450/30"></span>
                         <span className="text-slate-400 font-bold">Live Streaming Output</span>

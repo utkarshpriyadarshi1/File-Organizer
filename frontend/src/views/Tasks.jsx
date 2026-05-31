@@ -46,7 +46,7 @@ const Tasks = () => {
 
     // Toggle single active task selection
     const toggleActiveSelection = (id) => {
-        setSelectedTasks(prev => 
+        setSelectedTasks(prev =>
             prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]
         );
     };
@@ -105,8 +105,8 @@ const Tasks = () => {
         return history.filter(t => {
             const matchesType = historyFilterType === "ALL" || t.taskType === historyFilterType;
             const matchesStatus = historyFilterStatus === "ALL" || t.status === historyFilterStatus;
-            const matchesSearch = !historySearch.trim() || 
-                t.summary.toLowerCase().includes(historySearch.toLowerCase()) || 
+            const matchesSearch = !historySearch.trim() ||
+                t.summary.toLowerCase().includes(historySearch.toLowerCase()) ||
                 t.id.toLowerCase().includes(historySearch.toLowerCase());
             return matchesType && matchesStatus && matchesSearch;
         });
@@ -171,13 +171,13 @@ const Tasks = () => {
     if (selectedTask) {
         return (
             <div className="max-w-6xl mx-auto space-y-8 mt-4 pb-12">
-                <GenericResultViewer 
-                    task={selectedTask} 
+                <GenericResultViewer
+                    task={selectedTask}
                     onClose={() => {
                         console.log("[Tasks] Navigating backward from task result viewer");
                         setSelectedTask(null);
                         fetchHistory();
-                    }} 
+                    }}
                 />
             </div>
         );
@@ -185,7 +185,7 @@ const Tasks = () => {
 
     return (
         <div className="max-w-6xl mx-auto space-y-8 mt-4 pb-12">
-            
+
             {/* Header */}
             <div className="flex justify-between items-center bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
                 <div className="flex items-center gap-3">
@@ -197,7 +197,7 @@ const Tasks = () => {
                         <p className="text-xs text-gray-500 font-medium mt-0.5">Monitor and control your system's background operations</p>
                     </div>
                 </div>
-                <button 
+                <button
                     onClick={() => {
                         syncActiveTasks();
                         fetchHistory();
@@ -215,13 +215,13 @@ const Tasks = () => {
                     <div>
                         <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                             <i className="fa-solid fa-circle-notch text-blue-500 animate-spin-slow"></i>
-                            Active Task Control Center
+                            Active Tasks
                         </h3>
                         <p className="text-xs text-gray-500 mt-1">Manage active or queued background operations</p>
                     </div>
 
                     {selectedTasks.length > 0 && (
-                        <button 
+                        <button
                             onClick={handleBulkCancel}
                             className="bg-red-500 hover:bg-red-600 active:scale-95 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 shadow-sm border border-red-600"
                         >
@@ -235,8 +235,8 @@ const Tasks = () => {
                 <div className="flex flex-wrap gap-4 mb-4 text-xs font-semibold text-gray-600 bg-gray-50 p-4 rounded-xl border border-gray-100 items-center justify-between">
                     <div className="flex flex-wrap gap-3 items-center">
                         <span className="text-gray-400 uppercase text-[10px] tracking-wider font-bold">Filter By:</span>
-                        <select 
-                            onChange={(e) => setActiveFilter(e.target.value)} 
+                        <select
+                            onChange={(e) => setActiveFilter(e.target.value)}
                             value={activeFilter}
                             className="border border-gray-200 rounded-lg p-2 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                         >
@@ -253,8 +253,8 @@ const Tasks = () => {
 
                     <div className="flex flex-wrap gap-3 items-center">
                         <span className="text-gray-400 uppercase text-[10px] tracking-wider font-bold">Sort By:</span>
-                        <select 
-                            onChange={(e) => setActiveSort(e.target.value)} 
+                        <select
+                            onChange={(e) => setActiveSort(e.target.value)}
                             value={activeSort}
                             className="border border-gray-200 rounded-lg p-2 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                         >
@@ -269,7 +269,7 @@ const Tasks = () => {
                 <div className="space-y-3">
                     {sortedActive.length > 0 && (
                         <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 rounded-xl border border-gray-100 text-xs font-semibold text-gray-500 select-none">
-                            <input 
+                            <input
                                 type="checkbox"
                                 checked={allActiveVisibleSelected}
                                 onChange={() => toggleSelectAllActive(sortedActive)}
@@ -280,12 +280,12 @@ const Tasks = () => {
                     )}
 
                     {sortedActive.map(task => (
-                        <div 
-                            key={task.id} 
+                        <div
+                            key={task.id}
                             className="flex justify-between items-center border border-gray-150 p-4 rounded-xl bg-gray-50/50 hover:bg-gray-50 transition-all hover:shadow-sm duration-150"
                         >
                             <div className="flex items-center gap-3 flex-grow min-w-0">
-                                <input 
+                                <input
                                     type="checkbox"
                                     checked={selectedTasks.includes(task.id)}
                                     onChange={() => toggleActiveSelection(task.id)}
@@ -303,7 +303,7 @@ const Tasks = () => {
                                     </div>
                                     <p className="text-[10px] text-gray-400 font-mono mt-1 truncate">ID: {task.id || task.taskId}</p>
                                     <p className="text-xs text-gray-600 mt-1 font-medium italic truncate">{task.summary || task.message || "Working..."}</p>
-                                    
+
                                     {/* Real-time Progress Bar */}
                                     {task.progress !== undefined && task.progress !== null && task.progress > 0 && (
                                         <div className="mt-2.5 max-w-md">
@@ -312,7 +312,7 @@ const Tasks = () => {
                                                 <span>{task.progress.toFixed(0)}%</span>
                                             </div>
                                             <div className="w-full bg-gray-250 h-2 rounded-full overflow-hidden">
-                                                <div 
+                                                <div
                                                     className="bg-blue-600 h-2 rounded-full transition-all duration-305"
                                                     style={{ width: `${task.progress}%` }}
                                                 ></div>
@@ -343,7 +343,7 @@ const Tasks = () => {
                 <div className="mb-6">
                     <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                         <i className="fa-solid fa-clock-rotate-left text-indigo-500"></i>
-                        Execution & Notification History
+                        Task History
                     </h3>
                     <p className="text-xs text-gray-500 mt-1">Review historical completed task logs and their results</p>
                 </div>
@@ -356,7 +356,7 @@ const Tasks = () => {
                             <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                                 <i className="fa-solid fa-magnifying-glass text-xs"></i>
                             </span>
-                            <input 
+                            <input
                                 type="text"
                                 value={historySearch}
                                 onChange={(e) => setHistorySearch(e.target.value)}
@@ -364,7 +364,7 @@ const Tasks = () => {
                                 className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl bg-white text-xs font-medium text-gray-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
                             />
                             {historySearch && (
-                                <button 
+                                <button
                                     onClick={() => setHistorySearch("")}
                                     className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-650"
                                 >
@@ -377,8 +377,8 @@ const Tasks = () => {
                     <div className="flex flex-wrap gap-4 text-xs font-semibold text-gray-600 justify-between items-center">
                         <div className="flex flex-wrap gap-3 items-center">
                             <span className="text-gray-400 uppercase text-[10px] tracking-wider font-bold">Filter Type:</span>
-                            <select 
-                                onChange={(e) => setHistoryFilterType(e.target.value)} 
+                            <select
+                                onChange={(e) => setHistoryFilterType(e.target.value)}
                                 value={historyFilterType}
                                 className="border border-gray-200 rounded-lg p-2 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                             >
@@ -391,8 +391,8 @@ const Tasks = () => {
                             </select>
 
                             <span className="text-gray-400 uppercase text-[10px] tracking-wider font-bold ml-2">Status:</span>
-                            <select 
-                                onChange={(e) => setHistoryFilterStatus(e.target.value)} 
+                            <select
+                                onChange={(e) => setHistoryFilterStatus(e.target.value)}
                                 value={historyFilterStatus}
                                 className="border border-gray-200 rounded-lg p-2 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                             >
@@ -406,8 +406,8 @@ const Tasks = () => {
 
                         <div className="flex flex-wrap gap-3 items-center">
                             <span className="text-gray-400 uppercase text-[10px] tracking-wider font-bold">Sort By:</span>
-                            <select 
-                                onChange={(e) => setHistorySort(e.target.value)} 
+                            <select
+                                onChange={(e) => setHistorySort(e.target.value)}
                                 value={historySort}
                                 className="border border-gray-200 rounded-lg p-2 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                             >
@@ -455,8 +455,8 @@ const Tasks = () => {
                                     </td>
                                 </tr>
                             ) : sortedHistory.map(task => (
-                                <tr 
-                                    key={task.id} 
+                                <tr
+                                    key={task.id}
                                     onClick={() => setSelectedTask(task)}
                                     className="hover:bg-slate-50/80 cursor-pointer transition-colors duration-150 active:scale-[0.99] origin-center"
                                 >

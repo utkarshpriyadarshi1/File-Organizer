@@ -1,7 +1,7 @@
 export const translations = {
     en: {
         operations: "Operations",
-        dashboardStats: "Dashboard / Stats",
+        dashboardStats: "Dashboard",
         fileOrganizer: "File Organizer",
         backupRestore: "Backup & Restore",
         duplicateCleaner: "Duplicate Cleaner",
@@ -21,7 +21,7 @@ export const translations = {
     },
     es: {
         operations: "Operaciones",
-        dashboardStats: "Tablero / Estadísticas",
+        dashboardStats: "Tablero",
         fileOrganizer: "Organizador de Archivos",
         backupRestore: "Copia de Seguridad y Restauración",
         duplicateCleaner: "Limpiador de Duplicados",
