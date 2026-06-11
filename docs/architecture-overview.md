@@ -1,10 +1,8 @@
-<img src="https://r2cdn.perplexity.ai/pplx-full-logo-primary-dark%402x.png" class="logo" width="120"/>
-
-# e-abhilekh: File Organizer Desktop App
+# e-abhilekh: Architecture Overview
 
 ## Overview
 
-**e-abhilekh** is an offline, standalone Windows application for organizing, backing up, deduplicating, and securely storing files and documents. It features advanced search, robust metadata management, incremental backup, and a Document Locker with rich categorization—all optimized for performance and reliability, even at scale.
+**e-abhilekh** is an offline, standalone desktop application optimized specifically for Windows hosts, with no web portal, central servers, or external internet dependencies. It provides local-only file organizing, incremental backup, deduplication, and a password-protected Document Locker with rich categorization—all processed locally on-device for maximum security and privacy at scale.
 
 ---
 
@@ -159,30 +157,32 @@ CREATE INDEX idx_activity_log_timestamp ON activity_log(timestamp);
 
 ---
 
-## Redis Cache Structure (Optimized)
+## In-Memory Cache Structure (Optimized Caching)
 
-- **file:{file_id}:** Hash for hot file metadata (path, name, size, type, tags).
-- **hash:{hash_value}:** Set of file IDs sharing the same hash value.
-- **tag:{tag_name}:files:** Set of file IDs associated with a specific tag.
-- **task_queue:** FIFO List of pending tasks (`QUEUED` state IDs waiting for worker slots).
-- **task:{task_id}:cancel:** String flag (`1` = cancel signal received).
-- **task:{task_id}:processed:** Counter tracking files processed in real time.
-- **task:{task_id}:total:** String count of total files discovered.
-- **task:{task_id}:temp_results:** List accumulating file operations before database flushes.
+To maintain a 100% offline workflow with zero setup overhead, e-abhilekh implements an in-memory cache (`RedisCacheService`) using Java `ConcurrentHashMap` collections. The cache keys are structured using standard Redis-like namespacing concepts for fast retrieval:
+
+- **`file:{file_id}`:** Bounded map of hot file metadata (path, name, size, type, tags) for fast detail rendering.
+- **`hash:{hash_value}`:** Set of file IDs sharing the same hash value, optimized for duplicate detection.
+- **`tag:{tag_name}:files`:** Set of file IDs associated with a specific tag.
+- **`task_queue`:** In-memory queue of pending tasks awaiting worker threads.
+- **`task:{task_id}:cancel`:** Flag indicating a task has received a force-cancel signal.
+- **`task:{task_id}:processed`:** In-memory counter tracking real-time progress of files processed by a task.
+- **`task:{task_id}:total`:** In-memory count of total files discovered for a specific task.
+- **`task:{task_id}:temp_results`:** Buffer list accumulating task file actions before they are flushed to SQLite during checkpoints.
 
 ---
 
 ## Optimized Core Steps & Flows
 
 ### 1. Hybrid Task Execution & Checkpointing
-- Background workers perform directory scanning, hashing, or copying at memory speed, reporting progress directly to Redis.
+- Background workers perform directory scanning, hashing, or copying at memory speed, writing progress counters directly to the in-memory cache.
 - At checkpoint intervals (**every 500 files or every 30 seconds**, whichever is met earlier), the workers flush accumulated results to SQLite using the serialized `SqliteWriteQueueService`.
 - Upon completion, the detailed execution payload is written to `reports/{taskId}.json` on disk, leaving a summary in the SQLite DB.
 
 ### 2. Task Cancellation & Force-Shutdown
 - Users can view running and queued tasks. They can select multiple running/pending tasks and hit **"Force Cancel"**.
-- Queued tasks are immediately removed from the Redis list.
-- Running tasks detect the cancellation flag (`task:{taskId}:cancel`) in their loops, immediately throw a cancellation exception, exit cleanly, release pool slots, and log a `CANCELED` status.
+- Queued tasks are immediately removed from the local execution queue.
+- Running tasks detect the cancellation flag (`task:{taskId}:cancel` state) in their loops, immediately throw a cancellation exception, exit cleanly, release pool slots, and log a `CANCELED` status in SQLite.
 
 ### 3. Reversal (Undo) Aggression & Error Recovery
 - Undoing moves or restorations proceeds aggressively without pre-flight blocks.
@@ -199,8 +199,8 @@ CREATE INDEX idx_activity_log_timestamp ON activity_log(timestamp);
 
 To modularize the codebase, operations are divided into seven generic services:
 
-1. **`BackgroundTaskManager`:** Orchestrates the worker threads, manages the Redis job queue, triggers checkpoints, and commits results.
-2. **`TaskCancellationManager`:** Registers and queries cancellation indicators in Redis and evicts queued tasks.
+1. **`BackgroundTaskManager`:** Orchestrates the worker threads, manages the local task execution queue, triggers checkpoints, and commits results.
+2. **`TaskCancellationManager`:** Registers and queries cancellation indicators in the in-memory cache and evicts queued tasks.
 3. **`DirectoryStatsProvider`:** Asynchronously monitors AppData folders to return sizes, counts, and modified dates folder-wise.
 4. **`FilePurgeService`:** Sweeps AppData cache folders, verifying lock exemptions and active task exclusions.
 5. **`SecureStorageService`:** Performs file copying, moving, and deleting, with optional AES-CBC encryption and post-copy SHA-256 validation.

@@ -1,6 +1,4 @@
-<img src="https://r2cdn.perplexity.ai/pplx-full-logo-primary-dark%402x.png" class="logo" width="120"/>
-
-## e-abhilekh Rapid Development Phases for Production Readiness
+## e-abhilekh Development Phases for Production Readiness
 
 ### Phase 1: Foundation & Core Setup
 - **Define Requirements & Scope**
@@ -10,19 +8,19 @@
     - Set up version control, codebase structure, and package manager.
     - Scaffold Electron + React app with Spring Boot (Java) backend.
 - **Core Infrastructure**
-    - Integrate and configure SQLite and Redis (bundled for offline use).
+    - Integrate and configure SQLite and local in-memory caching.
     - Implement schema migrations, initial entities, and repositories.
 
 ---
 
 ### Phase 2: Core Functional Implementation & Task Engine
 - **Task Execution & Queuing Engine**
-    - Build `BackgroundTaskManager` to persistently queue jobs in Redis (`task_queue`) and manage thread pool limits.
+    - Build `BackgroundTaskManager` to queue jobs in local memory and manage thread pool limits.
     - Set up WebSocket handlers emitting structured JSON task progress.
 - **Generic Crawler & Secure Storage**
     - Implement `FileScannerService` for multi-threaded scanning and `SecureStorageService` for AES encryption and SHA-256 validation.
 - **Duplicate Detection**
-    - Parallel duplicate scans with size-groupings, Redis-backed lookup sets, and aggressive deletion controls.
+    - Parallel duplicate scans with size-groupings, in-memory cache lookup sets, and aggressive deletion controls.
 - **Incremental Backup & Restore**
     - Versioned backups copying new/changed files with integrity validation and granular restore routines.
 - **Document Locker Basic**
@@ -48,7 +46,7 @@
 
 ### Phase 4: Optimization & Hardening
 - **Performance Tuning**
-    - **Chunked SQLite Checkpointing:** Flush Redis temporary lists to SQLite every 500 files or 30 seconds to bypass SQL write locking (`SQLITE_BUSY`).
+    - **Chunked SQLite Checkpointing:** Flush temporary lists from in-memory cache to SQLite every 500 files or 30 seconds to bypass SQL write locking (`SQLITE_BUSY`).
     - **Externalized Task Reports:** Write full transaction arrays to `.json` files on disk, storing only database summaries to prevent SQLite bloat.
 - **Data Integrity & Security**
     - Enforce file permission audits and local encryption security.
@@ -59,7 +57,7 @@
 
 ### Phase 5: Packaging & Production Readiness
 - **Standalone Installer Creation**
-    - Bundle JRE, Electron, SQLite, Redis, and binaries into a standalone `.msi` or `.exe` installer.
+    - Bundle JRE, Electron, SQLite, and binaries into a standalone `.msi` or `.exe` installer.
     - Test portable mode running fully offline from external volumes.
 - **Extensive Testing**
     - Conduct stress testing with large datasets, validating backup/restore, duplicate sweeps, and cancellation responsiveness.

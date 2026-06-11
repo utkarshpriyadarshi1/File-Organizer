@@ -1,6 +1,4 @@
-<img src="https://r2cdn.perplexity.ai/pplx-full-logo-primary-dark%402x.png" class="logo" width="120"/>
-
-## e-abhilekh Scalability and Deployment Strategies
+# e-abhilekh Scalability and Deployment Strategies
 
 ### Scalability Strategies
 
@@ -8,9 +6,9 @@
 
 ---
 
-#### 1. Hybrid SQLite-Redis Task Flow
-* **In-Memory Buffering:** During intensive file actions (scanning, hashing, copying, restoring), workers write real-time progress counters and temporary results lists directly to Redis.
-* **Checkpointing (Lock Prevention):** To prevent SQLite database write locks (`SQLITE_BUSY`), the accumulated Redis task logs are flushed to SQLite in a single transaction only when:
+#### 1. Hybrid SQLite-Cache Task Flow
+* **In-Memory Buffering:** During intensive file actions (scanning, hashing, copying, restoring), workers write real-time progress counters and temporary results lists directly to the in-memory cache (`RedisCacheService`).
+* **Checkpointing (Lock Prevention):** To prevent SQLite database write locks (`SQLITE_BUSY`), the accumulated cached task logs are flushed to SQLite in a single transaction only when:
   * **500 files** have been processed, **OR**
   * **30 seconds** have elapsed since the last flush.
 * **Externalized JSON Reports:** Instead of saving long arrays of file changes in database rows (which causes SQLite bloating), detailed execution payloads are written as `.json` files under `AppData/Local/e-abhilekh/reports/`. SQLite only holds task summaries and report file pointers.
@@ -18,7 +16,7 @@
 ---
 
 #### 2. Persistent Task Queuing & Concurrency Control
-* **Redis Task Queue:** Submitted tasks are registered in Redis list `task_queue`.
+* **In-Memory Task Queue:** Submitted tasks are registered in a thread-safe task queue in memory.
 * **Gated Execution:** A concurrency limit (e.g. `MAX_CONCURRENT_TASKS = 2`) ensures that worker threads only pop tasks when slots open, protecting host file systems and CPU loads from starvation.
 * **Non-Blocking Execution:** The UI offloads long runs to a background drawer, allowing users to navigate and perform lightweight database operations (like browsing locker files) concurrently.
 
@@ -26,7 +24,7 @@
 
 #### 3. Task Cancellation & Interrupt Checkpoints
 * **Interrupt Flags:** Active tasks read a cancel indicator (`task:{id}:cancel`) in their file processing loops.
-* **Fast Halting:** When triggered, tasks stop processing files immediately, clean up open file streams, evict queued entries from Redis lists, and log a `CANCELED` state in SQLite.
+* **Fast Halting:** When triggered, tasks stop processing files immediately, clean up open file streams, evict queued entries from the local memory queue, and log a `CANCELED` state in SQLite.
 
 ---
 
@@ -38,14 +36,14 @@
 
 ### Deployment Strategies
 
-e-abhilekh is intended as a fully offline, standalone Windows application. Here is how deployment and environment requirements are met:
+e-abhilekh is designed and engineered as a **100% offline, standalone desktop application**. There is no web portal, centralized API, or cloud service hosting. All user operations, metadata indexing, and document encryption occur locally on the user's host machine. The default deployment target and automated build script setup is optimized specifically for **Windows environments (Windows 10 & 11)**. Here is how deployment and environment requirements are met:
 
 ---
 
 #### 1. Standalone Packaging
 - **Bundled Installer:**
-    - Package all dependencies (JRE/Java runtime, Electron desktop shell, SQLite engine, Redis server, system binaries, language sets) into a single installer (`.msi` or `.exe`).
-    - Ensure the installer configures and spins up SQLite and Redis services locally on boot, requiring zero external server configuration or internet connections.
+    - Package all dependencies (JRE/Java runtime, Electron desktop shell, SQLite engine, system binaries, language sets) into a single installer (`.msi` or `.exe`).
+    - Ensure the installer configures and spins up the application environment locally on boot, requiring zero external server configuration or internet connections.
 - **Portable Mode:**
     - Allow users to deploy e-abhilekh from external volumes (e.g. USB flash drives), saving configuration and database files inside a relative `./data/` folder for true portability.
 
@@ -59,9 +57,9 @@ e-abhilekh is intended as a fully offline, standalone Windows application. Here 
 
 | Area | Strategy |
 | :-- | :-- |
-| **Data Storage** | Hybrid SQLite + Redis, chunked checkpointing (500 files / 30s), externalized JSON reports, composite indexing. |
-| **Task Control** | Persistent Redis task queue (FIFO), concurrent worker pools, non-blocking UI task drawer. |
+| **Data Storage** | Hybrid SQLite + Cache, chunked checkpointing (500 files / 30s), externalized JSON reports, composite indexing. |
+| **Task Control** | In-memory task queue (FIFO), concurrent worker pools, non-blocking UI task drawer. |
 | **Task Cancellation** | Live interrupt check loops, bulk cancel REST endpoints, instant queue eviction. |
 | **Cache Management** | Folder-wise completed cache purge, active stats display, active report protection, 30-day auto-purge. |
 | **Local Operation** | Fully offline-first, no external API gateways, portable USB deployment option. |
-| **Packaging** | Bundled installers containing SQLite, Redis, JRE, and the Electron executable. |
+| **Packaging** | Bundled installers containing SQLite, JRE, and the Electron executable. |
