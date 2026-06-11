@@ -1,6 +1,6 @@
 <img src="https://r2cdn.perplexity.ai/pplx-full-logo-primary-dark%402x.png" class="logo" width="120"/>
 
-## e-Abhilekh Rapid Development Phases for Production Readiness
+## e-abhilekh Rapid Development Phases for Production Readiness
 
 ### Phase 1: Foundation & Core Setup
 - **Define Requirements & Scope**

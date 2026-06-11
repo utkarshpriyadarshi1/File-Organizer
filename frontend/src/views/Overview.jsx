@@ -201,7 +201,7 @@ const Overview = ({ setActiveTab }) => {
                 <div className="space-y-2 relative z-10">
                     <h2 className="text-2xl md:text-3xl font-black tracking-tight">System Overview & Metrics</h2>
                     <p className="text-sm text-blue-100 font-medium">
-                        {isOnline ? "e-Abhilekh File Organizer Desktop App is connected and operational." : "Connection lost. Retrying backend server synchronization..."}
+                        {isOnline ? "e-abhilekh File Organizer Desktop App is connected and operational." : "Connection lost. Retrying backend server synchronization..."}
                     </p>
                 </div>
                 

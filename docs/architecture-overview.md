@@ -1,10 +1,10 @@
 <img src="https://r2cdn.perplexity.ai/pplx-full-logo-primary-dark%402x.png" class="logo" width="120"/>
 
-# e-Abhilekh: File Organizer Desktop App
+# e-abhilekh: File Organizer Desktop App
 
 ## Overview
 
-**e-Abhilekh** is an offline, standalone Windows application for organizing, backing up, deduplicating, and securely storing files and documents. It features advanced search, robust metadata management, incremental backup, and a Document Locker with rich categorization—all optimized for performance and reliability, even at scale.
+**e-abhilekh** is an offline, standalone Windows application for organizing, backing up, deduplicating, and securely storing files and documents. It features advanced search, robust metadata management, incremental backup, and a Document Locker with rich categorization—all optimized for performance and reliability, even at scale.
 
 ---
 
@@ -125,7 +125,7 @@ CREATE TABLE background_tasks (
     task_type TEXT NOT NULL,       -- 'DUPLICATE_SCAN', 'BACKUP', 'SYNC', 'ORGANIZE', 'REVERSAL'
     status TEXT NOT NULL,          -- 'QUEUED', 'RUNNING', 'COMPLETED', 'COMPLETED_WITH_FAILURES', 'FAILED', 'CANCELED'
     summary TEXT NOT NULL,         -- e.g. "Scanned 1200 files, 5 duplicates found"
-    report_file_path TEXT,         -- Points to AppData/Local/e-Abhilekh/reports/{taskId}.json
+    report_file_path TEXT,         -- Points to AppData/Local/e-abhilekh/reports/{taskId}.json
     created_at TEXT NOT NULL,
     completed_at TEXT
 );

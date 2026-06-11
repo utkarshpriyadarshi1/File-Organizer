@@ -1,6 +1,6 @@
-# e-Abhilekh Boilerplate Code Setup Guide
+# e-abhilekh Boilerplate Code Setup Guide
 
-Get a working base with all core technologies installed and ready for custom e-Abhilekh features.
+Get a working base with all core technologies installed and ready for custom e-abhilekh features.
 
 ***
 

@@ -1,4 +1,4 @@
--- SQLite Database Schema for e-Abhilekh (File Organizer Desktop App)
+-- SQLite Database Schema for e-abhilekh (File Organizer Desktop App)
 
 -- 1. Files table: Stores core file properties and metadata.
 CREATE TABLE files (

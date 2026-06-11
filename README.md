@@ -1,6 +1,6 @@
-# e-Abhilekh: File Organizer Desktop App
+# e-abhilekh: File Organizer Desktop App
 
-Welcome to the **e-Abhilekh** standalone monorepo. This repository contains the full-stack architecture for organizing, backing up, deduplicating, and locally storing files and documents securely offline.
+Welcome to the **e-abhilekh** standalone monorepo. This repository contains the full-stack architecture for organizing, backing up, deduplicating, and locally storing files and documents securely offline.
 
 ## Project Structure
 

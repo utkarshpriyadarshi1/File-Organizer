@@ -1,6 +1,6 @@
 @echo off
-title e-Abhilekh - Development Environment
-echo Starting e-Abhilekh Backend and Frontend in Development Mode...
+title e-abhilekh - Development Environment
+echo Starting e-abhilekh Backend and Frontend in Development Mode...
 
 :: Add Maven to PATH if not already present
 where mvn >nul 2>nul
@@ -12,7 +12,7 @@ if %ERRORLEVEL% neq 0 (
 )
 
 :: Start Spring Boot Backend in a separate window
-start "e-Abhilekh Backend" cmd /c "set PATH=%PATH% && cd backend && mvn spring-boot:run"
+start "e-abhilekh Backend" cmd /c "set PATH=%PATH% && cd backend && mvn spring-boot:run"
 
 :: Prevent React dev server from opening standard browser window
 set BROWSER=none

@@ -1,6 +1,6 @@
 @echo off
-title e-Abhilekh - Production Environment (Local Run)
-echo Starting e-Abhilekh Backend and Frontend in Production Mode...
+title e-abhilekh - Production Environment (Local Run)
+echo Starting e-abhilekh Backend and Frontend in Production Mode...
 
 :: Verify Backend JAR exists
 set "JAR_PATH="
@@ -21,7 +21,7 @@ if not exist "frontend\build\index.html" (
 )
 
 :: Start Spring Boot Backend in a separate window
-start "e-Abhilekh Backend (Prod)" cmd /c "java -jar %JAR_PATH%"
+start "e-abhilekh Backend (Prod)" cmd /c "java -jar %JAR_PATH%"
 
 :: Start Electron pointing to local production files
 echo Starting Electron with compiled React production assets...

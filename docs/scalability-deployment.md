@@ -1,10 +1,10 @@
 <img src="https://r2cdn.perplexity.ai/pplx-full-logo-primary-dark%402x.png" class="logo" width="120"/>
 
-## e-Abhilekh Scalability and Deployment Strategies
+## e-abhilekh Scalability and Deployment Strategies
 
 ### Scalability Strategies
 
-**e-Abhilekh** is engineered to manage millions of files and metadata entries efficiently while maintaining fast performance and high UI responsiveness. Here are the core scalability and resource optimization strategies:
+**e-abhilekh** is engineered to manage millions of files and metadata entries efficiently while maintaining fast performance and high UI responsiveness. Here are the core scalability and resource optimization strategies:
 
 ---
 
@@ -13,7 +13,7 @@
 * **Checkpointing (Lock Prevention):** To prevent SQLite database write locks (`SQLITE_BUSY`), the accumulated Redis task logs are flushed to SQLite in a single transaction only when:
   * **500 files** have been processed, **OR**
   * **30 seconds** have elapsed since the last flush.
-* **Externalized JSON Reports:** Instead of saving long arrays of file changes in database rows (which causes SQLite bloating), detailed execution payloads are written as `.json` files under `AppData/Local/e-Abhilekh/reports/`. SQLite only holds task summaries and report file pointers.
+* **Externalized JSON Reports:** Instead of saving long arrays of file changes in database rows (which causes SQLite bloating), detailed execution payloads are written as `.json` files under `AppData/Local/e-abhilekh/reports/`. SQLite only holds task summaries and report file pointers.
 
 ---
 
@@ -38,7 +38,7 @@
 
 ### Deployment Strategies
 
-e-Abhilekh is intended as a fully offline, standalone Windows application. Here is how deployment and environment requirements are met:
+e-abhilekh is intended as a fully offline, standalone Windows application. Here is how deployment and environment requirements are met:
 
 ---
 
@@ -47,7 +47,7 @@ e-Abhilekh is intended as a fully offline, standalone Windows application. Here 
     - Package all dependencies (JRE/Java runtime, Electron desktop shell, SQLite engine, Redis server, system binaries, language sets) into a single installer (`.msi` or `.exe`).
     - Ensure the installer configures and spins up SQLite and Redis services locally on boot, requiring zero external server configuration or internet connections.
 - **Portable Mode:**
-    - Allow users to deploy e-Abhilekh from external volumes (e.g. USB flash drives), saving configuration and database files inside a relative `./data/` folder for true portability.
+    - Allow users to deploy e-abhilekh from external volumes (e.g. USB flash drives), saving configuration and database files inside a relative `./data/` folder for true portability.
 
 #### 2. Settings & Clean-Up Routines
 - **System Detection:** On first start, detect host CPU cores, RAM capacities, and disk volumes to set default concurrency ceilings.
@@ -55,7 +55,7 @@ e-Abhilekh is intended as a fully offline, standalone Windows application. Here 
 
 ---
 
-### Summary Table: e-Abhilekh Scalability & Deployment
+### Summary Table: e-abhilekh Scalability & Deployment
 
 | Area | Strategy |
 | :-- | :-- |
