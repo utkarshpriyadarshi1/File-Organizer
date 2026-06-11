@@ -1,4 +1,7 @@
 @echo off
+:: Ensure working directory is set to the project root directory
+cd /d "%~dp0.."
+
 title e-abhilekh - Production Environment (Local Run)
 echo Starting e-abhilekh Backend and Frontend in Production Mode...
 
@@ -8,14 +11,14 @@ for %%f in (backend\target\e-abhilekh-*.jar) do (
     set "JAR_PATH=%%f"
 )
 if not defined JAR_PATH (
-    echo [ERROR] Backend JAR not found! Please run package-app.bat first to build the executable.
+    echo [ERROR] Backend JAR not found! Please run packaging\package-app.bat first to build the executable.
     pause
     exit /b
 )
 
 :: Verify Frontend Build folder exists
 if not exist "frontend\build\index.html" (
-    echo [ERROR] Frontend build assets not found! Please run package-app.bat first to build the React package.
+    echo [ERROR] Frontend build assets not found! Please run packaging\package-app.bat first to build the React package.
     pause
     exit /b
 )
@@ -26,4 +29,3 @@ start "e-abhilekh Backend (Prod)" cmd /c "java -jar %JAR_PATH%"
 :: Start Electron pointing to local production files
 echo Starting Electron with compiled React production assets...
 cd frontend && npx electron . --prod
-

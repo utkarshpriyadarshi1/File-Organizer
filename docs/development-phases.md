@@ -57,6 +57,7 @@
 
 ### Phase 5: Packaging & Production Readiness
 - **Standalone Installer Creation**
+    - Structure the `packaging/` directory containing native Windows batch scripts and cross-platform `.sh` scripts.
     - Bundle JRE, Electron, SQLite, and binaries into a standalone `.msi` or `.exe` installer.
     - Test portable mode running fully offline from external volumes.
 - **Extensive Testing**

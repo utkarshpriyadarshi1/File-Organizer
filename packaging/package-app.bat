@@ -1,10 +1,13 @@
 @echo off
+:: Ensure working directory is set to the project root directory
+cd /d "%~dp0.."
+
 title e-abhilekh - Project Packaging
 echo Building and Packaging e-abhilekh Application...
 
 :: 0. Auto-increment version
 echo [0/3] Auto-incrementing version...
-python scripts\increment_version.py
+python packaging\increment_version.py
 
 :: 1. Build Spring Boot Java Backend
 echo [1/3] Packaging Java backend using Maven...
@@ -48,8 +51,6 @@ echo.
 echo - Backend executable: backend\target\e-abhilekh-*.jar
 echo - Frontend build folder: frontend\build\
 echo.
-echo You can test this compiled release by running: run-prod.bat
+echo You can test this compiled release by running: packaging\run-prod.bat
 cd ..
 pause
-
-

@@ -1,4 +1,7 @@
 @echo off
+:: Ensure working directory is set to the project root directory
+cd /d "%~dp0.."
+
 title e-abhilekh - Development Environment
 echo Starting e-abhilekh Backend and Frontend in Development Mode...
 

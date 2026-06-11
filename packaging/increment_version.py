@@ -2,9 +2,10 @@ import re
 import json
 import os
 
-pom_path = r"backend/pom.xml"
-pkg_path = r"frontend/package.json"
-ver_json_path = r"frontend/src/version.json"
+script_dir = os.path.dirname(os.path.abspath(__file__))
+pom_path = os.path.join(script_dir, "..", "backend", "pom.xml")
+pkg_path = os.path.join(script_dir, "..", "frontend", "package.json")
+ver_json_path = os.path.join(script_dir, "..", "frontend", "src", "version.json")
 
 # 1. Read and parse pom.xml version
 with open(pom_path, "r", encoding="utf-8") as f:

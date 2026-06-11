@@ -80,10 +80,12 @@ e-abhilekh/
 │   └── scalability-deployment.md
 ├── schema/             # Database initialization models
 │   └── e-abhilekh_schema.sql
-├── scripts/            # Helper automation scripts
-├── run-dev.bat         # Boots backend and frontend concurrently in development mode
-├── package-app.bat     # Compiles backend JAR and packages frontend resources
-└── run-prod.bat        # Runs compiled JAR and compiled frontend assets inside Electron
+├── packaging/          # Build and environment automation scripts
+│   ├── increment_version.py # Automation tool for version bumps
+│   ├── run-dev.bat     # Launches development server and Electron shell from root
+│   ├── package-app.bat # Packages backend JAR and compiles React for Windows
+│   ├── package-app.sh  # Packages backend JAR and compiles React for Linux/macOS
+│   └── run-prod.bat    # Runs production compiled assets locally
 ```
 
 ---
@@ -97,11 +99,11 @@ Make sure you have the following installed on your machine:
 *   **Node.js 18+** & **npm**
 
 ### Development Mode
-To start both the Spring Boot backend server and the Electron application concurrently, simply run the development script:
+To start both the Spring Boot backend server and the Electron application concurrently, run the development script:
 
 ```bash
-# Double-click run-dev.bat in Windows Explorer, OR execute in your terminal:
-.\run-dev.bat
+# Execute from project root:
+.\packaging\run-dev.bat
 ```
 
 Alternatively, you can boot them manually in separate terminal windows:
@@ -125,11 +127,15 @@ npm run dev
 
 ## 📦 Building & Packaging
 
-To compile the application for local production distribution, use the packaging script:
+To compile the application for local production distribution, run the packaging script:
 
 ```bash
-# Build the JAR backend and compile React/Electron production bundles:
-.\package-app.bat
+# On Windows:
+.\packaging\package-app.bat
+
+# On Linux or macOS:
+chmod +x packaging/package-app.sh
+./packaging/package-app.sh
 ```
 
 This performs the following operations:
@@ -139,7 +145,7 @@ This performs the following operations:
 
 To test the packaged build, run:
 ```bash
-.\run-prod.bat
+.\packaging\run-prod.bat
 ```
 
 ---

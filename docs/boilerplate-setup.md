@@ -10,6 +10,7 @@ Get a working base with all core technologies installed and ready for custom e-a
 - **backend/**: Spring Boot (Java) backend server managing local file metadata, hashes, backups, and caching.
 - **docs/**: Project architecture and technical specification documents.
 - **schema/**: SQLite database schema configurations.
+- **packaging/**: Build and run automation script controllers (Windows `.bat` files and cross-platform `.sh` scripts).
 
 ***
 
