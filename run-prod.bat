@@ -1,10 +1,10 @@
 @echo off
-title FBOSS - Production Environment (Local Run)
-echo Starting FBOSS Backend and Frontend in Production Mode...
+title e-Abhilekh - Production Environment (Local Run)
+echo Starting e-Abhilekh Backend and Frontend in Production Mode...
 
 :: Verify Backend JAR exists
 set "JAR_PATH="
-for %%f in (backend\target\fboss-*.jar) do (
+for %%f in (backend\target\e-abhilekh-*.jar) do (
     set "JAR_PATH=%%f"
 )
 if not defined JAR_PATH (
@@ -21,7 +21,7 @@ if not exist "frontend\build\index.html" (
 )
 
 :: Start Spring Boot Backend in a separate window
-start "FBOSS Backend (Prod)" cmd /c "java -jar %JAR_PATH%"
+start "e-Abhilekh Backend (Prod)" cmd /c "java -jar %JAR_PATH%"
 
 :: Start Electron pointing to local production files
 echo Starting Electron with compiled React production assets...

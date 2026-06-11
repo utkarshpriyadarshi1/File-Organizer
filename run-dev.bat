@@ -1,6 +1,6 @@
 @echo off
-title FBOSS - Development Environment
-echo Starting FBOSS Backend and Frontend in Development Mode...
+title e-Abhilekh - Development Environment
+echo Starting e-Abhilekh Backend and Frontend in Development Mode...
 
 :: Add Maven to PATH if not already present
 where mvn >nul 2>nul
@@ -12,7 +12,7 @@ if %ERRORLEVEL% neq 0 (
 )
 
 :: Start Spring Boot Backend in a separate window
-start "FBOSS Backend" cmd /c "set PATH=%PATH% && cd backend && mvn spring-boot:run"
+start "e-Abhilekh Backend" cmd /c "set PATH=%PATH% && cd backend && mvn spring-boot:run"
 
 :: Prevent React dev server from opening standard browser window
 set BROWSER=none

@@ -23,7 +23,7 @@ public class MaintenanceService {
     private final BackgroundTaskRepository backgroundTaskRepository;
     private final FilePurgeService filePurgeService;
 
-    private static final String TEMP_DIR = System.getProperty("user.home") + "/AppData/Local/FBOSS/temp";
+    private static final String TEMP_DIR = System.getProperty("user.home") + "/AppData/Local/e-Abhilekh/temp";
 
     @Scheduled(fixedRate = 86400000)
     public void runDailyMaintenance() {

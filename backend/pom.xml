@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>ip.updev</groupId>
-    <artifactId>fboss</artifactId>
+    <artifactId>e-abhilekh</artifactId>
     <version>0.0.2-SNAPSHOT</version>
-    <name>FBOSS</name>
-    <description>FBOSS - standalone application for File Backup, Organization, and Sync Suite</description>
+    <name>e-Abhilekh</name>
+    <description>e-Abhilekh - File Organizer Desktop App</description>
     <url/>
     <licenses>
         <license/>

@@ -76,7 +76,7 @@ const Logs = () => {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `fboss-logs-${new Date().toISOString().substring(0, 10)}.txt`;
+        link.download = `e-abhilekh-logs-${new Date().toISOString().substring(0, 10)}.txt`;
         link.click();
         URL.revokeObjectURL(url);
     };

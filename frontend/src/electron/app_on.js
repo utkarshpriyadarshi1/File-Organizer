@@ -49,7 +49,7 @@ if (!gotTheLock) {
             : path.join(__dirname, "../../public/favicon.ico");
 
         tray = new Tray(iconPath);
-        tray.setToolTip("FBOSS Control Client");
+        tray.setToolTip("e-Abhilekh Control Client");
 
         tray.on("double-click", () => {
             if (mainWindow) {

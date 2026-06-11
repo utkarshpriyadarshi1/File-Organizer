@@ -1,6 +1,6 @@
-# FBOSS Boilerplate Code Setup Guide
+# e-Abhilekh Boilerplate Code Setup Guide
 
-Get a working base with all core technologies installed and ready for custom FBOSS features.
+Get a working base with all core technologies installed and ready for custom e-Abhilekh features.
 
 ***
 
@@ -47,12 +47,12 @@ We use Java 23 and specify the custom source directory (`src`) and resource incl
 ```
 
 ### 2b. Database Configuration (`application.yml`)
-The backend is configured with SQLite file database (`fboss.db`) for true offline local-only operation:
+The backend is configured with SQLite file database (`e-abhilekh.db`) for true offline local-only operation:
 
 ```yaml
 spring:
   datasource:
-    url: jdbc:sqlite:fboss.db
+    url: jdbc:sqlite:e-abhilekh.db
     driver-class-name: org.sqlite.JDBC
   jpa:
     database-platform: org.hibernate.community.dialect.SQLiteDialect

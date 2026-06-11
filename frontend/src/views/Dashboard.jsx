@@ -56,7 +56,8 @@ const Dashboard = () => {
                             <i className="fa-solid fa-server"></i>
                         </div>
                         <div>
-                            <span className="text-sm font-black tracking-wider block text-white">FBOSS</span>
+                            <span className="text-sm font-black tracking-wider block text-white">e-Abhilekh</span>
+                            <span className="text-[10px] font-bold text-slate-550 block leading-tight">File Organizer Desktop App</span>
                         </div>
                     </div>
 

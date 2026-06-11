@@ -1,6 +1,6 @@
 @echo off
-title FBOSS - Project Packaging
-echo Building and Packaging FBOSS Application...
+title e-Abhilekh - Project Packaging
+echo Building and Packaging e-Abhilekh Application...
 
 :: 0. Auto-increment version
 echo [0/3] Auto-incrementing version...
@@ -45,7 +45,7 @@ echo Running electron-builder package process...
 
 echo Packaging steps complete! 
 echo.
-echo - Backend executable: backend\target\fboss-*.jar
+echo - Backend executable: backend\target\e-abhilekh-*.jar
 echo - Frontend build folder: frontend\build\
 echo.
 echo You can test this compiled release by running: run-prod.bat

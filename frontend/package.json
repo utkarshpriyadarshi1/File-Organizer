@@ -1,5 +1,5 @@
 {
-  "name": "fboss-app",
+  "name": "e-abhilekh-app",
   "version": "0.0.2",
   "private": true,
   "main": "src/electron/app_on.js",

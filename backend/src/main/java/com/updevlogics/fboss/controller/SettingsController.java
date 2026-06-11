@@ -98,9 +98,9 @@ public class SettingsController {
         return "Ignore rule deleted.";
     }
 
-    private static final String REPORTS_DIR = System.getProperty("user.home") + "/AppData/Local/FBOSS/reports";
-    private static final String TEMP_DIR = System.getProperty("user.home") + "/AppData/Local/FBOSS/temp";
-    private static final String LOGS_DIR = System.getProperty("user.home") + "/AppData/Local/FBOSS/logs";
+    private static final String REPORTS_DIR = System.getProperty("user.home") + "/AppData/Local/e-Abhilekh/reports";
+    private static final String TEMP_DIR = System.getProperty("user.home") + "/AppData/Local/e-Abhilekh/temp";
+    private static final String LOGS_DIR = System.getProperty("user.home") + "/AppData/Local/e-Abhilekh/logs";
 
     @GetMapping("/cache")
     public List<FolderStats> getCacheStats() {

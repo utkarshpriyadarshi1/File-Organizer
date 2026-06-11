@@ -13,7 +13,7 @@ import java.nio.file.Paths;
 @Service
 public class ReportSerializationService {
     private static final Logger logger = LoggerFactory.getLogger(ReportSerializationService.class);
-    private static final String REPORTS_DIR = System.getProperty("user.home") + "/AppData/Local/FBOSS/reports";
+    private static final String REPORTS_DIR = System.getProperty("user.home") + "/AppData/Local/e-Abhilekh/reports";
 
     public ReportSerializationService() {
         try {

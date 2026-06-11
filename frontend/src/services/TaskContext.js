@@ -13,7 +13,7 @@ export const TaskProvider = ({ children }) => {
     const [folderSelectorConfig, setFolderSelectorConfig] = useState(null);
     const [notificationsHistory, setNotificationsHistory] = useState(() => {
         try {
-            const saved = localStorage.getItem("fboss_notifications_history");
+            const saved = localStorage.getItem("e_abhilekh_notifications_history");
             return saved ? JSON.parse(saved) : [];
         } catch (e) {
             return [];
@@ -22,7 +22,7 @@ export const TaskProvider = ({ children }) => {
 
     useEffect(() => {
         try {
-            localStorage.setItem("fboss_notifications_history", JSON.stringify(notificationsHistory));
+            localStorage.setItem("e_abhilekh_notifications_history", JSON.stringify(notificationsHistory));
         } catch (e) {
             console.error("Failed to save notifications to localStorage:", e);
         }
