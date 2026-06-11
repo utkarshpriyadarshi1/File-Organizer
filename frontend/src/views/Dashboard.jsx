@@ -57,7 +57,7 @@ const Dashboard = () => {
                         </div>
                         <div>
                             <span className="text-sm font-black tracking-wider block text-white">e-Abhilekh</span>
-                            <span className="text-[10px] font-bold text-slate-550 block leading-tight">File Organizer Desktop App</span>
+                            <span className="text-[10px] font-bold text-slate-400 block leading-tight">File Organizer Desktop App</span>
                         </div>
                     </div>
 
