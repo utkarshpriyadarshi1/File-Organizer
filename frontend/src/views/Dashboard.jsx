@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Overview from "./Overview";
 import Organizer from "./Organizer";
 import Backup from "./Backup";
@@ -8,6 +8,7 @@ import Tasks from "./Tasks";
 import Settings from "./Settings";
 import SyncRestore from "./SyncRestore";
 import Notifications from "./Notifications";
+import Help from "./Help";
 import TaskDrawer from "../components/TaskDrawer";
 import ToastContainer from "../components/ToastContainer";
 import { useTasks } from "../services/TaskContext";
@@ -19,6 +20,23 @@ const Dashboard = () => {
     const { unreadCount, activeTasks } = useTasks();
     const { t } = useI18n();
     const activeTasksCount = Object.keys(activeTasks || {}).length;
+
+    const [theme, setTheme] = useState(() => {
+        return localStorage.getItem("e_abhilekh_theme") || "light";
+    });
+
+    useEffect(() => {
+        if (theme === "dark") {
+            document.documentElement.classList.add("dark");
+        } else {
+            document.documentElement.classList.remove("dark");
+        }
+        localStorage.setItem("e_abhilekh_theme", theme);
+    }, [theme]);
+
+    const toggleTheme = () => {
+        setTheme(prev => prev === "light" ? "dark" : "light");
+    };
 
     const renderComponent = () => {
         switch (activeTab) {
@@ -40,6 +58,8 @@ const Dashboard = () => {
                 return <Notifications />;
             case "settings":
                 return <Settings />;
+            case "help":
+                return <Help />;
             default:
                 return <Overview setActiveTab={setActiveTab} />;
         }
@@ -173,9 +193,53 @@ const Dashboard = () => {
                 </div>
             </aside>
 
-            {/* Active Component Area */}
-            <div className="flex-grow p-6 overflow-y-auto bg-slate-50">
-                {renderComponent()}
+            {/* Main Content Area */}
+            <div className="flex-grow flex flex-col overflow-hidden bg-slate-50">
+                {/* Top Header Bar */}
+                <header className="h-16 border-b border-gray-200 bg-white flex items-center justify-between px-6 shrink-0 shadow-sm">
+                    <div className="text-sm font-bold text-gray-700 capitalize">
+                        {t(activeTab) || activeTab}
+                    </div>
+                    {/* Top Right Actions */}
+                    <div className="flex items-center gap-3">
+                        {/* Day/Night theme button */}
+                        <button
+                            onClick={toggleTheme}
+                            className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all duration-150 flex items-center justify-center cursor-pointer border border-gray-200 dark:border-gray-750 shadow-sm active:scale-95"
+                        >
+                            <i className={`fa-solid ${theme === "dark" ? "fa-sun text-amber-500" : "fa-moon text-blue-600"} text-base`}></i>
+                        </button>
+
+                        {/* Preferences/Setting button */}
+                        <button
+                            onClick={() => setActiveTab("settings")}
+                            className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all duration-150 flex items-center justify-center cursor-pointer border border-gray-200 dark:border-gray-750 shadow-sm active:scale-95"
+                        >
+                            <i className="fa-solid fa-sliders text-base text-teal-600"></i>
+                        </button>
+
+                        {/* console log view button */}
+                        <button
+                            onClick={() => setActiveTab("logs")}
+                            className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all duration-150 flex items-center justify-center cursor-pointer border border-gray-200 dark:border-gray-750 shadow-sm active:scale-95"
+                        >
+                            <i className="fa-solid fa-terminal text-base text-indigo-600"></i>
+                        </button>
+
+                        {/* help section button */}
+                        <button
+                            onClick={() => setActiveTab("help")}
+                            className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all duration-150 flex items-center justify-center cursor-pointer border border-gray-200 dark:border-gray-750 shadow-sm active:scale-95"
+                        >
+                            <i className="fa-solid fa-circle-question text-base text-rose-500"></i>
+                        </button>
+                    </div>
+                </header>
+
+                {/* Active Component Area */}
+                <div className="flex-grow p-6 overflow-y-auto">
+                    {renderComponent()}
+                </div>
             </div>
 
             {/* Global Widgets */}

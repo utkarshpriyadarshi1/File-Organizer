@@ -20,6 +20,7 @@ C:\Users\utkar\Desktop\Projects\fboss\backend\src\main\java\com\updevlogics\eabh
 C:\Users\utkar\Desktop\Projects\fboss\backend\src\main\java\com\updevlogics\eabhilekh\entities\FileReversal.java
 C:\Users\utkar\Desktop\Projects\fboss\backend\src\main\java\com\updevlogics\eabhilekh\entities\FileVersion.java
 C:\Users\utkar\Desktop\Projects\fboss\backend\src\main\java\com\updevlogics\eabhilekh\entities\IgnoreRule.java
+C:\Users\utkar\Desktop\Projects\fboss\backend\src\main\java\com\updevlogics\eabhilekh\entities\RegisteredVersion.java
 C:\Users\utkar\Desktop\Projects\fboss\backend\src\main\java\com\updevlogics\eabhilekh\entities\SyncJob.java
 C:\Users\utkar\Desktop\Projects\fboss\backend\src\main\java\com\updevlogics\eabhilekh\entities\Tag.java
 C:\Users\utkar\Desktop\Projects\fboss\backend\src\main\java\com\updevlogics\eabhilekh\enums\SyncType.java
@@ -35,6 +36,7 @@ C:\Users\utkar\Desktop\Projects\fboss\backend\src\main\java\com\updevlogics\eabh
 C:\Users\utkar\Desktop\Projects\fboss\backend\src\main\java\com\updevlogics\eabhilekh\repositories\FileReversalRepository.java
 C:\Users\utkar\Desktop\Projects\fboss\backend\src\main\java\com\updevlogics\eabhilekh\repositories\FileVersionRepository.java
 C:\Users\utkar\Desktop\Projects\fboss\backend\src\main\java\com\updevlogics\eabhilekh\repositories\IgnoreRuleRepository.java
+C:\Users\utkar\Desktop\Projects\fboss\backend\src\main\java\com\updevlogics\eabhilekh\repositories\RegisteredVersionRepository.java
 C:\Users\utkar\Desktop\Projects\fboss\backend\src\main\java\com\updevlogics\eabhilekh\repositories\SyncJobRepository.java
 C:\Users\utkar\Desktop\Projects\fboss\backend\src\main\java\com\updevlogics\eabhilekh\repositories\TagRepository.java
 C:\Users\utkar\Desktop\Projects\fboss\backend\src\main\java\com\updevlogics\eabhilekh\services\AuditLogService.java
@@ -56,3 +58,4 @@ C:\Users\utkar\Desktop\Projects\fboss\backend\src\main\java\com\updevlogics\eabh
 C:\Users\utkar\Desktop\Projects\fboss\backend\src\main\java\com\updevlogics\eabhilekh\services\SqliteWriteQueueService.java
 C:\Users\utkar\Desktop\Projects\fboss\backend\src\main\java\com\updevlogics\eabhilekh\services\SyncService.java
 C:\Users\utkar\Desktop\Projects\fboss\backend\src\main\java\com\updevlogics\eabhilekh\services\TaskCancellationManager.java
+C:\Users\utkar\Desktop\Projects\fboss\backend\src\main\java\com\updevlogics\eabhilekh\services\VersionInitializer.java

@@ -59,6 +59,46 @@ if match:
         json.dump(version_data, f, indent=2)
     print(f"Wrote version.json: {ver_json_path}")
     
+    # 2b. Write version.json to backend resources
+    backend_res_dir = os.path.join(script_dir, "..", "backend", "src", "main", "resources")
+    backend_ver_json_path = os.path.join(backend_res_dir, "version.json")
+    os.makedirs(backend_res_dir, exist_ok=True)
+    with open(backend_ver_json_path, "w", encoding="utf-8") as f:
+        json.dump(version_data, f, indent=2)
+    print(f"Wrote backend version.json: {backend_ver_json_path}")
+    
+    # 2c. Register build version in existing local SQLite databases
+    import sqlite3
+    import datetime
+    db_paths = [
+        os.path.join(script_dir, "..", "backend", "e-abhilekh.db"),
+        os.path.join(script_dir, "..", "e-abhilekh.db"),
+        os.path.join(script_dir, "..", "backend", "fboss.db"),
+        os.path.join(script_dir, "..", "fboss.db")
+    ]
+    for db_path in db_paths:
+        if os.path.exists(db_path):
+            try:
+                conn = sqlite3.connect(db_path)
+                cursor = conn.cursor()
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS registered_versions (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        version TEXT UNIQUE NOT NULL,
+                        registered_at TEXT NOT NULL
+                    )
+                """)
+                now_str = datetime.datetime.now().isoformat()
+                cursor.execute(
+                    "INSERT OR IGNORE INTO registered_versions (version, registered_at) VALUES (?, ?)",
+                    (new_version, now_str)
+                )
+                conn.commit()
+                conn.close()
+                print(f"Registered version {new_version} in SQLite database: {db_path}")
+            except Exception as e:
+                print(f"Failed to register version in database {db_path}: {e}")
+    
     # 3. Update frontend package.json version (strip SNAPSHOT)
     clean_ver = new_ver_nums_str
     if os.path.exists(pkg_path):

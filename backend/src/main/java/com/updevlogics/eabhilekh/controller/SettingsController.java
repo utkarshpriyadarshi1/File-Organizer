@@ -3,6 +3,7 @@ package com.updevlogics.eabhilekh.controller;
 import com.updevlogics.eabhilekh.entities.AppSetting;
 import com.updevlogics.eabhilekh.entities.BackgroundTask;
 import com.updevlogics.eabhilekh.entities.IgnoreRule;
+import com.updevlogics.eabhilekh.entities.RegisteredVersion;
 import com.updevlogics.eabhilekh.repositories.*;
 import com.updevlogics.eabhilekh.services.*;
 import com.updevlogics.eabhilekh.services.DirectoryStatsProvider.FolderStats;
@@ -39,6 +40,7 @@ public class SettingsController {
     private final TagRepository tagRepository;
     private final RedisCacheService redisCacheService;
     private final SqliteWriteQueueService sqliteWriteQueueService;
+    private final RegisteredVersionRepository registeredVersionRepository;
 
     @GetMapping("/default-path")
     public Map<String, String> getDefaultPathSetting() {
@@ -181,6 +183,12 @@ public class SettingsController {
             System.exit(0);
         }).start();
         return "Backend shutdown initiated.";
+    }
+
+    @GetMapping("/versions")
+    public List<RegisteredVersion> getRegisteredVersions() {
+        logger.info("Request received to fetch all registered app versions");
+        return registeredVersionRepository.findAll();
     }
 }
 
