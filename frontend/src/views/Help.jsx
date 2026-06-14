@@ -1,20 +1,41 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useI18n } from "../services/I18nContext";
+import { marked } from "marked";
 
 const Help = () => {
     const { t } = useI18n();
+    const [helpGuides, setHelpGuides] = useState([]);
+    const [activeHelpGuide, setActiveHelpGuide] = useState("");
+    const [loading, setLoading] = useState(true);
 
-    // Standard GitHub Issues page for e-abhilekh repo
+    useEffect(() => {
+        if (window.electron && window.electron.readHelpFiles) {
+            setLoading(true);
+            window.electron.readHelpFiles()
+                .then(guides => {
+                    console.log("Loaded help guides:", guides);
+                    setHelpGuides(guides || []);
+                    if (guides && guides.length > 0) {
+                        setActiveHelpGuide(guides[0].name);
+                    }
+                    setLoading(false);
+                })
+                .catch(err => {
+                    console.error("Failed to load help files:", err);
+                    setLoading(false);
+                });
+        } else {
+            console.warn("Electron readHelpFiles API not available.");
+            setLoading(false);
+        }
+    }, []);
+
     const handleOpenGitHub = () => {
-        // Since we are in Electron and using context bridge, let's open in external web browser.
-        // Electron's shell.openExternal can be triggered if we had it exposed. Since we don't, 
-        // a standard window.open or <a> with target="_blank" is the fallback. Electron wraps <a> with target="_blank"
-        // and usually opens it in default system browser, or we can use normal window.open.
         window.open("https://github.com/utkarshpriyadarshi1/e-abhilekh/issues", "_blank");
     };
 
     return (
-        <div className="max-w-4xl mx-auto mt-6 space-y-6 text-left">
+        <div className="max-w-5xl mx-auto mt-6 space-y-6 text-left">
             {/* Header Title Section */}
             <div className="flex items-center gap-4 border-b border-gray-150 pb-5">
                 <div className="w-12 h-12 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-500 shadow-sm border border-rose-100">
@@ -47,83 +68,58 @@ const Help = () => {
                 </button>
             </div>
 
-            {/* FAQs Grid */}
-            <div className="space-y-4">
-                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    <i className="fa-solid fa-circle-info text-blue-500"></i>
-                    {t("faq")}
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-white p-5 rounded-2xl border border-gray-150 shadow-sm space-y-2">
-                        <h4 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"></span>
-                            {t("faq1Title")}
-                        </h4>
-                        <p className="text-xs text-gray-500 font-bold leading-relaxed">{t("faq1Desc")}</p>
+            {/* Help Guides Tabs Layout */}
+            <div className="bg-white rounded-2xl border border-gray-150 shadow-sm overflow-hidden flex flex-col md:flex-row h-[500px]">
+                {/* Tabs Sidebar */}
+                <div className="w-full md:w-64 bg-slate-50 border-b md:border-b-0 md:border-r border-gray-150 shrink-0 overflow-y-auto">
+                    <div className="p-4 border-b border-gray-150">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Documentation</span>
                     </div>
-
-                    <div className="bg-white p-5 rounded-2xl border border-gray-150 shadow-sm space-y-2">
-                        <h4 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-                            {t("faq2Title")}
-                        </h4>
-                        <p className="text-xs text-gray-500 font-bold leading-relaxed">{t("faq2Desc")}</p>
-                    </div>
-
-                    <div className="bg-white p-5 rounded-2xl border border-gray-150 shadow-sm space-y-2 md:col-span-2">
-                        <h4 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0"></span>
-                            {t("faq3Title")}
-                        </h4>
-                        <p className="text-xs text-gray-500 font-bold leading-relaxed">{t("faq3Desc")}</p>
-                    </div>
+                    <nav className="p-2 space-y-1">
+                        {loading ? (
+                            <div className="text-xs text-gray-400 font-bold p-3 animate-pulse">Scanning guides...</div>
+                        ) : helpGuides.length === 0 ? (
+                            <div className="text-xs text-gray-400 font-bold p-3">No manuals found.</div>
+                        ) : (
+                            helpGuides.map(guide => (
+                                <button
+                                    key={guide.name}
+                                    onClick={() => setActiveHelpGuide(guide.name)}
+                                    className={`w-full text-left px-3.5 py-2.5 rounded-xl transition-all duration-150 flex items-center gap-2.5 text-xs font-bold cursor-pointer active:scale-95 ${
+                                        activeHelpGuide === guide.name
+                                            ? "bg-slate-200 text-slate-800 shadow-sm"
+                                            : "hover:bg-slate-100 text-slate-505 text-slate-500 hover:text-slate-700"
+                                    }`}
+                                >
+                                    <i className="fa-solid fa-book-open text-sky-500 text-[11px]"></i>
+                                    <span className="capitalize">{guide.name.replace(/-/g, " ")}</span>
+                                </button>
+                            ))
+                        )}
+                    </nav>
                 </div>
-            </div>
 
-            {/* Manual Instructions List */}
-            <div className="space-y-4">
-                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    <i className="fa-solid fa-book-open text-teal-500"></i>
-                    {t("userManual")}
-                </h3>
-
-                <div className="space-y-3">
-                    <div className="flex gap-4 bg-white p-4 rounded-xl border border-gray-150 shadow-sm">
-                        <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0 font-bold">
-                            1
+                {/* Content Pane */}
+                <div className="flex-grow p-6 overflow-y-auto bg-white select-text">
+                    {loading ? (
+                        <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-2">
+                            <i className="fa-solid fa-rotate animate-spin text-2xl"></i>
+                            <span className="text-xs font-bold">Loading User Manual...</span>
                         </div>
-                        <div>
-                            <h4 className="text-sm font-bold text-gray-800">{t("fileOrganizer")}</h4>
-                            <p className="text-xs text-gray-500 font-semibold mt-1">
-                                Navigate to File Organizer from sidebar. Select a source directory to walk. Add tags, details, or sort files. Revert changes via the undo panel if needed.
-                            </p>
+                    ) : activeHelpGuide && helpGuides.find(g => g.name === activeHelpGuide) ? (
+                        <article className="prose prose-sm max-w-none text-slate-700 leading-relaxed font-sans">
+                            <div 
+                                dangerouslySetInnerHTML={{ 
+                                    __html: marked.parse(helpGuides.find(g => g.name === activeHelpGuide).content || "") 
+                                }} 
+                            />
+                        </article>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-2">
+                            <i className="fa-solid fa-file-invoice text-3xl"></i>
+                            <span className="text-xs font-bold">Select a user manual tab to display instructions.</span>
                         </div>
-                    </div>
-
-                    <div className="flex gap-4 bg-white p-4 rounded-xl border border-gray-150 shadow-sm">
-                        <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 shrink-0 font-bold">
-                            2
-                        </div>
-                        <div>
-                            <h4 className="text-sm font-bold text-gray-800">{t("backupRestore")}</h4>
-                            <p className="text-xs text-gray-500 font-semibold mt-1">
-                                Create incrementally updated backup directories. Verify integrity with post-copy hash checks. Restore folders from target ZIPs or historical backups easily.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="flex gap-4 bg-white p-4 rounded-xl border border-gray-150 shadow-sm">
-                        <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 shrink-0 font-bold">
-                            3
-                        </div>
-                        <div>
-                            <h4 className="text-sm font-bold text-gray-800">{t("duplicateCleaner")}</h4>
-                            <p className="text-xs text-gray-500 font-semibold mt-1">
-                                Run high-performance duplicate scanners. Compare file sizes and SHA-256 hashes inside your SQLite index, then perform safe cleanups.
-                            </p>
-                        </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </div>

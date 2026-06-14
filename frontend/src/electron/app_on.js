@@ -380,6 +380,36 @@ async function shutdownAndExit() {
         return result.filePaths[0] || "";
     });
 
+    ipcMain.handle("read-help-files", async () => {
+        try {
+            const fs = require("fs");
+            const docsHelpPath = app.isPackaged
+                ? path.join(process.resourcesPath, "docs/help")
+                : path.join(__dirname, "../../../docs/help");
+
+            console.log("Reading help files from:", docsHelpPath);
+            if (fs.existsSync(docsHelpPath)) {
+                const files = await fs.promises.readdir(docsHelpPath);
+                const mdFiles = files.filter(f => f.endsWith('.md'));
+                const results = [];
+                for (const file of mdFiles) {
+                    const content = await fs.promises.readFile(path.join(docsHelpPath, file), 'utf8');
+                    results.push({
+                        name: file.replace('.md', ''),
+                        content: content
+                    });
+                }
+                return results;
+            } else {
+                console.warn("Docs help path does not exist:", docsHelpPath);
+            }
+            return [];
+        } catch (err) {
+            console.error("Failed to read help files:", err);
+            return [];
+        }
+    });
+
     app.on("window-all-closed", () => {
         if (process.platform !== "darwin") app.quit();
     });

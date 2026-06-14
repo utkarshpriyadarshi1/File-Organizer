@@ -27,7 +27,7 @@ public class VersionInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         logger.info("Checking current app version for registration...");
         try {
-            ClassPathResource resource = new ClassPathResource("version.json");
+            ClassPathResource resource = new ClassPathResource("app.config.json");
             if (resource.exists()) {
                 try (InputStream is = resource.getInputStream()) {
                     Map<String, Object> data = objectMapper.readValue(is, Map.class);
@@ -49,7 +49,7 @@ public class VersionInitializer implements ApplicationRunner {
                     }
                 }
             } else {
-                logger.warn("version.json not found in classpath. Skipping runtime version registration.");
+                logger.warn("app.config.json not found in classpath. Skipping runtime version registration.");
             }
         } catch (Exception e) {
             logger.error("Failed to read or register app version on startup", e);

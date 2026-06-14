@@ -13,9 +13,12 @@ import TaskDrawer from "../components/TaskDrawer";
 import ToastContainer from "../components/ToastContainer";
 import { useTasks } from "../services/TaskContext";
 import { useI18n } from "../services/I18nContext";
-import versionInfo from "../version.json";
+import appConfig from "../app.config.json";
 
 const Dashboard = () => {
+    useEffect(() => {
+        document.title = `${appConfig.heading} - v${appConfig.version}`;
+    }, []);
     const [activeTab, setActiveTab] = useState("dashboard");
     const { unreadCount, activeTasks } = useTasks();
     const { t } = useI18n();
@@ -76,8 +79,8 @@ const Dashboard = () => {
                             <i className="fa-solid fa-server"></i>
                         </div>
                         <div>
-                            <span className="text-sm font-black tracking-wider block text-white">e-abhilekh</span>
-                            <span className="text-[10px] font-bold text-slate-400 block leading-tight">File Organizer Desktop App</span>
+                            <span className="text-sm font-black tracking-wider block text-white">{appConfig.appName}</span>
+                            <span className="text-[10px] font-bold text-slate-400 block leading-tight">{appConfig.subtitle}</span>
                         </div>
                     </div>
 
@@ -188,7 +191,7 @@ const Dashboard = () => {
                     </div>
                     <div className="flex items-center justify-between font-semibold">
                         <span>{t("appVersion")}:</span>
-                        <span className="text-slate-400">v{versionInfo.version}</span>
+                        <span className="text-slate-400">v{appConfig.version}</span>
                     </div>
                 </div>
             </aside>
