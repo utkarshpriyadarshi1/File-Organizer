@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the **e-abhilekh** project will be documented in this file.
+All notable changes to the **File Organizer** project will be documented in this file.
 
 ## [0.0.3] - 2026-06-14
 ### Added

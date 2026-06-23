@@ -31,7 +31,7 @@ const Help = () => {
     }, []);
 
     const handleOpenGitHub = () => {
-        window.open("https://github.com/utkarshpriyadarshi1/e-abhilekh/issues", "_blank");
+        window.open("https://github.com/utkarshpriyadarshi1/File-Organizer/issues", "_blank");
     };
 
     return (

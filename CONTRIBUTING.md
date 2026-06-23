@@ -1,4 +1,4 @@
-# Contributing to e-abhilekh
+# Contributing to File Organizer
 
 First off, thank you for taking the time to contribute! Contributions are what make the open-source community such an amazing place to learn, inspire, and create.
 
@@ -23,8 +23,8 @@ By participating in this project, you agree to abide by the guidelines outlined 
 1.  **Fork** the repository on GitHub.
 2.  **Clone** your fork locally:
     ```bash
-    git clone https://github.com/your-username/e-abhilekh.git
-    cd e-abhilekh
+    git clone https://github.com/your-username/File Organizer.git
+    cd File Organizer
     ```
 3.  Set up your local development environment by checking out the **Development Mode** section in the [README.md](README.md).
 4.  Create a branch for your work:

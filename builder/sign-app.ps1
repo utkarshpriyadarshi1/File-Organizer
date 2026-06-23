@@ -3,8 +3,8 @@ param (
     [string]$targetFile
 )
 
-$certPath = Join-Path $PSScriptRoot "e-abhilekh-cert.pfx"
-$certPass = "Abhilekh2026!"
+$certPath = Join-Path $PSScriptRoot "file-organizer-cert.pfx"
+$certPass = "Organizer2026!"
 
 if (-not $targetFile) {
     Write-Error "No target file specified. Usage: sign-app.ps1 [path_to_file]"
@@ -18,7 +18,7 @@ if (-not (Test-Path $targetFile)) {
 
 if (-not (Test-Path $certPath)) {
     Write-Warning "PFX Certificate not found at $certPath. Generating a new one..."
-    & (Join-Path $PSScriptRoot "generate-cert.ps1")
+    & (Join-Path $PSScriptRoot "setup-cert.ps1")
 }
 
 if (-not (Test-Path $certPath)) {

@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 echo ===================================================
-echo   e-abhilekh Developer Onboarding Setup
+echo   File Organizer Developer Onboarding Setup
 echo ===================================================
 echo.
 

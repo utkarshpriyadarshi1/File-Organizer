@@ -1,4 +1,4 @@
-## e-abhilekh Development Phases for Production Readiness
+## File Organizer Development Phases for Production Readiness
 
 ### Phase 1: Foundation & Core Setup
 - **Define Requirements & Scope**

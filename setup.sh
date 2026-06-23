@@ -2,7 +2,7 @@
 # setup.sh - Onboarding setup script for Unix-like environments
 
 echo "==================================================="
-echo "  e-abhilekh Developer Onboarding Setup"
+echo "  File Organizer Developer Onboarding Setup"
 echo "==================================================="
 echo ""
 

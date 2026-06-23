@@ -1,6 +1,6 @@
 # Security Policy
 
-We take the security of **e-abhilekh** seriously. If you believe you have found a security vulnerability, please report it to us responsibly so we can address it as quickly as possible.
+We take the security of **File Organizer** seriously. If you believe you have found a security vulnerability, please report it to us responsibly so we can address it as quickly as possible.
 
 ## Supported Versions
 

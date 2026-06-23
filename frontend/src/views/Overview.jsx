@@ -201,7 +201,7 @@ const Overview = ({ setActiveTab }) => {
                 <div className="space-y-2 relative z-10">
                     <h2 className="text-2xl md:text-3xl font-black tracking-tight">System Overview & Metrics</h2>
                     <p className="text-sm text-blue-100 font-medium">
-                        {isOnline ? "e-abhilekh File Organizer Desktop App is connected and operational." : "Connection lost. Retrying backend server synchronization..."}
+                        {isOnline ? "File Organizer Desktop App is connected and operational." : "Connection lost. Retrying backend server synchronization..."}
                     </p>
                 </div>
                 
@@ -498,7 +498,7 @@ const Overview = ({ setActiveTab }) => {
                             <i className="fa-solid fa-bolt text-amber-500"></i>
                             Quick Shortcuts
                         </h3>
-                        <p className="text-[11px] text-gray-500 mt-0.5">Quickly access other modules of the e-Abhilekh app</p>
+                        <p className="text-[11px] text-gray-500 mt-0.5">Quickly access other modules of the File Organizer app</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">

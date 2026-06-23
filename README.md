@@ -77,15 +77,20 @@ File Organizer/
 │   ├── architecture-overview.md
 │   ├── database-schema.md
 │   ├── development-phases.md
-│   └── scalability-deployment.md
+│   ├── feature-catalog.md
+│   ├── scalability-deployment.md
+│   └── technical-specification.md
 ├── schema/             # Database initialization models
-│   └── File Organizer_schema.sql
-├── packaging/          # Build and environment automation scripts
+│   ├── schema.sql
+│   └── data.sql
+├── builder/            # Build and environment automation scripts
 │   ├── increment_version.py # Automation tool for version bumps
-│   ├── run-dev.bat     # Launches development server and Electron shell from root
-│   ├── package-app.bat # Packages backend JAR and compiles React for Windows
-│   ├── package-app.sh  # Packages backend JAR and compiles React for Linux/macOS
-│   └── run-prod.bat    # Runs production compiled assets locally
+│   ├── build.js        # Build pipeline execution script (Node)
+│   ├── clean.js        # Workspace cleanup execution script (Node)
+│   └── setup-cert.ps1  # Code signing certificate generator
+├── dev.bat / dev.sh    # Launches development server and Electron shell from root
+├── build.bat / build.sh # Packages backend JAR and compiles React from root
+└── clean.bat / clean.sh # Cleans built assets and class files from root
 ```
 
 ---
@@ -103,7 +108,7 @@ To start both the Spring Boot backend server and the Electron application concur
 
 ```bash
 # Execute from project root:
-.\packaging\run-dev.bat
+.\dev.bat
 ```
 
 Alternatively, you can boot them manually in separate terminal windows:
@@ -131,11 +136,11 @@ To compile the application for local production distribution, run the packaging 
 
 ```bash
 # On Windows:
-.\packaging\package-app.bat
+.\build.bat
 
 # On Linux or macOS:
-chmod +x packaging/package-app.sh
-./packaging/package-app.sh
+chmod +x build.sh
+./build.sh
 ```
 
 This performs the following operations:

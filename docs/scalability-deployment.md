@@ -1,8 +1,8 @@
-# e-abhilekh Scalability and Deployment Strategies
+# File Organizer Scalability and Deployment Strategies
 
 ### Scalability Strategies
 
-**e-abhilekh** is engineered to manage millions of files and metadata entries efficiently while maintaining fast performance and high UI responsiveness. Here are the core scalability and resource optimization strategies:
+**File Organizer** is engineered to manage millions of files and metadata entries efficiently while maintaining fast performance and high UI responsiveness. Here are the core scalability and resource optimization strategies:
 
 ---
 
@@ -11,7 +11,7 @@
 * **Checkpointing (Lock Prevention):** To prevent SQLite database write locks (`SQLITE_BUSY`), the accumulated cached task logs are flushed to SQLite in a single transaction only when:
   * **500 files** have been processed, **OR**
   * **30 seconds** have elapsed since the last flush.
-* **Externalized JSON Reports:** Instead of saving long arrays of file changes in database rows (which causes SQLite bloating), detailed execution payloads are written as `.json` files under `AppData/Local/e-abhilekh/reports/`. SQLite only holds task summaries and report file pointers.
+* **Externalized JSON Reports:** Instead of saving long arrays of file changes in database rows (which causes SQLite bloating), detailed execution payloads are written as `.json` files under `AppData/Local/file-organizer/reports/`. SQLite only holds task summaries and report file pointers.
 
 ---
 
@@ -36,7 +36,7 @@
 
 ### Deployment Strategies
 
-e-abhilekh is designed and engineered as a **100% offline, standalone desktop application**. There is no web portal, centralized API, or cloud service hosting. All user operations, metadata indexing, and document encryption occur locally on the user's host machine. The default deployment target and automated build script setup is optimized specifically for **Windows environments (Windows 10 & 11)**. Here is how deployment and environment requirements are met:
+File Organizer is designed and engineered as a **100% offline, standalone desktop application**. There is no web portal, centralized API, or cloud service hosting. All user operations, metadata indexing, and document encryption occur locally on the user's host machine. The default deployment target and automated build script setup is optimized specifically for **Windows environments (Windows 10 & 11)**. Here is how deployment and environment requirements are met:
 
 ---
 
@@ -45,7 +45,7 @@ e-abhilekh is designed and engineered as a **100% offline, standalone desktop ap
     - Package all dependencies (JRE/Java runtime, Electron desktop shell, SQLite engine, system binaries, language sets) into a single installer (`.msi` or `.exe`).
     - Ensure the installer configures and spins up the application environment locally on boot, requiring zero external server configuration or internet connections.
 - **Portable Mode:**
-    - Allow users to deploy e-abhilekh from external volumes (e.g. USB flash drives), saving configuration and database files inside a relative `./data/` folder for true portability.
+    - Allow users to deploy File Organizer from external volumes (e.g. USB flash drives), saving configuration and database files inside a relative `./data/` folder for true portability.
 
 #### 2. Settings & Clean-Up Routines
 - **System Detection:** On first start, detect host CPU cores, RAM capacities, and disk volumes to set default concurrency ceilings.
@@ -53,7 +53,7 @@ e-abhilekh is designed and engineered as a **100% offline, standalone desktop ap
 
 ---
 
-### Summary Table: e-abhilekh Scalability & Deployment
+### Summary Table: File Organizer Scalability & Deployment
 
 | Area | Strategy |
 | :-- | :-- |

@@ -40,7 +40,7 @@ This ensures that only a single thread ever writes to the SQLite file at any giv
 ## 3. Storage & Local Cache
 
 - **Preferences Directory**: All user preference maps (such as layout rules) are serialized into `preferences.json` in the local directory:
-  `%USERPROFILE%/AppData/Local/e-abhilekh/preferences.json`
+  `%USERPROFILE%/AppData/Local/file-organizer/preferences.json`
 - **Cache Management**:
   - `reports/`: Diagnostic JSON details of completed scans and operations.
   - `temp/`: Temporary directories for decrypting files for previewing.

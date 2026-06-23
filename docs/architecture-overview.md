@@ -1,8 +1,8 @@
-# e-abhilekh: Architecture Overview
+# File Organizer: Architecture Overview
 
 ## Overview
 
-**e-abhilekh** is an offline, standalone desktop application optimized specifically for Windows hosts, with no web portal, central servers, or external internet dependencies. It provides local-only file organizing, incremental backup, deduplication, and a password-protected Document Locker with rich categorization—all processed locally on-device for maximum security and privacy at scale.
+**File Organizer** is an offline, standalone desktop application optimized specifically for Windows hosts, with no web portal, central servers, or external internet dependencies. It provides local-only file organizing, incremental backup, deduplication, and a password-protected Document Locker with rich categorization—all processed locally on-device for maximum security and privacy at scale.
 
 ---
 
@@ -123,7 +123,7 @@ CREATE TABLE background_tasks (
     task_type TEXT NOT NULL,       -- 'DUPLICATE_SCAN', 'BACKUP', 'SYNC', 'ORGANIZE', 'REVERSAL'
     status TEXT NOT NULL,          -- 'QUEUED', 'RUNNING', 'COMPLETED', 'COMPLETED_WITH_FAILURES', 'FAILED', 'CANCELED'
     summary TEXT NOT NULL,         -- e.g. "Scanned 1200 files, 5 duplicates found"
-    report_file_path TEXT,         -- Points to AppData/Local/e-abhilekh/reports/{taskId}.json
+    report_file_path TEXT,         -- Points to AppData/Local/file-organizer/reports/{taskId}.json
     created_at TEXT NOT NULL,
     completed_at TEXT
 );
@@ -159,7 +159,7 @@ CREATE INDEX idx_activity_log_timestamp ON activity_log(timestamp);
 
 ## In-Memory Cache Structure (Optimized Caching)
 
-To maintain a 100% offline workflow with zero setup overhead, e-abhilekh implements an in-memory cache (`RedisCacheService`) using Java `ConcurrentHashMap` collections. The cache keys are structured using standard Redis-like namespacing concepts for fast retrieval:
+To maintain a 100% offline workflow with zero setup overhead, File Organizer implements an in-memory cache (`RedisCacheService`) using Java `ConcurrentHashMap` collections. The cache keys are structured using standard Redis-like namespacing concepts for fast retrieval:
 
 - **`file:{file_id}`:** Bounded map of hot file metadata (path, name, size, type, tags) for fast detail rendering.
 - **`hash:{hash_value}`:** Set of file IDs sharing the same hash value, optimized for duplicate detection.
