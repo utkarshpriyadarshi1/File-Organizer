@@ -1,6 +1,6 @@
-# e-abhilekh Task Checklist
+# File Organizer Task Checklist
 
-A tracker of achievements and pending milestones for the e-abhilekh system.
+A tracker of achievements and pending milestones for the File Organizer system.
 
 ## Completed Refactoring Milestones
 - [x] **Centralized Configuration:** Configured root-level `app.config.json` defining metadata and versions.
@@ -13,3 +13,9 @@ A tracker of achievements and pending milestones for the e-abhilekh system.
 - [ ] Add localization for more regional languages.
 - [ ] Complete automated verification tests for incremental backups in macOS/Linux environments.
 - [ ] Integrate database migration mechanisms inside Spring Boot to sync dynamic changes automatically.
+- [ ] Custom Folder Layout Rules in Preferences
+- [ ] Website: www.updev.in
+- [ ] Project Name: File Organizer
+- [ ] Tagline: Clean and Organize your Files
+- [ ] Documentation Reference - Architecture Overview,  Database Schema, Technical Specification, Feature Catalog, Development Phases, Changelog
+- [ ] 
