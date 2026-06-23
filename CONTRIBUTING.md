@@ -75,10 +75,10 @@ We encourage clear, structured commit messages. Use the following prefixes to cl
 2.  **Verify your code:** Ensure the backend builds cleanly and the React/Electron app boots up successfully. Run:
     ```bash
     # On Windows:
-    .\packaging\package-app.bat
+    .\build.bat
 
     # On macOS/Linux:
-    ./packaging/package-app.sh
+    ./build.sh
     ```
 3.  **Submit the PR:** Create a pull request to the `main` branch. Complete the pull request checklist in the template provided.
 4.  **Review:** A project maintainer will review your code. Address any requested changes or questions promptly.

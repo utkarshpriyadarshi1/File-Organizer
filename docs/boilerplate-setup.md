@@ -10,7 +10,7 @@ Get a working base with all core technologies installed and ready for custom Fil
 - **backend/**: Spring Boot (Java) backend server managing local file metadata, hashes, backups, and caching.
 - **docs/**: Project architecture and technical specification documents.
 - **schema/**: SQLite database schema configurations.
-- **packaging/**: Build and run automation script controllers (Windows `.bat` files and cross-platform `.sh` scripts).
+- **builder/**: Build and run automation script controllers (Windows `.bat` files and cross-platform `.sh` scripts).
 
 ***
 
@@ -19,11 +19,11 @@ Get a working base with all core technologies installed and ready for custom Fil
 The backend is built as a standalone Spring Boot application, using a custom source directory config in `pom.xml`.
 
 ### 2a. Maven Configuration (`pom.xml`)
-We use Java 23 and specify the custom source directory (`src`) and resource inclusion directories:
+We use Java 21 and specify the custom source directory (`src`) and resource inclusion directories:
 
 ```xml
     <properties>
-        <java.version>23</java.version>
+        <java.version>21</java.version>
     </properties>
     
     <build>

@@ -62,4 +62,4 @@ File Organizer is designed and engineered as a **100% offline, standalone deskto
 | **Task Cancellation** | Live interrupt check loops, bulk cancel REST endpoints, instant queue eviction. |
 | **Cache Management** | Folder-wise completed cache purge, active stats display, active report protection, 30-day auto-purge. |
 | **Local Operation** | Fully offline-first, no external API gateways, portable USB deployment option. |
-| **Packaging** | Bounded local scripts (`packaging/` folder) for automated builds on Windows and Linux/macOS. Bundled installers contain SQLite, JRE, and the Electron executable. |
+| **Packaging** | Bounded local scripts (`builder/` folder) for automated builds on Windows and Linux/macOS. Bundled installers contain SQLite, JRE, and the Electron executable. |

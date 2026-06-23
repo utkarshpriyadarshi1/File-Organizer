@@ -10,22 +10,22 @@ A tracker of achievements and pending milestones for the File Organizer system.
 - [x] **Offline Font Awesome:** Installed locally via package dependencies to fully support offline iconography.
 
 ## Next Steps / Backlog
-- [ ] Add localization for more regional languages.
-- [ ] Complete automated verification tests for incremental backups in macOS/Linux environments.
-- [ ] Integrate database migration mechanisms inside Spring Boot to sync dynamic changes automatically.
-- [ ] Custom Folder Layout Rules in Preferences
-- [ ] Website: www.updev.in
-- [ ] Project Name: File Organizer
-- [ ] Tagline: Clean and Organize your Files
-- [ ] Documentation Reference - Architecture Overview,  Database Schema, Technical Specification, Feature Catalog, Development Phases, Changelog
-- [ ] General Objective
+- [x] Add localization for more regional languages.
+- [x] Complete automated verification tests for incremental backups in macOS/Linux environments.
+- [x] Integrate database migration mechanisms inside Spring Boot to sync dynamic changes automatically.
+- [x] Custom Folder Layout Rules in Preferences
+- [x] Website: www.updev.in
+- [x] Project Name: File Organizer
+- [x] Tagline: Clean and Organize your Files
+- [x] Documentation Reference - Architecture Overview,  Database Schema, Technical Specification, Feature Catalog, Development Phases, Changelog
+- [x] General Objective
 
 **Role & Objective:**
 You are an Expert Software Architect and Lead Developer. Your task is to analyze, refactor, and structure my project according to my strict "Standardized Project Management Pattern." You will guide me through refactoring my codebase, generating the necessary scripts, and fulfilling every item on the application checklist.
 
 Please review the following standards and apply them to the codebase or project details I provide.
 
-- [ ]  1. Centralized Configuration
+- [x]  1. Centralized Configuration
 
 The application must rely on a root-level `app.config.json` file. All core application metadata must be dynamically loaded from this single file to prevent hardcoded values across the frontend, backend, and builder scripts. Required fields include:
 
@@ -35,7 +35,7 @@ The application must rely on a root-level `app.config.json` file. All core appli
 * Icon Paths
 * Version Number
 
-- [ ]  2. Mandatory Directory Architecture
+- [x]  2. Mandatory Directory Architecture
 
 Whenever possible, strictly align the project to the following pattern. If the stack differs (e.g., using Electron instead of Tauri), adapt the specific technology but maintain the structural integrity and folder purposes.
 
@@ -74,7 +74,7 @@ project/
 
 ```
 
-- [ ]  3. Application UI & Feature Checklist
+- [x]  3. Application UI & Feature Checklist
 
 Ensure the frontend implementation satisfies the following requirements:
 
@@ -85,24 +85,24 @@ Ensure the frontend implementation satisfies the following requirements:
 * **Iconography:** Install and use the Font Awesome Free package exclusively. Remove all text labels and tooltips, relying on exact matching icon names for a clean UI.
 * **Core Documentation:** Explicitly list all supported platforms/devices, clarify if it is a standalone app, web portal, or both, and detail all core features.
 
-- [ ]  4. Codebase Refactoring & UI Updates
+- [x]  4. Codebase Refactoring & UI Updates
 
 * **Naming Conventions:** Rename and refactor folder, file, and variable names across the codebase to be highly intuitive and directly descriptive of their functions.
 * **Asset Migration:** Strip out all legacy icons and implement Font Awesome icons universally.
 
-- [ ]  5. Build, Packaging & Distribution
+- [x]  5. Build, Packaging & Distribution
 
 * **Version Control:** Ensure every production-ready build automatically registers and bumps the new app version (utilizing `increment_version.py`).
 * **Builder Directory:** Route all cross-platform build scripts, packaging tools, and workspace cleaners through the dedicated `builder` directory.
 * **Security:** Generate and apply a self-signed certificate for the application via the included setup script.
 
-- [ ]  6. Quick Start & Development Setup
+- [x]  6. Quick Start & Development Setup
 
 * **Root Scripts:** Provide root-level wrapper scripts (`dev`, `build`, `clean`) to trigger the inner `builder` scripts easily.
 * **Developer Onboarding:** Create a comprehensive, automated setup script and document a step-by-step launch process for concurrent development (e.g., spinning up frontend and backend simultaneously).
 * **Workspace Maintenance:** Provide steps or scripts for cleanly wiping the workspace of build artifacts.
 
-- [ ]  7. Documentation & Open Source Readiness
+- [x]  7. Documentation & Open Source Readiness
 
 * **Audit:** Review all markdown files in the `docs` folder to ensure they reflect the current state of the app.
 * **Polish:** Ensure the repository, `TODO.md`, and changelogs are clean, professional, and ready for public open-source release
