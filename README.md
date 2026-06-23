@@ -1,11 +1,11 @@
-# e-abhilekh: Standalone File Organizer & Offline Backup Desktop App
+# File Organizer - Clean and Organize your Files
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Platform: Windows](https://img.shields.io/badge/Platform-Windows-0078D6.svg?logo=windows&logoColor=white)]()
 [![Offline First](https://img.shields.io/badge/Offline--First-100%25-green.svg)]()
 [![Architecture: Spring Boot + Electron](https://img.shields.io/badge/Architecture-Spring%20Boot%20%2B%20Electron-brightgreen.svg)]()
 
-Welcome to **e-abhilekh**, a premium, production-ready desktop application designed to catalog, organize, deduplicate, back up, and secure files completely offline. Built as a desktop app wrapping a Spring Boot backend in an Electron shell, e-abhilekh provides maximum data privacy and performance without sending metadata to the cloud.
+Welcome to **File Organizer**, a premium, production-ready desktop application designed to catalog, organize, deduplicate, back up, and secure files completely offline. Built as a desktop app wrapping a Spring Boot backend in an Electron shell, File Organizer provides maximum data privacy and performance without sending metadata to the cloud.
 
 ---
 
@@ -33,7 +33,7 @@ Welcome to **e-abhilekh**, a premium, production-ready desktop application desig
 
 ## ⚙️ Architecture & Technical Stack
 
-e-abhilekh utilizes a hybrid architecture:
+File Organizer utilizes a hybrid architecture:
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -56,7 +56,7 @@ e-abhilekh utilizes a hybrid architecture:
 *   **Frontend:** React (TypeScript) + Tailwind CSS + WebSockets.
 *   **Wrapper:** Electron (provides native directory/file picker dialogs via IPC).
 *   **Backend:** Spring Boot (Java 21) running an embedded Tomcat container.
-*   **Database:** SQLite (file-based database driver writing to `e-abhilekh.db`).
+*   **Database:** SQLite (file-based database driver writing to `File Organizer.db`).
 *   **Caching & Queueing:** Local in-memory data structures modeled on Redis API schemas for fast key-value lookups.
 
 ---
@@ -64,7 +64,7 @@ e-abhilekh utilizes a hybrid architecture:
 ## 📂 Project Structure
 
 ```
-e-abhilekh/
+File Organizer/
 ├── backend/            # Spring Boot REST API & WebSocket progress server
 │   ├── src/            # Java source files (Controller, Service, Entity, Repository)
 │   ├── pom.xml         # Maven project descriptor
@@ -79,7 +79,7 @@ e-abhilekh/
 │   ├── development-phases.md
 │   └── scalability-deployment.md
 ├── schema/             # Database initialization models
-│   └── e-abhilekh_schema.sql
+│   └── File Organizer_schema.sql
 ├── packaging/          # Build and environment automation scripts
 │   ├── increment_version.py # Automation tool for version bumps
 │   ├── run-dev.bat     # Launches development server and Electron shell from root
@@ -139,7 +139,7 @@ chmod +x packaging/package-app.sh
 ```
 
 This performs the following operations:
-1.  **Backend compilation:** Builds a standalone executable JAR inside `backend/target/e-abhilekh-*.jar`.
+1.  **Backend compilation:** Builds a standalone executable JAR inside `backend/target/File Organizer-*.jar`.
 2.  **Frontend compilation:** Builds minimized static files in `frontend/build/`.
 3.  **Local Distribution:** Generates assets ready to run offline.
 
