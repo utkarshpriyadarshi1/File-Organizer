@@ -2,6 +2,14 @@
 
 All notable changes to the **File Organizer** project will be documented in this file.
 
+## [0.0.7] - 2026-06-24
+### Refactored
+- Renamed project name, folder, file, and variable configurations from **e-abhilekh** to **File Organizer**.
+- Reorganized Java backend source directories and package namespace layout from `com.updevlogics.eabhilekh` to `in.updev.fileorganizer`.
+- Renamed SQLite database configuration to `file-organizer.db` and updated AppData folders to `%USERPROFILE%/AppData/Local/file-organizer`.
+- Updated code-signing scripts `setup-cert.ps1` and `sign-app.ps1` to produce and utilize `file-organizer-cert.pfx` certificate.
+- Refactored frontend views (`Overview.jsx`, `Logs.jsx`, `Help.jsx`, `App.test.js`), manifest descriptors, and package settings to align with the new branding.
+
 ## [0.0.3] - 2026-06-14
 ### Added
 - Root-level centralized configuration `app.config.json` defining core app parameters.

@@ -1,18 +1,18 @@
 @echo off
 :: package-app-signed.bat
-:: Production build script for e-abhilekh with self-signed certificate signing
+:: Production build script for File Organizer with self-signed certificate signing
 
 cd /d "%~dp0.."
 
-title e-abhilekh - Signed Production Build
+title File Organizer - Signed Production Build
 echo ==========================================================
-echo Starting e-abhilekh Signed Production Build Process
+echo Starting File Organizer Signed Production Build Process
 echo ==========================================================
 echo.
 
 :: 0. Auto-increment version and register
 echo [Step 1/4] Auto-incrementing version & registering in DB...
-python packaging\increment_version.py
+python builder\increment_version.py
 if %ERRORLEVEL% neq 0 (
     echo [ERROR] Version increment failed!
     pause
@@ -73,7 +73,7 @@ echo.
 echo ==========================================================
 echo Signed Build Process Complete!
 echo ==========================================================
-echo - Backend executable: backend\target\e-abhilekh-*.jar
+echo - Backend executable: backend\target\file-organizer-*.jar
 echo - Frontend build folder: frontend\build\
 echo - Packaged installers: frontend\dist\*.exe (Signed, if present)
 echo ==========================================================

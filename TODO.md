@@ -18,7 +18,6 @@ A tracker of achievements and pending milestones for the File Organizer system.
 - [x] Project Name: File Organizer
 - [x] Tagline: Clean and Organize your Files
 - [x] Documentation Reference - Architecture Overview,  Database Schema, Technical Specification, Feature Catalog, Development Phases, Changelog
-- [ ] 
 --- General Objective
 
 **Role & Objective:**

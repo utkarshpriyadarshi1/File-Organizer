@@ -8,7 +8,7 @@ Set-Location "$PSScriptRoot\.."
 
 # 1. Load configuration and determine certificate subject
 $configPath = Join-Path (Get-Location) "app.config.json"
-$appName = "e-abhilekh"
+$appName = "file-organizer"
 if (Test-Path $configPath) {
     $config = Get-Content -Raw -Path $configPath | ConvertFrom-Json
     if ($null -ne $config.appName) {
@@ -29,9 +29,9 @@ if ($null -eq $cert) {
     Write-Host "Found existing certificate with Thumbprint: $($cert.Thumbprint)"
 }
 
-# 2. Export certificate to builder\e-abhilekh-cert.pfx
-$pfxPath = Join-Path $PSScriptRoot "e-abhilekh-cert.pfx"
-$password = ConvertTo-SecureString "Abhilekh2026!" -AsPlainText -Force
+# 2. Export certificate to builder\file-organizer-cert.pfx
+$pfxPath = Join-Path $PSScriptRoot "file-organizer-cert.pfx"
+$password = ConvertTo-SecureString "Organizer2026!" -AsPlainText -Force
 Write-Host "Exporting certificate to $pfxPath..."
 if (Test-Path $pfxPath) {
     Remove-Item $pfxPath -Force

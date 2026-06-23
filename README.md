@@ -56,7 +56,7 @@ File Organizer utilizes a hybrid architecture:
 *   **Frontend:** React (TypeScript) + Tailwind CSS + WebSockets.
 *   **Wrapper:** Electron (provides native directory/file picker dialogs via IPC).
 *   **Backend:** Spring Boot (Java 21) running an embedded Tomcat container.
-*   **Database:** SQLite (file-based database driver writing to `File Organizer.db`).
+*   **Database:** SQLite (file-based database driver writing to `file-organizer.db`).
 *   **Caching & Queueing:** Local in-memory data structures modeled on Redis API schemas for fast key-value lookups.
 
 ---
