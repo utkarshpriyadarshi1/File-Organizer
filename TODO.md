@@ -18,8 +18,7 @@ A tracker of achievements and pending milestones for the File Organizer system.
 - [ ] Project Name: File Organizer
 - [ ] Tagline: Clean and Organize your Files
 - [ ] Documentation Reference - Architecture Overview,  Database Schema, Technical Specification, Feature Catalog, Development Phases, Changelog
-- [ ] 
---- General Objective
+- [ ] General Objective
 
 **Role & Objective:**
 You are an Expert Software Architect and Lead Developer. Your task is to analyze, refactor, and structure my project according to my strict "Standardized Project Management Pattern." You will guide me through refactoring my codebase, generating the necessary scripts, and fulfilling every item on the application checklist.
