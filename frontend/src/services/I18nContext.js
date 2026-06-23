@@ -5,12 +5,12 @@ const I18nContext = createContext();
 
 export const I18nProvider = ({ children }) => {
     const [language, setLanguageState] = useState(() => {
-        return localStorage.getItem("e_abhilekh_language") || "en";
+        return localStorage.getItem("file_organizer_language") || "en";
     });
 
     const changeLanguage = (lang) => {
         setLanguageState(lang);
-        localStorage.setItem("e_abhilekh_language", lang);
+        localStorage.setItem("file_organizer_language", lang);
     };
 
     const t = (key) => {

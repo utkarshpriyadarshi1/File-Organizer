@@ -24,6 +24,10 @@ const Settings = () => {
     // Registered versions state
     const [registeredVersions, setRegisteredVersions] = useState([]);
 
+    // Custom folder layout rule state
+    const [layoutPattern, setLayoutPattern] = useState("");
+    const [preferencesLoading, setPreferencesLoading] = useState(false);
+
     const fetchCacheStats = () => {
         console.log("[Settings] Fetching cache folder statistics...");
         setCacheLoading(true);
@@ -76,11 +80,39 @@ const Settings = () => {
             });
     };
 
+    const fetchPreferences = () => {
+        console.log("[Settings] Fetching app preferences...");
+        setPreferencesLoading(true);
+        axios.get("http://localhost:8080/api/preferences")
+            .then(res => {
+                setLayoutPattern(res.data.folderLayoutPattern || "{fileType}/{yearMonth}");
+                setPreferencesLoading(false);
+            })
+            .catch(err => {
+                console.error("[Settings] Failed to fetch preferences:", err);
+                setPreferencesLoading(false);
+            });
+    };
+
+    const handleSavePreferences = async (pattern) => {
+        const targetPattern = pattern || layoutPattern;
+        console.log("[Settings] Requesting to save layout preferences:", targetPattern);
+        try {
+            await axios.post("http://localhost:8080/api/preferences", { folderLayoutPattern: targetPattern });
+            addToast("Layout preferences saved successfully.", "success");
+            setLayoutPattern(targetPattern);
+        } catch (err) {
+            console.error("[Settings] Failed to save layout preferences:", err);
+            addToast("Failed to save layout preferences.", "error");
+        }
+    };
+
     useEffect(() => {
         fetchCacheStats();
         fetchIgnoreRules();
         fetchDefaultPath();
         fetchRegisteredVersions();
+        fetchPreferences();
     }, []);
 
     const handleSelectDefaultFolder = async () => {
@@ -218,6 +250,58 @@ const Settings = () => {
                     >
                         {t("spanish")} (ES)
                     </button>
+                    <button 
+                        onClick={() => changeLanguage("de")}
+                        className={`px-4 py-2.5 rounded-xl transition-all duration-150 text-xs font-bold border cursor-pointer ${language === "de" ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/10" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"}`}
+                    >
+                        {t("german")} (DE)
+                    </button>
+                </div>
+            </div>
+
+            {/* Custom Folder Layout Preference Panel */}
+            <div className="bg-white p-6 rounded-2xl shadow border border-gray-150 text-left">
+                <h3 className="text-xl font-bold text-gray-800 mb-2">{t("customLayoutRule")}</h3>
+                <p className="text-xs text-gray-500 mb-4 font-bold">{t("customLayoutRuleDesc")}</p>
+
+                <div className="space-y-4">
+                    <div className="flex gap-2">
+                        <input 
+                            type="text" 
+                            value={layoutPattern} 
+                            onChange={(e) => setLayoutPattern(e.target.value)}
+                            placeholder="e.g. {fileType}/{yearMonth}"
+                            className="bg-gray-50 text-xs border border-gray-200 rounded-xl p-3 flex-grow focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-mono font-bold text-gray-700"
+                        />
+                        <button 
+                            onClick={() => handleSavePreferences()}
+                            className="bg-blue-600 hover:bg-blue-700 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-white text-xs font-bold px-5 py-3 rounded-xl transition-all duration-150 flex items-center gap-1.5 shadow-sm"
+                        >
+                            <i className="fa-solid fa-floppy-disk"></i>
+                            {t("saveSetting")}
+                        </button>
+                    </div>
+
+                    <div className="space-y-1">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t("layoutPreset")}</span>
+                        <div className="flex flex-wrap gap-2">
+                            {[
+                                "{fileType}/{yearMonth}",
+                                "{fileType}/{year}/{month}",
+                                "{extension}/{yearMonth}",
+                                "{year}/{fileType}/{extension}"
+                            ].map(preset => (
+                                <button
+                                    key={preset}
+                                    type="button"
+                                    onClick={() => handleSavePreferences(preset)}
+                                    className="bg-slate-50 hover:bg-slate-100 border border-gray-200 hover:border-gray-300 text-[10px] font-mono font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer text-slate-600"
+                                >
+                                    {preset}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             </div>
 

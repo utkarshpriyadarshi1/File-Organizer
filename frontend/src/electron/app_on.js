@@ -49,7 +49,7 @@ if (!gotTheLock) {
             : path.join(__dirname, "../../public/favicon.ico");
 
         tray = new Tray(iconPath);
-        tray.setToolTip("e-abhilekh Control Client");
+        tray.setToolTip("File Organizer Control Client");
 
         tray.on("double-click", () => {
             if (mainWindow) {

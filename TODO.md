@@ -10,14 +10,14 @@ A tracker of achievements and pending milestones for the File Organizer system.
 - [x] **Offline Font Awesome:** Installed locally via package dependencies to fully support offline iconography.
 
 ## Next Steps / Backlog
-- [ ] Add localization for more regional languages.
-- [ ] Complete automated verification tests for incremental backups in macOS/Linux environments.
-- [ ] Integrate database migration mechanisms inside Spring Boot to sync dynamic changes automatically.
-- [ ] Custom Folder Layout Rules in Preferences
-- [ ] Website: www.updev.in
-- [ ] Project Name: File Organizer
-- [ ] Tagline: Clean and Organize your Files
-- [ ] Documentation Reference - Architecture Overview,  Database Schema, Technical Specification, Feature Catalog, Development Phases, Changelog
+- [x] Add localization for more regional languages.
+- [x] Complete automated verification tests for incremental backups in macOS/Linux environments.
+- [x] Integrate database migration mechanisms inside Spring Boot to sync dynamic changes automatically.
+- [x] Custom Folder Layout Rules in Preferences
+- [x] Website: www.updev.in
+- [x] Project Name: File Organizer
+- [x] Tagline: Clean and Organize your Files
+- [x] Documentation Reference - Architecture Overview,  Database Schema, Technical Specification, Feature Catalog, Development Phases, Changelog
 - [ ] 
 --- General Objective
 

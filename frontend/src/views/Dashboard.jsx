@@ -9,6 +9,7 @@ import Settings from "./Settings";
 import SyncRestore from "./SyncRestore";
 import Notifications from "./Notifications";
 import Help from "./Help";
+import WorkspaceExplorer from "./WorkspaceExplorer";
 import TaskDrawer from "../components/TaskDrawer";
 import ToastContainer from "../components/ToastContainer";
 import { useTasks } from "../services/TaskContext";
@@ -25,7 +26,7 @@ const Dashboard = () => {
     const activeTasksCount = Object.keys(activeTasks || {}).length;
 
     const [theme, setTheme] = useState(() => {
-        return localStorage.getItem("e_abhilekh_theme") || "light";
+        return localStorage.getItem("file_organizer_theme") || "light";
     });
 
     useEffect(() => {
@@ -34,7 +35,7 @@ const Dashboard = () => {
         } else {
             document.documentElement.classList.remove("dark");
         }
-        localStorage.setItem("e_abhilekh_theme", theme);
+        localStorage.setItem("file_organizer_theme", theme);
     }, [theme]);
 
     const toggleTheme = () => {
@@ -59,6 +60,8 @@ const Dashboard = () => {
                 return <Logs />;
             case "notifications":
                 return <Notifications />;
+            case "workspaceExplorer":
+                return <WorkspaceExplorer />;
             case "settings":
                 return <Settings />;
             case "help":
@@ -102,6 +105,14 @@ const Dashboard = () => {
                         >
                             <i className="fa-solid fa-folder-tree text-[13px] w-4 text-center"></i>
                             {t("fileOrganizer")}
+                        </button>
+
+                        <button
+                            onClick={() => setActiveTab("workspaceExplorer")}
+                            className={`w-full px-3.5 py-2.5 rounded-xl transition-all duration-150 flex items-center gap-3 text-xs font-bold cursor-pointer active:scale-95 ${activeTab === "workspaceExplorer" ? "bg-blue-600 text-white shadow-md shadow-blue-500/10" : "hover:bg-slate-800 text-slate-400 hover:text-slate-200"}`}
+                        >
+                            <i className="fa-solid fa-sitemap text-[13px] w-4 text-center"></i>
+                            {t("workspaceExplorer")}
                         </button>
 
                         <button

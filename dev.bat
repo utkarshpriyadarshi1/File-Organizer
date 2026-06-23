@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 
-title e-abhilekh - Development Mode
+title File Organizer - Development Mode
 echo Starting backend and frontend services in development mode...
 
 :: Add Maven to PATH if not already present
@@ -21,7 +21,7 @@ if exist "app.config.json" (
 )
 
 :: Start Spring Boot Backend in a separate window
-start "e-abhilekh Backend" cmd /c "set PATH=%PATH% && cd backend && mvn spring-boot:run"
+start "File Organizer Backend" cmd /c "set PATH=%PATH% && cd backend && mvn spring-boot:run"
 
 :: Prevent React dev server from opening standard browser window
 set BROWSER=none

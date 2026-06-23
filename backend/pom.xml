@@ -8,11 +8,11 @@
         <version>3.4.3</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>ip.updev</groupId>
-    <artifactId>e-abhilekh</artifactId>
+    <groupId>in.updev</groupId>
+    <artifactId>file-organizer</artifactId>
     <version>0.0.7-SNAPSHOT</version>
-    <name>e-abhilekh</name>
-    <description>e-abhilekh - File Organizer Desktop App</description>
+    <name>file-organizer</name>
+    <description>File Organizer Desktop App</description>
     <url/>
     <licenses>
         <license/>

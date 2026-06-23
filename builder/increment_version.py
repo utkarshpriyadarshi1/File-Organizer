@@ -106,10 +106,8 @@ def main():
 
     # 4. Register version in existing SQLite databases
     db_paths = [
-        os.path.join(root_dir, "backend", "e-abhilekh.db"),
-        os.path.join(root_dir, "e-abhilekh.db"),
-        os.path.join(root_dir, "backend", "fboss.db"),
-        os.path.join(root_dir, "fboss.db")
+        os.path.join(root_dir, "backend", "file-organizer.db"),
+        os.path.join(root_dir, "file-organizer.db")
     ]
     for db_path in db_paths:
         if os.path.exists(db_path):
