@@ -137,55 +137,36 @@ const Notifications = () => {
     };
 
     return (
-        <div className="space-y-6 max-w-6xl mx-auto">
-            {/* Header Banner */}
-            <div className="bg-gradient-to-r from-slate-800 via-indigo-900 to-slate-900 rounded-3xl p-6 md:p-8 text-white shadow-md relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="absolute -right-16 -top-16 w-48 h-48 rounded-full bg-indigo-500/10 blur-2xl"></div>
-                
-                <div className="space-y-2 relative z-10">
-                    <h2 className="text-2xl md:text-3xl font-black tracking-tight">System Notification Center</h2>
-                    <p className="text-sm text-indigo-200 font-medium">History of all operations, alerts, warnings, and background updates.</p>
-                </div>
-
-                <div className="flex gap-2 relative z-10">
-                    <button
-                        onClick={clearAllNotifications}
-                        disabled={notificationsHistory.length === 0}
-                        className="bg-white/10 hover:bg-white/20 active:scale-95 text-white border border-white/10 text-xs font-bold px-4 py-2.5 rounded-xl transition-all cursor-pointer disabled:opacity-50"
-                    >
-                        Clear All History
-                    </button>
-                </div>
-            </div>
+        <div className="space-y-4 max-w-6xl mx-auto">
 
             {/* Metrics Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div className="bg-white p-4 rounded-2xl border border-gray-150 shadow-sm">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
+                <div className="bg-white p-3 rounded-xl border border-gray-150 shadow-sm text-left">
                     <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Total Received</p>
-                    <p className="text-xl font-black text-gray-800 mt-1">{stats.total}</p>
+                    <p className="text-lg font-black text-gray-800 mt-0.5">{stats.total}</p>
                 </div>
-                <div className="bg-white p-4 rounded-2xl border border-gray-150 shadow-sm">
+                <div className="bg-white p-3 rounded-xl border border-gray-150 shadow-sm text-left">
                     <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">Success Actions</p>
-                    <p className="text-xl font-black text-emerald-600 mt-1">{stats.success}</p>
+                    <p className="text-lg font-black text-emerald-600 mt-0.5">{stats.success}</p>
                 </div>
-                <div className="bg-white p-4 rounded-2xl border border-gray-150 shadow-sm">
+                <div className="bg-white p-3 rounded-xl border border-gray-150 shadow-sm text-left">
                     <p className="text-[9px] font-bold text-rose-600 uppercase tracking-wider">Failures/Errors</p>
-                    <p className="text-xl font-black text-rose-600 mt-1">{stats.error}</p>
+                    <p className="text-lg font-black text-rose-600 mt-0.5">{stats.error}</p>
                 </div>
-                <div className="bg-white p-4 rounded-2xl border border-gray-150 shadow-sm">
+                <div className="bg-white p-3 rounded-xl border border-gray-150 shadow-sm text-left">
                     <p className="text-[9px] font-bold text-amber-600 uppercase tracking-wider">System Warnings</p>
-                    <p className="text-xl font-black text-amber-600 mt-1">{stats.warning}</p>
+                    <p className="text-lg font-black text-amber-600 mt-0.5">{stats.warning}</p>
                 </div>
-                <div className="bg-white p-4 rounded-2xl border border-gray-150 shadow-sm col-span-2 md:col-span-1">
+                <div className="bg-white p-3 rounded-xl border border-gray-150 shadow-sm col-span-2 md:col-span-1 text-left">
                     <p className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">Info Updates</p>
-                    <p className="text-xl font-black text-blue-600 mt-1">{stats.info}</p>
+                    <p className="text-lg font-black text-blue-600 mt-0.5">{stats.info}</p>
                 </div>
             </div>
 
             {/* Search and Filters */}
-            <div className="bg-white p-4 rounded-2xl border border-gray-150 shadow-sm flex flex-col md:flex-row gap-3 items-center justify-between">
+            <div className="bg-white p-3 rounded-xl border border-gray-150 shadow-sm flex flex-col md:flex-row gap-3 items-center justify-between">
                 {/* Search Bar */}
-                <div className="relative flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 w-full md:max-w-md">
+                <div className="relative flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 w-full md:max-w-md">
                     <i className="fa-solid fa-magnifying-glass text-slate-400 text-xs mr-2"></i>
                     <input 
                         type="text"
@@ -196,21 +177,34 @@ const Notifications = () => {
                     />
                 </div>
 
-                {/* Filter Tabs */}
-                <div className="flex gap-1.5 overflow-x-auto w-full md:w-auto shrink-0 pb-1 md:pb-0">
-                    {["ALL", "INFO", "SUCCESS", "WARNING", "ERROR"].map(type => (
-                        <button
-                            key={type}
-                            onClick={() => setFilter(type)}
-                            className={`text-[10px] font-bold px-3.5 py-2 rounded-lg border transition-all cursor-pointer ${
-                                filter === type 
-                                    ? "bg-slate-900 text-white border-slate-900" 
-                                    : "bg-white text-gray-505 border-gray-200 hover:bg-gray-50"
-                            }`}
-                        >
-                            {type}
-                        </button>
-                    ))}
+                {/* Filter & Actions Wrapper */}
+                <div className="flex flex-wrap gap-2.5 items-center w-full md:w-auto shrink-0 justify-between md:justify-end">
+                    {/* Filter Tabs */}
+                    <div className="flex gap-1.5 overflow-x-auto">
+                        {["ALL", "INFO", "SUCCESS", "WARNING", "ERROR"].map(type => (
+                            <button
+                                key={type}
+                                onClick={() => setFilter(type)}
+                                className={`text-[10px] font-bold px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                                    filter === type 
+                                        ? "bg-slate-900 text-white border-slate-900 font-extrabold" 
+                                        : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"
+                                }`}
+                            >
+                                {type}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Action button */}
+                    <button
+                        onClick={clearAllNotifications}
+                        disabled={notificationsHistory.length === 0}
+                        className="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-100 hover:border-rose-200 text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer disabled:opacity-50 active:scale-95 shrink-0"
+                    >
+                        <i className="fa-solid fa-trash-can mr-1"></i>
+                        Clear History
+                    </button>
                 </div>
             </div>
 

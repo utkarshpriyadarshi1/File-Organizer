@@ -228,16 +228,6 @@ const Dashboard = () => {
                             <i className="fa-solid fa-sliders text-base text-teal-600"></i>
                         </button>
 
-                        {/* console log view button */}
-                        <button
-                            onClick={() => {
-                                setSettingsSubTab("logs");
-                                setActiveTab("settings");
-                            }}
-                            className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all duration-150 flex items-center justify-center cursor-pointer border border-gray-200 dark:border-gray-750 shadow-sm active:scale-95"
-                        >
-                            <i className="fa-solid fa-terminal text-base text-indigo-600"></i>
-                        </button>
 
                         {/* help section button */}
                         <button
@@ -250,7 +240,7 @@ const Dashboard = () => {
                 </header>
 
                 {/* Active Component Area */}
-                <div className="flex-grow p-6 overflow-y-auto">
+                <div className="flex-grow p-4 overflow-y-auto">
                     {renderComponent()}
                 </div>
             </div>

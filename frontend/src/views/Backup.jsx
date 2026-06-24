@@ -72,14 +72,9 @@ const Backup = () => {
     };
 
     return (
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 text-center space-y-6 flex flex-col justify-between h-full shadow-sm">
+        <div className="bg-white p-4 rounded-2xl border border-gray-100 text-center space-y-4 flex flex-col justify-between h-full shadow-sm">
             <div>
-                <h2 className="text-xl font-extrabold text-gray-800 flex items-center justify-center gap-2">
-                    <i className="fa-solid fa-shield-halved text-amber-550"></i>
-                    Incremental Backup Manager
-                </h2>
-                
-                <div className="space-y-4 text-left mt-6">
+                <div className="space-y-4 text-left mt-0">
                     <div>
                         <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5 flex items-center gap-1.5">
                             <i className="fa-solid fa-right-from-bracket text-blue-500"></i>
@@ -128,7 +123,7 @@ const Backup = () => {
                 </div>
             </div>
 
-            <div className="flex gap-2 mt-4">
+            <div className="flex gap-2 mt-2">
                 <button 
                     onClick={startBackup} 
                     className="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-white font-semibold text-xs py-3 rounded-xl shadow-md transition-all duration-150 flex items-center justify-center gap-1.5"

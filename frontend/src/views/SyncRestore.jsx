@@ -164,17 +164,17 @@ const SyncRestore = () => {
     };
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
             
             {/* Folder Synchronization Panel */}
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 flex flex-col justify-between shadow-sm">
+            <div className="bg-white p-4 rounded-2xl border border-gray-100 flex flex-col justify-between shadow-sm">
                 <div>
-                    <h3 className="text-xl font-extrabold text-gray-800 mb-6 flex items-center gap-2">
-                        <i className="fa-solid fa-arrows-rotate text-blue-600"></i>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
+                        <i className="fa-solid fa-arrows-rotate text-blue-500"></i>
                         Sync Folders
                     </h3>
                     
-                    <div className="space-y-4 mb-6">
+                    <div className="space-y-4 mb-4">
                         <div>
                             <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5 flex items-center gap-1.5">
                                 <i className="fa-solid fa-right-from-bracket text-blue-500"></i>
@@ -308,10 +308,10 @@ const SyncRestore = () => {
             </div>
 
             {/* Versioned Restore Panel */}
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 flex flex-col justify-between shadow-sm">
+            <div className="bg-white p-4 rounded-2xl border border-gray-100 flex flex-col justify-between shadow-sm">
                 <div>
-                    <h3 className="text-xl font-extrabold text-gray-800 mb-6 flex items-center gap-2">
-                        <i className="fa-solid fa-clock-rotate-left text-indigo-600"></i>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
+                        <i className="fa-solid fa-clock-rotate-left text-indigo-500"></i>
                         Version Restore
                     </h3>
                     

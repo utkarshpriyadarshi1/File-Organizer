@@ -187,51 +187,41 @@ const Tasks = () => {
     }
 
     return (
-        <div className="max-w-6xl mx-auto space-y-8 mt-4 pb-12">
-
-            {/* Header */}
-            <div className="flex justify-between items-center bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
-                <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl shadow-inner">
-                        <i className="fa-solid fa-list-check"></i>
-                    </div>
-                    <div>
-                        <h2 className="text-2xl font-black text-gray-800">Tasks</h2>
-                        <p className="text-xs text-gray-500 font-medium mt-0.5">Monitor and control your system's background operations</p>
-                    </div>
-                </div>
-                <button
-                    onClick={() => {
-                        syncActiveTasks();
-                        fetchHistory();
-                    }}
-                    className="p-3 bg-gray-50 hover:bg-gray-100 hover:shadow-sm text-gray-600 rounded-xl transition-all cursor-pointer flex items-center gap-2 text-xs font-bold active:scale-95 border border-gray-200"
-                >
-                    <i className="fa-solid fa-arrows-rotate"></i>
-                    Refresh All
-                </button>
-            </div>
+        <div className="max-w-6xl mx-auto space-y-4 mt-0 pb-12">
 
             {/* Active Task Control Center */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-150">
-                <div className="flex justify-between items-start mb-6">
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-150">
+                <div className="flex justify-between items-start mb-4">
                     <div>
-                        <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
                             <i className="fa-solid fa-circle-notch text-blue-500 animate-spin-slow"></i>
                             Active Tasks
                         </h3>
-                        <p className="text-xs text-gray-500 mt-1">Manage active or queued background operations</p>
+                        <p className="text-[10px] text-gray-500 mt-0.5">Manage active or queued background operations</p>
                     </div>
 
-                    {selectedTasks.length > 0 && (
+                    <div className="flex gap-2">
                         <button
-                            onClick={handleBulkCancel}
-                            className="bg-red-500 hover:bg-red-600 active:scale-95 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 shadow-sm border border-red-600"
+                            onClick={() => {
+                                syncActiveTasks();
+                                fetchHistory();
+                            }}
+                            className="p-2 bg-gray-55 bg-gray-50 hover:bg-gray-100 hover:shadow-sm text-gray-600 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 text-xs font-bold active:scale-95 border border-gray-200"
                         >
-                            <i className="fa-solid fa-ban"></i>
-                            Force Cancel Selected ({selectedTasks.length})
+                            <i className="fa-solid fa-arrows-rotate"></i>
+                            Refresh All
                         </button>
-                    )}
+
+                        {selectedTasks.length > 0 && (
+                            <button
+                                onClick={handleBulkCancel}
+                                className="bg-red-550 bg-red-500 hover:bg-red-650 hover:bg-red-600 active:scale-95 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm border border-red-650"
+                            >
+                                <i className="fa-solid fa-ban"></i>
+                                Cancel Selected ({selectedTasks.length})
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 {/* Filters and Sorting for Active Tasks */}
@@ -362,13 +352,13 @@ const Tasks = () => {
             </div>
 
             {/* Execution & Notification History */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-150">
-                <div className="mb-6">
-                    <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-150">
+                <div className="mb-4">
+                    <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
                         <i className="fa-solid fa-clock-rotate-left text-indigo-500"></i>
                         Task History
                     </h3>
-                    <p className="text-xs text-gray-500 mt-1">Review historical completed task logs and their results</p>
+                    <p className="text-[10px] text-gray-500 mt-0.5">Review historical completed task logs and their results</p>
                 </div>
 
                 {/* Filters, Sorting, and Searching for History */}

@@ -159,16 +159,10 @@ const WorkspaceExplorer = () => {
     }, [isVirtual]);
 
     return (
-        <div className="max-w-4xl mx-auto mt-6 space-y-6">
-            <div className="bg-white p-6 rounded-2xl shadow border border-gray-150 text-left">
-                <h2 className="text-3xl font-extrabold text-gray-800 flex items-center gap-2.5 mb-2">
-                    <i className="fa-solid fa-folder-tree text-blue-600"></i>
-                    {t("workspaceExplorer")}
-                </h2>
-                <p className="text-xs text-gray-500 mb-6 font-bold">{t("workspaceExplorerDesc")}</p>
-
+        <div className="max-w-4xl mx-auto mt-0 space-y-4">
+            <div className="bg-white p-4 rounded-xl border border-gray-150 text-left">
                 {/* Directory Selector Panel */}
-                <div className="flex flex-col md:flex-row gap-3 mb-6">
+                <div className="flex flex-col md:flex-row gap-3 mb-4">
                     <div className="flex-grow flex gap-2">
                         <input 
                             type="text" 
