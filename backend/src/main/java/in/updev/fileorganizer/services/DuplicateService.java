@@ -34,7 +34,7 @@ public class DuplicateService {
     private final IgnoreRuleRepository ignoreRuleRepository;
 
     public String findDuplicates(String folderPath) {
-        return backgroundTaskManager.submitTask(TaskType.DUPLICATE_SCAN, (taskId, reporter) -> {
+        return backgroundTaskManager.submitTask(TaskType.DUPLICATE_SCAN, folderPath, null, "Scan for Duplicate Files", (taskId, reporter) -> {
             Path rootPath = Paths.get(folderPath);
             if (!Files.exists(rootPath) || !Files.isDirectory(rootPath)) {
                 throw new IllegalArgumentException("Invalid folder path.");
@@ -241,7 +241,8 @@ public class DuplicateService {
     }
 
     public String removeDuplicates(List<String> filesToDelete, boolean dryRun) {
-        return backgroundTaskManager.submitTask(TaskType.DUPLICATE_CLEAN, (taskId, reporter) -> {
+        String actionDetails = (dryRun ? "Dry Run: " : "") + "Clean Duplicate Files (" + filesToDelete.size() + " files)";
+        return backgroundTaskManager.submitTask(TaskType.DUPLICATE_CLEAN, null, null, actionDetails, (taskId, reporter) -> {
             int total = filesToDelete.size();
             int count = 0;
 

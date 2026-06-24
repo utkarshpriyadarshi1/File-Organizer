@@ -24,7 +24,11 @@ public class BackupService {
     private final SecureStorageService secureStorageService;
 
     public String createBackup(String sourceFolder, String backupFolder) {
-        return backgroundTaskManager.submitTask(TaskType.BACKUP, (taskId, reporter) -> {
+        return createBackup(sourceFolder, backupFolder, "Full Backup");
+    }
+
+    public String createBackup(String sourceFolder, String backupFolder, String actionDetails) {
+        return backgroundTaskManager.submitTask(TaskType.BACKUP, sourceFolder, backupFolder, actionDetails, (taskId, reporter) -> {
             Path sourcePath = Paths.get(sourceFolder);
             Path backupPath = Paths.get(backupFolder);
             Files.createDirectories(backupPath);
@@ -108,6 +112,6 @@ public class BackupService {
     }
 
     public String updateBackup(String sourceFolder, String backupFolder) {
-        return createBackup(sourceFolder, backupFolder);
+        return createBackup(sourceFolder, backupFolder, "Incremental Backup Update");
     }
 }

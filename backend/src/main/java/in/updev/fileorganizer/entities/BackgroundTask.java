@@ -35,6 +35,15 @@ public class BackgroundTask implements Serializable {
     @Column(name = "report_file_path", columnDefinition = "TEXT")
     private String reportFilePath;
 
+    @Column(name = "source_path", columnDefinition = "TEXT")
+    private String sourcePath;
+
+    @Column(name = "destination_path", columnDefinition = "TEXT")
+    private String destinationPath;
+
+    @Column(name = "action_details", columnDefinition = "TEXT")
+    private String actionDetails;
+
     @Column(name = "created_at", nullable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();

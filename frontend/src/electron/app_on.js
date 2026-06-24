@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, Tray, Menu } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage } = require("electron");
 const path = require("path");
 
 let mainWindow = null;
@@ -6,6 +6,12 @@ let tray = null;
 let statusInterval = null;
 let isOffline = false;
 let activeTaskIds = [];
+
+const TRAY_ICONS = {
+    idle: nativeImage.createFromDataURL("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PScwIDAgNTEyIDUxMicgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyB3aWR0aD0nMzInIGhlaWdodD0nMzInPjxwYXRoIGZpbGw9JyMzYjgyZjYnIGQ9J002NCAzMkMyOC43IDMyIDAgNjAuNyAwIDk2djY0YzAgMzUuMyAyOC43IDY0IDY0IDY0SDQ0OGMzNS4zIDAgNjQtMjguNyA2NC02NFY5NmMwLTM1LjMtMjguNy02NC02NC02NEg2NHptMjgwIDcyYTI0IDI0IDAgMSAxIDAgNDggMjQgMjQgMCAxIDEgMC00OHptNDggMjRhMjQgMjQgMCAxIDEgNDggMCAyNCAyNCAwIDEgMS00OCAwek02NCAyODhjLTM1LjMgMC02NCAyOC43LTY0IDY0djY0YzAgMzUuMyAyOC43IDY0IDY0IDY0SDQ0OGMzNS4zIDAgNjQtMjguNyA2NC02NFYzNTJjMC0zNS4zLTI4LjctNjQtNjQtNjRINjR6bTI4MCA3MmEyNCAyNCAwIDEgMSAwIDQ4IDI0IDI0IDAgMSAxIDAtNDh6bTQ4IDI0YTI0IDI0IDAgMSAxIDQ4IDAgMjQgMjQgMCAxIDEtNDggMHonLz48L3N2Zz4="),
+    busy: nativeImage.createFromDataURL("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNTEyIDUxMiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB3aWR0aD0iMzIiIGhlaWdodD0iMzIiPjxwYXRoIGZpbGw9IiNmNTllMGIiIGQ9Ik02NCAzMkMyOC43IDMyIDAgNjAuNyAwIDk2djY0YzAgMzUuMyAyOC43IDY0IDY0IDY0SDQ0OGMzNS4zIDAgNjQtMjguNyA2NC02NFY5NmMwLTM1LjMtMjguNy02NC02NC02NEg2NHptMjgwIDcyYTI0IDI0IDAgMSAxIDAgNDggMjQgMjQgMCAxIDEgMC00OHptNDggMjRhMjQgMjQgMCAxIDEgNDggMCAyNCAyNCAwIDEgMS00OCAwek02NCAyODhjLTM1LjMgMC02NCAyOC43LTY0IDY0djY0YzAgMzUuMyAyOC43IDY0IDY0IDY0SDQ0OGMzNS4zIDAgNjQtMjguNyA2NC02NFYzNTJjMC0zNS4zLTI4LjctNjQtNjQtNjRINjR6bTI4MCA3MmEyNCAyNCAwIDEgMSAwIDQ4IDI0IDI0IDAgMSAxIDAtNDh6bTQ4IDI0YTI0IDI0IDAgMSAxIDQ4IDAgMjQgMjQgMCAxIDEtNDggMHoiLz48L3N2Zz4="),
+    offline: nativeImage.createFromDataURL("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNTEyIDUxMiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB3aWR0aD0iMzIiIGhlaWdodD0iMzIiPjxwYXRoIGZpbGw9IiM5NGEzYjgiIGQ9Ik02NCAzMkMyOC43IDMyIDAgNjAuNyAwIDk2djY0YzAgMzUuMyAyOC43IDY0IDY0IDY0SDQ0OGMzNS4zIDAgNjQtMjguNyA2NC02NFY5NmMwLTM1LjMtMjguNy02NC02NC02NEg2NHptMjgwIDcyYTI0IDI0IDAgMSAxIDAgNDggMjQgMjQgMCAxIDEgMC00OHptNDggMjRhMjQgMjQgMCAxIDEgNDggMCAyNCAyNCAwIDEgMS00OCAwek02NCAyODhjLTM1LjMgMC02NCAyOC43LTY0IDY0djY0YzAgMzUuMyAyOC43IDY0IDY0IDY0SDQ0OGMzNS4zIDAgNjQtMjguNyA2NC02NFYzNTJjMC0zNS4zLTI4LjctNjQtNjQtNjRINjR6bTI4MCA3MmEyNCAyNCAwIDEgMSAwIDQ4IDI0IDI0IDAgMSAxIDAtNDh6bTQ4IDI0YTI0IDI0IDAgMSAxIDQ4IDAgMjQgMjQgMCAxIDEtNDggMHoiLz48L3N2Zz4=")
+};
 
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
@@ -44,11 +50,7 @@ if (!gotTheLock) {
         });
 
         // Initialize System Task Tray
-        const iconPath = app.isPackaged 
-            ? path.join(__dirname, "../../build/favicon.ico") 
-            : path.join(__dirname, "../../public/favicon.ico");
-
-        tray = new Tray(iconPath);
+        tray = new Tray(TRAY_ICONS.idle);
         tray.setToolTip("File Organizer Control Client");
 
         tray.on("double-click", () => {
@@ -98,6 +100,14 @@ async function updateTrayMenu() {
         isOffline = false;
         const activeCount = activeTasks.length;
         activeTaskIds = activeTasks.map(t => t.id).filter(Boolean);
+
+        if (tray) {
+            if (activeCount > 0) {
+                tray.setImage(TRAY_ICONS.busy);
+            } else {
+                tray.setImage(TRAY_ICONS.idle);
+            }
+        }
 
         const statusLabel = activeCount > 0 
             ? `App Status: Processing (${activeCount}) Tasks`
@@ -258,6 +268,9 @@ async function updateTrayMenu() {
     } catch (error) {
         isOffline = true;
         activeTaskIds = [];
+        if (tray) {
+            tray.setImage(TRAY_ICONS.offline);
+        }
 
         const template = [
             { label: "App Status: Offline / Connecting...", enabled: false },

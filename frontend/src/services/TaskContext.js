@@ -100,9 +100,15 @@ export const TaskProvider = ({ children }) => {
         setTimeout(() => dismissToast(id), 6000);
 
         let title = "System Notification";
-        if (type === "success") title = "Action Completed";
-        else if (type === "error") title = "Error Occurred";
-        else if (type === "warning") title = "System Warning";
+        if (metadata && metadata.actionDetails) {
+            title = metadata.actionDetails;
+        } else if (type === "success") {
+            title = "Action Completed";
+        } else if (type === "error") {
+            title = "Error Occurred";
+        } else if (type === "warning") {
+            title = "System Warning";
+        }
         addNotification(message, title, type, metadata);
     };
 
@@ -126,7 +132,10 @@ export const TaskProvider = ({ children }) => {
                         progress: 0.0,
                         summary: task.summary,
                         message: task.summary,
-                        createdAt: task.createdAt
+                        createdAt: task.createdAt,
+                        sourcePath: task.sourcePath,
+                        destinationPath: task.destinationPath,
+                        actionDetails: task.actionDetails
                     };
                 });
                 setActiveTasks(tasksObj);
@@ -180,7 +189,17 @@ export const TaskProvider = ({ children }) => {
                             const toastType = data.status === TaskStatus.FAILED 
                                 ? "error" 
                                 : (data.status === TaskStatus.COMPLETED_WITH_FAILURES ? "warning" : "success");
-                            addToast(`Task ${data.taskType} ${data.status.replace(/_/g, " ")}: ${data.message}`, toastType, { taskId: data.taskId, taskType: data.taskType });
+                            const toastMsg = data.actionDetails 
+                                ? `${data.actionDetails} - ${data.status.replace(/_/g, " ")}: ${data.message}`
+                                : `Task ${data.taskType} ${data.status.replace(/_/g, " ")}: ${data.message}`;
+                            
+                            addToast(toastMsg, toastType, {
+                                taskId: data.taskId,
+                                taskType: data.taskType,
+                                sourcePath: data.sourcePath,
+                                destinationPath: data.destinationPath,
+                                actionDetails: data.actionDetails
+                            });
                         } else {
                             setActiveTasks(prev => {
                                 const taskData = {

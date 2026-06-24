@@ -27,7 +27,10 @@ const Notifications = () => {
     const filteredNotifications = notificationsHistory.filter(n => {
         const matchesFilter = filter === "ALL" || n.type === filter.toLowerCase();
         const matchesSearch = n.message.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                              (n.title && n.title.toLowerCase().includes(searchQuery.toLowerCase()));
+                              (n.title && n.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                              (n.metadata?.actionDetails && n.metadata.actionDetails.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                              (n.metadata?.sourcePath && n.metadata.sourcePath.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                              (n.metadata?.destinationPath && n.metadata.destinationPath.toLowerCase().includes(searchQuery.toLowerCase()));
         return matchesFilter && matchesSearch;
     });
 
@@ -281,8 +284,17 @@ const Notifications = () => {
                                     {/* Task Metadata Info */}
                                     {notification.metadata && (
                                         <div className="bg-gray-50 p-2.5 rounded-lg font-mono text-[10px] text-gray-600 space-y-1">
+                                            {notification.metadata.actionDetails && (
+                                                <div><span className="font-bold">Action:</span> {notification.metadata.actionDetails}</div>
+                                            )}
+                                            {notification.metadata.sourcePath && (
+                                                <div><span className="font-bold">Source Path:</span> {notification.metadata.sourcePath}</div>
+                                            )}
+                                            {notification.metadata.destinationPath && (
+                                                <div><span className="font-bold">Destination Path:</span> {notification.metadata.destinationPath}</div>
+                                            )}
                                             {notification.metadata.taskId && (
-                                                <div><span className="font-bold">Task ID:</span> {notification.metadata.taskId}</div>
+                                                <div className="text-gray-400"><span className="font-bold">Task ID:</span> {notification.metadata.taskId}</div>
                                             )}
                                             {notification.metadata.taskType && (
                                                 <div><span className="font-bold">Task Type:</span> {notification.metadata.taskType}</div>

@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
+import { FrontendLogger } from "../services/FrontendLogger";
 
 const Logs = () => {
     const [logs, setLogs] = useState([]);
     const [dbLogs, setDbLogs] = useState([]);
+    const [frontendLogs, setFrontendLogs] = useState([]);
     const consoleContainerRef = useRef(null);
     const consoleEndRef = useRef(null);
 
@@ -32,13 +34,26 @@ const Logs = () => {
         return () => socket.close();
     }, []);
 
-    // Fetch initial diagnostic logs from database
+    // Fetch initial diagnostic logs from database and listen to frontend logs
     useEffect(() => {
         axios.get("http://localhost:8080/api/logs")
             .then(response => {
                 setDbLogs(response.data || []);
             })
             .catch(error => console.error("Error fetching logs:", error));
+
+        setFrontendLogs(FrontendLogger.getLogs());
+        const unsubscribe = FrontendLogger.subscribe((newLog) => {
+            setFrontendLogs((prev) => {
+                const next = [...prev, newLog];
+                if (next.length > 1000) {
+                    return next.slice(next.length - 1000);
+                }
+                return next;
+            });
+        });
+
+        return () => unsubscribe();
     }, []);
 
     // Scroll to bottom when logs append (if sorting is oldToNew)
@@ -46,7 +61,7 @@ const Logs = () => {
         if (sortOrder === "oldToNew" && consoleEndRef.current && !showScrollBottom) {
             consoleEndRef.current.scrollIntoView({ behavior: "smooth" });
         }
-    }, [logs, dbLogs, sortOrder, showScrollBottom]);
+    }, [logs, dbLogs, frontendLogs, sortOrder, showScrollBottom]);
 
     const handleScroll = () => {
         if (!consoleContainerRef.current) return;
@@ -66,6 +81,8 @@ const Logs = () => {
     const clearConsole = () => {
         setLogs([]);
         setDbLogs([]);
+        setFrontendLogs([]);
+        FrontendLogger.clear();
     };
 
     const downloadLogs = () => {
@@ -133,7 +150,7 @@ const Logs = () => {
         };
     };
 
-    const rawCombinedLogs = [...dbLogs, ...logs].map(formatLog);
+    const rawCombinedLogs = [...dbLogs.map(formatLog), ...logs.map(formatLog), ...frontendLogs];
     const logTypes = Array.from(new Set(rawCombinedLogs.map(l => l.type).filter(Boolean)));
 
     const getFilteredLogs = () => {

@@ -3,7 +3,6 @@ import Overview from "./Overview";
 import Organizer from "./Organizer";
 import Backup from "./Backup";
 import Duplicates from "./Duplicates";
-import Logs from "./Logs";
 import Tasks from "./Tasks";
 import Settings from "./Settings";
 import SyncRestore from "./SyncRestore";
@@ -21,6 +20,7 @@ const Dashboard = () => {
         document.title = `${appConfig.heading} - v${appConfig.version}`;
     }, []);
     const [activeTab, setActiveTab] = useState("dashboard");
+    const [settingsSubTab, setSettingsSubTab] = useState("general");
     const { unreadCount, activeTasks } = useTasks();
     const { t } = useI18n();
     const activeTasksCount = Object.keys(activeTasks || {}).length;
@@ -56,14 +56,12 @@ const Dashboard = () => {
                 return <SyncRestore />;
             case "tasks":
                 return <Tasks />;
-            case "logs":
-                return <Logs />;
             case "notifications":
                 return <Notifications />;
             case "workspaceExplorer":
                 return <WorkspaceExplorer />;
             case "settings":
-                return <Settings />;
+                return <Settings defaultSubTab={settingsSubTab} />;
             case "help":
                 return <Help />;
             default:
@@ -159,14 +157,6 @@ const Dashboard = () => {
                         </button>
 
                         <button
-                            onClick={() => setActiveTab("logs")}
-                            className={`w-full px-3.5 py-2.5 rounded-xl transition-all duration-150 flex items-center gap-3 text-xs font-bold cursor-pointer active:scale-95 ${activeTab === "logs" ? "bg-blue-600 text-white shadow-md shadow-blue-500/10" : "hover:bg-slate-800 text-slate-400 hover:text-slate-200"}`}
-                        >
-                            <i className="fa-solid fa-terminal text-[13px] w-4 text-center"></i>
-                            {t("systemLogs")}
-                        </button>
-
-                        <button
                             onClick={() => setActiveTab("notifications")}
                             className={`w-full px-3.5 py-2.5 rounded-xl transition-all duration-150 flex items-center justify-between text-xs font-bold cursor-pointer active:scale-95 ${activeTab === "notifications" ? "bg-blue-600 text-white shadow-md shadow-blue-500/10" : "hover:bg-slate-800 text-slate-400 hover:text-slate-200"}`}
                         >
@@ -182,7 +172,10 @@ const Dashboard = () => {
                         </button>
 
                         <button
-                            onClick={() => setActiveTab("settings")}
+                            onClick={() => {
+                                setSettingsSubTab("general");
+                                setActiveTab("settings");
+                            }}
                             className={`w-full px-3.5 py-2.5 rounded-xl transition-all duration-150 flex items-center gap-3 text-xs font-bold cursor-pointer active:scale-95 ${activeTab === "settings" ? "bg-blue-600 text-white shadow-md shadow-blue-500/10" : "hover:bg-slate-800 text-slate-400 hover:text-slate-200"}`}
                         >
                             <i className="fa-solid fa-sliders text-[13px] w-4 text-center"></i>
@@ -226,7 +219,10 @@ const Dashboard = () => {
 
                         {/* Preferences/Setting button */}
                         <button
-                            onClick={() => setActiveTab("settings")}
+                            onClick={() => {
+                                setSettingsSubTab("general");
+                                setActiveTab("settings");
+                            }}
                             className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all duration-150 flex items-center justify-center cursor-pointer border border-gray-200 dark:border-gray-750 shadow-sm active:scale-95"
                         >
                             <i className="fa-solid fa-sliders text-base text-teal-600"></i>
@@ -234,7 +230,10 @@ const Dashboard = () => {
 
                         {/* console log view button */}
                         <button
-                            onClick={() => setActiveTab("logs")}
+                            onClick={() => {
+                                setSettingsSubTab("logs");
+                                setActiveTab("settings");
+                            }}
                             className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all duration-150 flex items-center justify-center cursor-pointer border border-gray-200 dark:border-gray-750 shadow-sm active:scale-95"
                         >
                             <i className="fa-solid fa-terminal text-base text-indigo-600"></i>

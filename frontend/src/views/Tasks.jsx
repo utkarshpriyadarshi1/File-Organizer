@@ -106,7 +106,10 @@ const Tasks = () => {
             const matchesType = historyFilterType === "ALL" || t.taskType === historyFilterType;
             const matchesStatus = historyFilterStatus === "ALL" || t.status === historyFilterStatus;
             const matchesSearch = !historySearch.trim() ||
-                t.summary.toLowerCase().includes(historySearch.toLowerCase()) ||
+                (t.summary && t.summary.toLowerCase().includes(historySearch.toLowerCase())) ||
+                (t.actionDetails && t.actionDetails.toLowerCase().includes(historySearch.toLowerCase())) ||
+                (t.sourcePath && t.sourcePath.toLowerCase().includes(historySearch.toLowerCase())) ||
+                (t.destinationPath && t.destinationPath.toLowerCase().includes(historySearch.toLowerCase())) ||
                 t.id.toLowerCase().includes(historySearch.toLowerCase());
             return matchesType && matchesStatus && matchesSearch;
         });
@@ -301,7 +304,27 @@ const Tasks = () => {
                                             {task.status}
                                         </span>
                                     </div>
-                                    <p className="text-[10px] text-gray-400 font-mono mt-1 truncate">ID: {task.id || task.taskId}</p>
+                                    {task.actionDetails && (
+                                        <p className="text-xs text-gray-800 font-bold mt-1">
+                                            <i className="fa-solid fa-play text-gray-405 mr-1.5"></i>
+                                            {task.actionDetails}
+                                        </p>
+                                    )}
+                                    {task.sourcePath && (
+                                        <p className="text-[11px] text-gray-600 mt-1 flex items-center gap-1">
+                                            <span className="font-semibold text-gray-400 text-[10px] uppercase">Src:</span>
+                                            <span className="bg-gray-100 px-1.5 py-0.5 rounded font-mono truncate">{task.sourcePath}</span>
+                                        </p>
+                                    )}
+                                    {task.destinationPath && (
+                                        <p className="text-[11px] text-gray-600 mt-0.5 flex items-center gap-1">
+                                            <span className="font-semibold text-gray-400 text-[10px] uppercase">Dest:</span>
+                                            <span className="bg-gray-100 px-1.5 py-0.5 rounded font-mono truncate">{task.destinationPath}</span>
+                                        </p>
+                                    )}
+                                    {!task.actionDetails && !task.sourcePath && !task.destinationPath && (
+                                        <p className="text-[10px] text-gray-400 font-mono mt-1 truncate">ID: {task.id || task.taskId}</p>
+                                    )}
                                     <p className="text-xs text-gray-600 mt-1 font-medium italic truncate">{task.summary || task.message || "Working..."}</p>
 
                                     {/* Real-time Progress Bar */}
@@ -470,7 +493,29 @@ const Tasks = () => {
                                             {task.status.replace(/_/g, " ")}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-4 text-gray-600 truncate max-w-xs">{task.summary}</td>
+                                    <td className="px-4 py-4 text-gray-605 max-w-md">
+                                        {task.actionDetails ? (
+                                            <div className="font-bold text-gray-800 mb-0.5">{task.actionDetails}</div>
+                                        ) : (
+                                            <div className="text-gray-800">{task.summary}</div>
+                                        )}
+                                        {task.sourcePath && (
+                                            <div className="text-[10px] text-gray-500 mt-1 flex flex-wrap items-center gap-1">
+                                                <span className="font-semibold text-gray-400 uppercase text-[9px]">Src:</span>
+                                                <span className="font-mono truncate bg-gray-50 px-1 py-0.2 rounded border border-gray-150 inline-block max-w-[200px]" title={task.sourcePath}>{task.sourcePath}</span>
+                                                {task.destinationPath && (
+                                                    <>
+                                                        <i className="fa-solid fa-arrow-right text-gray-300 text-[9px] mx-0.5"></i>
+                                                        <span className="font-semibold text-gray-400 uppercase text-[9px]">Dest:</span>
+                                                        <span className="font-mono truncate bg-gray-50 px-1 py-0.2 rounded border border-gray-150 inline-block max-w-[200px]" title={task.destinationPath}>{task.destinationPath}</span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
+                                        {task.actionDetails && task.summary && (
+                                            <div className="text-[10px] text-gray-400 italic mt-0.5">{task.summary}</div>
+                                        )}
+                                    </td>
                                     <td className="px-4 py-4 text-gray-500 min-w-[160px]">
                                         <span className="flex items-center gap-1.5 font-medium">
                                             <i className="fa-regular fa-clock text-slate-400 text-xs"></i>

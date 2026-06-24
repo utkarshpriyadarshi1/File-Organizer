@@ -34,22 +34,25 @@ public class RestoreService {
         FileVersion version = fileVersionRepository.findById(versionId)
                 .orElseThrow(() -> new IllegalArgumentException("File version not found: " + versionId));
 
-        return backgroundTaskManager.submitTask(TaskType.RESTORE, (taskId, reporter) -> {
+        String destPathStr = (targetPathOverride != null && !targetPathOverride.trim().isEmpty())
+                ? targetPathOverride.trim()
+                : version.getFile().getPath();
+        String actionDetails = "Restore version " + version.getVersionNumber() + " of " + (version.getFile() != null ? version.getFile().getName() : "file");
+
+        final String finalDestPathStr = destPathStr;
+
+        return backgroundTaskManager.submitTask(TaskType.RESTORE, version.getBackupPath(), destPathStr, actionDetails, (taskId, reporter) -> {
             Path backupFile = Paths.get(version.getBackupPath());
             if (!Files.exists(backupFile)) {
                 throw new IOException("Backup file does not exist at location: " + version.getBackupPath());
             }
 
-            String destPathStr = (targetPathOverride != null && !targetPathOverride.trim().isEmpty())
-                    ? targetPathOverride.trim()
-                    : version.getFile().getPath();
-
-            Path destination = Paths.get(destPathStr);
+            Path destination = Paths.get(finalDestPathStr);
 
             Map<String, Object> fileResult = new HashMap<>();
             fileResult.put("versionId", versionId);
             fileResult.put("backupPath", version.getBackupPath());
-            fileResult.put("destinationPath", destPathStr);
+            fileResult.put("destinationPath", finalDestPathStr);
 
             try {
                 // Restore copy & integrity verify
@@ -57,9 +60,9 @@ public class RestoreService {
                 fileResult.put("failed", false);
 
                 auditLogService.logAction("FILE_RESTORED", version.getFile(), 
-                        "Restored version " + version.getVersionNumber() + " to " + destPathStr);
+                        "Restored version " + version.getVersionNumber() + " to " + finalDestPathStr);
                 
-                logger.info("Restored version {} of file {} to {}", version.getVersionNumber(), version.getFile().getId(), destPathStr);
+                logger.info("Restored version {} of file {} to {}", version.getVersionNumber(), version.getFile().getId(), finalDestPathStr);
             } catch (Exception e) {
                 logger.error("Restore failed for version: {}", versionId, e);
                 fileResult.put("failed", true);

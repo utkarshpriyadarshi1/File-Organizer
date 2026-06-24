@@ -39,7 +39,8 @@ public class OrganizerService {
     private final PreferencesService preferencesService;
 
     public String organizeFiles(String sourceFolder, String destinationFolder, boolean dryRun) {
-        return backgroundTaskManager.submitTask(TaskType.ORGANIZE, (taskId, reporter) -> {
+        String actionDetails = (dryRun ? "Dry run: Organize " : "Organize ") + "files";
+        return backgroundTaskManager.submitTask(TaskType.ORGANIZE, sourceFolder, destinationFolder, actionDetails, (taskId, reporter) -> {
             Path sourcePath = Paths.get(sourceFolder);
             Path destPath = Paths.get(destinationFolder);
             if (!dryRun) {

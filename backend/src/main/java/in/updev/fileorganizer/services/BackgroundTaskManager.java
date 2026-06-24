@@ -43,6 +43,15 @@ public class BackgroundTaskManager {
     private final Queue<String> localTaskQueue = new ConcurrentLinkedQueue<>();
     private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
+    @lombok.Data
+    @lombok.AllArgsConstructor
+    private static class TaskMeta {
+        private String sourcePath;
+        private String destinationPath;
+        private String actionDetails;
+    }
+    private final Map<String, TaskMeta> taskMetaCache = new ConcurrentHashMap<>();
+
     @FunctionalInterface
     public interface TaskAction {
         void execute(String taskId, TaskProgressReporter reporter) throws Exception;
@@ -55,14 +64,25 @@ public class BackgroundTaskManager {
     }
 
     public String submitTask(TaskType taskType, TaskAction action) {
+        return submitTask(taskType, null, null, null, action);
+    }
+
+    public String submitTask(TaskType taskType, String sourcePath, String destinationPath, String actionDetails, TaskAction action) {
         String taskId = UUID.randomUUID().toString();
         
+        if (sourcePath != null || destinationPath != null || actionDetails != null) {
+            taskMetaCache.put(taskId, new TaskMeta(sourcePath, destinationPath, actionDetails));
+        }
+
         sqliteWriteQueueService.submitWrite(() -> {
             BackgroundTask task = BackgroundTask.builder()
                     .id(taskId)
                     .taskType(taskType)
                     .status(TaskStatus.QUEUED)
                     .summary("Waiting in queue...")
+                    .sourcePath(sourcePath)
+                    .destinationPath(destinationPath)
+                    .actionDetails(actionDetails)
                     .createdAt(LocalDateTime.now())
                     .build();
             backgroundTaskRepository.save(task);
@@ -145,6 +165,7 @@ public class BackgroundTaskManager {
                 } finally {
                     activeFutures.remove(finalTaskId);
                     taskCancellationManager.cleanCancellationKey(finalTaskId);
+                    taskMetaCache.remove(finalTaskId);
                 }
             });
 
@@ -230,7 +251,8 @@ public class BackgroundTaskManager {
     }
 
     public String executeReversalAction(String originalTaskId, String actionType, List<String> targetPaths) {
-        return submitTask(TaskType.REVERSAL, (taskId, reporter) -> {
+        String actionDetails = "Undo operations for task: " + originalTaskId;
+        return submitTask(TaskType.REVERSAL, null, null, actionDetails, (taskId, reporter) -> {
             if ("REVERT_MOVES".equals(actionType)) {
                 List<FileReversal> reversals = fileReversalRepository.findByTaskId(originalTaskId);
                 if (targetPaths != null && !targetPaths.isEmpty()) {
@@ -288,6 +310,14 @@ public class BackgroundTaskManager {
             payload.put("status", status.name());
             payload.put("progress", progress);
             payload.put("message", message);
+            
+            TaskMeta meta = taskMetaCache.get(taskId);
+            if (meta != null) {
+                payload.put("sourcePath", meta.getSourcePath());
+                payload.put("destinationPath", meta.getDestinationPath());
+                payload.put("actionDetails", meta.getActionDetails());
+            }
+            
             WebSocketHandler.broadcastMessage(objectMapper.writeValueAsString(payload));
         } catch (Exception e) {
             logger.error("Failed to broadcast task status", e);

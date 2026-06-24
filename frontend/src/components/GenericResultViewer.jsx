@@ -695,8 +695,22 @@ const GenericResultViewer = ({ task, onClose }) => {
                         <i className="fa-solid fa-file-waveform"></i>
                     </div>
                     <div>
-                        <h3 className="text-lg font-bold text-gray-800">Task Log Details</h3>
-                        <p className="text-xs text-gray-500 font-semibold">{task.taskType} • {task.id}</p>
+                        <h3 className="text-lg font-bold text-gray-800">
+                            {task.actionDetails || `${task.taskType} Operations`}
+                        </h3>
+                        {task.sourcePath ? (
+                            <p className="text-xs text-gray-500 font-semibold mt-0.5 flex flex-wrap items-center gap-1.5">
+                                <span className="bg-gray-100 px-1.5 py-0.5 rounded font-mono">{task.sourcePath}</span>
+                                {task.destinationPath && (
+                                    <>
+                                        <i className="fa-solid fa-arrow-right text-gray-300 text-[10px]"></i>
+                                        <span className="bg-gray-100 px-1.5 py-0.5 rounded font-mono">{task.destinationPath}</span>
+                                    </>
+                                )}
+                            </p>
+                        ) : (
+                            <p className="text-xs text-gray-500 font-semibold mt-0.5">Task Type: {task.taskType}</p>
+                        )}
                     </div>
                 </div>
             </div>

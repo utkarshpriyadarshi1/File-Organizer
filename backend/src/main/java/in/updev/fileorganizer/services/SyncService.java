@@ -46,7 +46,8 @@ public class SyncService {
         SyncJob job = syncJobRepository.findById(jobId)
                 .orElseThrow(() -> new IllegalArgumentException("Sync job not found: " + jobId));
 
-        return backgroundTaskManager.submitTask(TaskType.SYNC, (taskId, reporter) -> {
+        String actionDetails = "Sync Job: " + job.getJobName() + " (" + job.getSyncType().name() + ")";
+        return backgroundTaskManager.submitTask(TaskType.SYNC, job.getSourcePath(), job.getDestinationPath(), actionDetails, (taskId, reporter) -> {
             sqliteWriteQueueService.executeWrite(() -> {
                 job.setStatus("RUNNING");
                 return syncJobRepository.save(job);
