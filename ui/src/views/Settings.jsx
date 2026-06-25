@@ -4,11 +4,11 @@ import { useTasks } from "../services/TaskContext";
 import { useI18n } from "../services/I18nContext";
 import Logs from "./Logs";
 import { Card, Input, Button, Tabs, Select, Tag, Popconfirm, Spin, Space, Typography, Row, Col } from "../components/common";
-import { 
-    SlidersOutlined, 
-    DatabaseOutlined, 
-    CodeOutlined, 
-    FolderOpenOutlined, 
+import {
+    SlidersOutlined,
+    DatabaseOutlined,
+    CodeOutlined,
+    FolderOpenOutlined,
     SaveOutlined,
     GlobalOutlined,
     StopOutlined,
@@ -27,7 +27,7 @@ const { Text } = Typography;
 const Settings = ({ defaultSubTab }) => {
     const { addToast, selectFolder } = useTasks();
     const { language, changeLanguage, t } = useI18n();
-    
+
     // Sub-tab navigation
     const [activeSection, setActiveSection] = useState("general");
 
@@ -179,7 +179,7 @@ const Settings = ({ defaultSubTab }) => {
         if (e) e.preventDefault();
         const trimmed = newPattern.trim();
         if (!trimmed) return;
-        
+
         console.log(`[Settings] Requesting to add ignore rule pattern: "${trimmed}"`);
         try {
             const res = await axios.post("http://localhost:8080/api/settings/ignore-rules", { pattern: trimmed });
@@ -224,7 +224,7 @@ const Settings = ({ defaultSubTab }) => {
     const renderGeneralPreferences = () => (
         <div className="space-y-6 pt-2">
             {/* Default Scan Path Panel */}
-            <Card 
+            <Card
                 className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-md rounded-2xl text-left"
                 bodyStyle={{ padding: '20px' }}
                 title={
@@ -238,14 +238,14 @@ const Settings = ({ defaultSubTab }) => {
                 }
             >
                 <div className="flex flex-col sm:flex-row gap-2">
-                    <Input 
-                        value={defaultPath} 
+                    <Input
+                        value={defaultPath}
                         onChange={(e) => setDefaultPath(e.target.value)}
                         placeholder="No default directory configured"
                         className="bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 flex-grow font-mono font-bold text-slate-700 dark:text-slate-200"
                     />
                     <div className="flex gap-2 shrink-0">
-                        <Button 
+                        <Button
                             onClick={handleSelectDefaultFolder}
                             icon={<FolderOpenOutlined />}
                             className="h-full border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm active:scale-95 shrink-0"
@@ -253,7 +253,7 @@ const Settings = ({ defaultSubTab }) => {
                         >
                             {t("browse")}
                         </Button>
-                        <Button 
+                        <Button
                             type="primary"
                             onClick={handleSaveDefaultPath}
                             icon={<SaveOutlined />}
@@ -266,7 +266,7 @@ const Settings = ({ defaultSubTab }) => {
             </Card>
 
             {/* Language Preference Panel */}
-            <Card 
+            <Card
                 className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-md rounded-2xl text-left"
                 bodyStyle={{ padding: '20px' }}
                 title={
@@ -283,10 +283,9 @@ const Settings = ({ defaultSubTab }) => {
                     {[
                         { code: "en", label: t("english") || "English" },
                         { code: "hi", label: t("hindi") || "Hindi" },
-                        { code: "es", label: t("spanish") || "Spanish" },
-                        { code: "de", label: t("german") || "German" }
+
                     ].map(lang => (
-                        <Button 
+                        <Button
                             key={lang.code}
                             onClick={() => changeLanguage(lang.code)}
                             type={language === lang.code ? "primary" : "default"}
@@ -299,7 +298,7 @@ const Settings = ({ defaultSubTab }) => {
             </Card>
 
             {/* Custom Folder Layout Preference Panel */}
-            <Card 
+            <Card
                 className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-md rounded-2xl text-left"
                 bodyStyle={{ padding: '20px' }}
                 title={
@@ -314,13 +313,13 @@ const Settings = ({ defaultSubTab }) => {
             >
                 <div className="space-y-4">
                     <div className="flex flex-col sm:flex-row gap-2">
-                        <Input 
-                            value={layoutPattern} 
+                        <Input
+                            value={layoutPattern}
                             onChange={(e) => setLayoutPattern(e.target.value)}
                             placeholder="e.g. {fileType}/{yearMonth}"
                             className="bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 flex-grow font-mono font-bold text-slate-700 dark:text-slate-200"
                         />
-                        <Button 
+                        <Button
                             type="primary"
                             onClick={() => handleSavePreferences()}
                             icon={<SaveOutlined />}
@@ -353,7 +352,7 @@ const Settings = ({ defaultSubTab }) => {
             </Card>
 
             {/* Global Exclusions Panel */}
-            <Card 
+            <Card
                 className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-md rounded-2xl text-left"
                 bodyStyle={{ padding: '20px' }}
                 title={
@@ -368,14 +367,14 @@ const Settings = ({ defaultSubTab }) => {
             >
                 <div className="space-y-4">
                     <form onSubmit={handleAddIgnoreRule} className="flex flex-col sm:flex-row gap-2">
-                        <Input 
-                            value={newPattern} 
+                        <Input
+                            value={newPattern}
                             onChange={(e) => setNewPattern(e.target.value)}
                             placeholder="e.g. node_modules, .git, target, *.tmp"
                             className="bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 flex-grow font-bold text-slate-707 dark:text-slate-200"
                         />
-                        <Button 
-                            type="submit" 
+                        <Button
+                            type="submit"
                             icon={<PlusOutlined />}
                             className="h-full bg-blue-600 hover:bg-blue-750 text-white text-xs font-extrabold px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md shadow-blue-500/10 border-0 active:scale-95 shrink-0"
                         >
@@ -392,7 +391,7 @@ const Settings = ({ defaultSubTab }) => {
                             ) : (
                                 <div className="flex flex-wrap gap-2">
                                     {ignoreRules.map(rule => (
-                                        <Tag 
+                                        <Tag
                                             key={rule.id}
                                             closable
                                             onClose={() => handleDeleteIgnoreRule(rule.id, rule.pattern)}
@@ -412,7 +411,7 @@ const Settings = ({ defaultSubTab }) => {
             </Card>
 
             {/* Registered App Versions Panel */}
-            <Card 
+            <Card
                 className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-md rounded-2xl text-left"
                 bodyStyle={{ padding: '20px' }}
                 title={
@@ -447,7 +446,7 @@ const Settings = ({ defaultSubTab }) => {
     );
 
     const renderStorageAndCache = () => (
-        <Card 
+        <Card
             className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-md rounded-2xl text-left pt-2"
             bodyStyle={{ padding: '20px' }}
             title={
@@ -462,8 +461,8 @@ const Settings = ({ defaultSubTab }) => {
         >
             <div className="space-y-5">
                 <div className="flex gap-3 text-xs font-bold text-slate-600">
-                    <Select 
-                        onChange={(val) => setCacheFilter(val)} 
+                    <Select
+                        onChange={(val) => setCacheFilter(val)}
                         value={cacheFilter}
                         className="h-9 text-xs w-44"
                         options={[
@@ -474,8 +473,8 @@ const Settings = ({ defaultSubTab }) => {
                         ]}
                     />
 
-                    <Select 
-                        onChange={(val) => setCacheSort(val)} 
+                    <Select
+                        onChange={(val) => setCacheSort(val)}
                         value={cacheSort}
                         className="h-9 text-xs w-44"
                         options={[
@@ -499,7 +498,7 @@ const Settings = ({ defaultSubTab }) => {
                             let desc = "Temporary system logs, report metadata, or decryption cache dump files.";
                             let icon = <FolderOutlined style={{ color: '#94a3b8' }} />;
                             let bgIcon = "bg-slate-100 dark:bg-slate-800/40 text-slate-655";
-                            
+
                             if (c.folderName === "reports") {
                                 label = "Completed Reports Cache";
                                 desc = "Completed operations history report dumps, logs breakdown indexes.";
@@ -543,7 +542,7 @@ const Settings = ({ defaultSubTab }) => {
                                         cancelText="Cancel"
                                         okButtonProps={{ danger: true, type: 'primary' }}
                                     >
-                                        <Button 
+                                        <Button
                                             danger
                                             className="rounded-xl text-xs font-black px-4 h-9 flex items-center justify-center shadow-sm shrink-0 self-end sm:self-center"
                                         >
@@ -598,7 +597,7 @@ const Settings = ({ defaultSubTab }) => {
 
     return (
         <div className="max-w-4xl mx-auto space-y-4 text-left">
-            <Tabs 
+            <Tabs
                 activeKey={activeSection}
                 onChange={(key) => setActiveSection(key)}
                 items={tabItems}

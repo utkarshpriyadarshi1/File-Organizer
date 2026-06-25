@@ -3,26 +3,26 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useTasks } from "../services/TaskContext";
 import GenericResultViewer from "../components/GenericResultViewer";
-import { 
-    Card, 
-    Row, 
-    Col, 
-    Input, 
-    Button, 
-    Table, 
-    Tag, 
-    Progress, 
-    Spin, 
-    Badge, 
+import {
+    Card,
+    Row,
+    Col,
+    Input,
+    Button,
+    Table,
+    Tag,
+    Progress,
+    Spin,
+    Badge,
     Typography,
     Statistic
 } from "../components/common";
-import { 
-    SyncOutlined, 
-    FolderOpenOutlined, 
-    CopyOutlined, 
-    SafetyCertificateOutlined, 
-    UnorderedListOutlined, 
+import {
+    SyncOutlined,
+    FolderOpenOutlined,
+    CopyOutlined,
+    SafetyCertificateOutlined,
+    UnorderedListOutlined,
     CheckCircleOutlined,
     CloseCircleOutlined,
     ClockCircleOutlined,
@@ -103,7 +103,7 @@ const Overview = ({ setActiveTab }) => {
             ]);
 
             // Sort and grab top 5 recent tasks
-            const sortedHistory = [...historyRes.data].sort((a, b) => 
+            const sortedHistory = [...historyRes.data].sort((a, b) =>
                 new Date(b.completedAt || b.createdAt) - new Date(a.completedAt || a.createdAt)
             );
             setRecentLogs(sortedHistory.slice(0, 5));
@@ -112,12 +112,12 @@ const Overview = ({ setActiveTab }) => {
             let reports = { size: "0 B", count: 0 };
             let temp = { size: "0 B", count: 0 };
             let logs = { size: "0 B", count: 0 };
-            
+
             if (Array.isArray(cacheRes.data)) {
                 cacheRes.data.forEach(folder => {
-                    const mapped = { 
-                        size: folder.sizeFormatted || `${(folder.totalSize / 1024).toFixed(1)} KB`, 
-                        count: folder.fileCount 
+                    const mapped = {
+                        size: folder.sizeFormatted || `${(folder.totalSize / 1024).toFixed(1)} KB`,
+                        count: folder.fileCount
                     };
                     if (folder.folderName === "reports") reports = mapped;
                     if (folder.folderName === "temp") temp = mapped;
@@ -146,7 +146,7 @@ const Overview = ({ setActiveTab }) => {
 
     useEffect(() => {
         loadDashboardData();
-        
+
         axios.get("http://localhost:8080/api/settings/default-path")
             .then(res => {
                 if (res.data.defaultPath) {
@@ -235,12 +235,12 @@ const Overview = ({ setActiveTab }) => {
 
     if (selectedTask) {
         return (
-            <GenericResultViewer 
-                task={selectedTask} 
+            <GenericResultViewer
+                task={selectedTask}
                 onClose={() => {
                     setSelectedTask(null);
                     loadDashboardData();
-                }} 
+                }}
             />
         );
     }
@@ -256,36 +256,12 @@ const Overview = ({ setActiveTab }) => {
 
     return (
         <div className="space-y-6 max-w-6xl mx-auto">
-            {/* Redesigned Hello Banner */}
-            <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-850 rounded-2xl p-5 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-3 border border-indigo-500/10">
-                <div className="absolute -right-16 -top-16 w-48 h-48 rounded-full bg-white/10 blur-2xl"></div>
-                <div className="absolute -left-16 -bottom-16 w-48 h-48 rounded-full bg-white/5 blur-2xl"></div>
-                
-                <div className="space-y-1 relative z-10">
-                    <span className="text-[10px] uppercase tracking-widest font-black text-indigo-200">System Dashboard</span>
-                    <p className="text-xs text-blue-50 font-medium mt-0.5">
-                        {isOnline ? "File Organizer Desktop Client is connected and fully operational." : "Connection lost. Retrying backend server synchronization..."}
-                    </p>
-                </div>
-                
-                <div className="relative z-10">
-                    <Badge 
-                        status={isOnline ? "success" : "error"} 
-                        text={
-                            <span className="text-xs font-extrabold text-white uppercase tracking-wider ml-1">
-                                {isOnline ? "Online & Healthy" : "Offline"}
-                            </span>
-                        } 
-                        className="bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 shadow-md"
-                    />
-                </div>
-            </div>
 
             {/* Ant Design KPI Cards Grid */}
             <Row gutter={[16, 16]}>
                 <Col xs={24} sm={12} lg={6}>
-                    <Card 
-                        hoverable 
+                    <Card
+                        hoverable
                         onClick={() => setActiveTab("tasks")}
                         className="rounded-xl border border-slate-100/80 dark:border-slate-800 shadow-sm cursor-pointer hover:border-blue-200"
                         bodyStyle={{ padding: '20px' }}
@@ -303,8 +279,8 @@ const Overview = ({ setActiveTab }) => {
                     </Card>
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
-                    <Card 
-                        hoverable 
+                    <Card
+                        hoverable
                         onClick={() => setActiveTab("sync")}
                         className="rounded-xl border border-slate-100/80 dark:border-slate-800 shadow-sm cursor-pointer hover:border-emerald-200"
                         bodyStyle={{ padding: '20px' }}
@@ -322,8 +298,8 @@ const Overview = ({ setActiveTab }) => {
                     </Card>
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
-                    <Card 
-                        hoverable 
+                    <Card
+                        hoverable
                         onClick={() => setActiveTab("tasks")}
                         className="rounded-xl border border-slate-100/80 dark:border-slate-800 shadow-sm cursor-pointer hover:border-indigo-200"
                         bodyStyle={{ padding: '20px' }}
@@ -341,8 +317,8 @@ const Overview = ({ setActiveTab }) => {
                     </Card>
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
-                    <Card 
-                        hoverable 
+                    <Card
+                        hoverable
                         onClick={() => setActiveTab("settings")}
                         className="rounded-xl border border-slate-100/80 dark:border-slate-800 shadow-sm cursor-pointer hover:border-rose-200"
                         bodyStyle={{ padding: '20px' }}
@@ -362,8 +338,8 @@ const Overview = ({ setActiveTab }) => {
             </Row>
 
             {/* Redesigned Disk Space & File Type Analyzer */}
-            <Card 
-                className="bg-white dark:bg-slate-900 border border-slate-100/80 dark:border-slate-800 shadow-md rounded-2xl" 
+            <Card
+                className="bg-white dark:bg-slate-900 border border-slate-100/80 dark:border-slate-800 shadow-md rounded-2xl"
                 title={
                     <div className="flex items-center gap-2 py-1">
                         <PieChartOutlined className="text-indigo-600 text-lg" />
@@ -376,21 +352,21 @@ const Overview = ({ setActiveTab }) => {
             >
                 <div className="space-y-4">
                     <div className="flex flex-col sm:flex-row gap-2">
-                        <Input 
-                            value={analyzerPath} 
+                        <Input
+                            value={analyzerPath}
                             readOnly
                             placeholder="Select a folder to analyze..."
                             className="bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 flex-grow font-mono font-bold text-slate-700 dark:text-slate-200 hover:border-slate-350"
                         />
                         <div className="flex gap-2">
-                            <Button 
-                                onClick={selectAnalyzerFolder} 
+                            <Button
+                                onClick={selectAnalyzerFolder}
                                 icon={<FolderOpenOutlined />}
                                 className="h-full border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm active:scale-95"
                             >
                                 Select Folder
                             </Button>
-                            <Button 
+                            <Button
                                 type="primary"
                                 onClick={runDirectoryAnalysis}
                                 loading={analysisLoading}
@@ -430,14 +406,14 @@ const Overview = ({ setActiveTab }) => {
                             {/* Visual breakdown list */}
                             <Row gutter={[12, 12]}>
                                 {Object.entries(analysisResult.categories).map(([catName, catStats]) => {
-                                    const sizePercentage = analysisResult.totalSize > 0 
-                                        ? ((catStats.totalSize / analysisResult.totalSize) * 100) 
+                                    const sizePercentage = analysisResult.totalSize > 0
+                                        ? ((catStats.totalSize / analysisResult.totalSize) * 100)
                                         : 0;
-                                    
+
                                     let progressColor = "#3b82f6";
                                     let iconClass = "fa-solid fa-file text-slate-500";
                                     let bgIconColor = "bg-slate-100 dark:bg-slate-800/40";
-                                    
+
                                     if (catName === "Images") {
                                         progressColor = "#f43f5e";
                                         iconClass = "fa-solid fa-image text-rose-500";
@@ -462,8 +438,8 @@ const Overview = ({ setActiveTab }) => {
 
                                     return (
                                         <Col xs={24} sm={12} lg={8} key={catName}>
-                                            <Card 
-                                                hoverable 
+                                            <Card
+                                                hoverable
                                                 className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm rounded-xl"
                                                 bodyStyle={{ padding: '12px 14px' }}
                                             >
@@ -480,11 +456,11 @@ const Overview = ({ setActiveTab }) => {
                                                             <span>{catStats.fileCount} files</span>
                                                             <span>{sizePercentage.toFixed(1)}%</span>
                                                         </div>
-                                                        <Progress 
-                                                            percent={parseFloat(sizePercentage.toFixed(1))} 
-                                                            showInfo={false} 
-                                                            strokeColor={progressColor} 
-                                                            size="small" 
+                                                        <Progress
+                                                            percent={parseFloat(sizePercentage.toFixed(1))}
+                                                            showInfo={false}
+                                                            strokeColor={progressColor}
+                                                            size="small"
                                                             style={{ marginTop: '6px' }}
                                                         />
                                                     </div>
@@ -503,7 +479,7 @@ const Overview = ({ setActiveTab }) => {
             <Row gutter={[16, 16]}>
                 {/* Recent Completed Runs Table (2/3 width) */}
                 <Col xs={24} lg={16}>
-                    <Card 
+                    <Card
                         className="bg-white dark:bg-slate-900 border border-slate-100/80 dark:border-slate-800 shadow-md rounded-2xl h-full"
                         title={
                             <div className="flex items-center justify-between w-full py-1">
@@ -511,10 +487,10 @@ const Overview = ({ setActiveTab }) => {
                                     <span className="text-sm font-black text-slate-800 dark:text-slate-100 block leading-tight">Recent Completed Runs</span>
                                     <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">Click on any record to view its detailed changes report</span>
                                 </div>
-                                <Button 
+                                <Button
                                     size="small"
                                     type="link"
-                                    onClick={() => setActiveTab("tasks")} 
+                                    onClick={() => setActiveTab("tasks")}
                                     className="text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/40 px-2.5 h-7 rounded-lg shadow-inner flex items-center"
                                 >
                                     View Full History
@@ -522,9 +498,9 @@ const Overview = ({ setActiveTab }) => {
                             </div>
                         }
                     >
-                        <Table 
-                            columns={columns} 
-                            dataSource={recentLogs} 
+                        <Table
+                            columns={columns}
+                            dataSource={recentLogs}
                             rowKey="id"
                             pagination={false}
                             size="small"
@@ -547,7 +523,7 @@ const Overview = ({ setActiveTab }) => {
 
                 {/* Quick Shortcuts Grid (1/3 width) */}
                 <Col xs={24} lg={8}>
-                    <Card 
+                    <Card
                         className="bg-white dark:bg-slate-900 border border-slate-100/80 dark:border-slate-800 shadow-md rounded-2xl h-full"
                         title={
                             <div className="flex items-center gap-2 py-1">
@@ -560,7 +536,7 @@ const Overview = ({ setActiveTab }) => {
                         }
                     >
                         <div className="grid grid-cols-1 gap-3">
-                            <button 
+                            <button
                                 onClick={() => setActiveTab("organizer")}
                                 className="p-3 bg-slate-50 hover:bg-blue-50 dark:bg-slate-800/40 dark:hover:bg-slate-800 border border-slate-100 dark:border-slate-800 rounded-xl text-left transition-all duration-200 active:scale-95 cursor-pointer group flex items-start gap-3 w-full"
                             >
@@ -573,7 +549,7 @@ const Overview = ({ setActiveTab }) => {
                                 </div>
                             </button>
 
-                            <button 
+                            <button
                                 onClick={() => setActiveTab("backup")}
                                 className="p-3 bg-slate-50 hover:bg-amber-50 dark:bg-slate-800/40 dark:hover:bg-slate-800 border border-slate-100 dark:border-slate-800 rounded-xl text-left transition-all duration-200 active:scale-95 cursor-pointer group flex items-start gap-3 w-full"
                             >
@@ -586,7 +562,7 @@ const Overview = ({ setActiveTab }) => {
                                 </div>
                             </button>
 
-                            <button 
+                            <button
                                 onClick={() => setActiveTab("duplicates")}
                                 className="p-3 bg-slate-50 hover:bg-rose-50 dark:bg-slate-800/40 dark:hover:bg-slate-800 border border-slate-100 dark:border-slate-800 rounded-xl text-left transition-all duration-200 active:scale-95 cursor-pointer group flex items-start gap-3 w-full"
                             >
@@ -599,7 +575,7 @@ const Overview = ({ setActiveTab }) => {
                                 </div>
                             </button>
 
-                            <button 
+                            <button
                                 onClick={() => setActiveTab("sync")}
                                 className="p-3 bg-slate-50 hover:bg-emerald-50 dark:bg-slate-800/40 dark:hover:bg-slate-800 border border-slate-100 dark:border-slate-800 rounded-xl text-left transition-all duration-200 active:scale-95 cursor-pointer group flex items-start gap-3 w-full"
                             >

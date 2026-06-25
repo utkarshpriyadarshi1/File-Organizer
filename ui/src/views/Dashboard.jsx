@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { Layout, Menu, Button, Badge } from "../components/common";
-import { 
-    DashboardOutlined, 
-    FolderOpenOutlined, 
-    DeploymentUnitOutlined, 
-    SafetyCertificateOutlined, 
-    CopyOutlined, 
-    SyncOutlined, 
-    UnorderedListOutlined, 
-    BellOutlined, 
-    SettingOutlined, 
+import {
+    DashboardOutlined,
+    FolderOpenOutlined,
+    DeploymentUnitOutlined,
+    SafetyCertificateOutlined,
+    CopyOutlined,
+    SyncOutlined,
+    UnorderedListOutlined,
+    BellOutlined,
+    SettingOutlined,
     QuestionCircleOutlined,
     SunOutlined,
     MoonOutlined
@@ -145,7 +145,7 @@ const Dashboard = ({ theme, toggleTheme }) => {
         <Layout style={{ minHeight: '100vh', overflow: 'hidden' }} className="select-none font-sans">
             <Sider
                 width={260}
-                theme="dark"
+                theme="white"
                 style={{
                     boxShadow: '4px 0 24px rgba(0,0,0,0.15)',
                     zIndex: 10,
