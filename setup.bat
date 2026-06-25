@@ -37,8 +37,8 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo Installing dependencies in the frontend directory...
-cd "%~dp0frontend"
+echo Installing dependencies in the ui directory...
+cd "%~dp0ui"
 call npm install
 if %errorlevel% neq 0 (
     echo [ERROR] Failed to install npm dependencies.
@@ -50,7 +50,7 @@ echo.
 
 :: 4. Generate local Windows development certificate
 echo Configuring local code signing certificate...
-powershell -ExecutionPolicy Bypass -File "%~dp0builder\setup-cert.ps1"
+powershell -ExecutionPolicy Bypass -File "%~dp0scripts\setup-cert.ps1"
 if %errorlevel% neq 0 (
     echo [WARNING] Development certificate setup failed or was cancelled (requires admin privileges to install).
     echo You can run the app locally, but packaging might fail unless you run setup.bat as Administrator.

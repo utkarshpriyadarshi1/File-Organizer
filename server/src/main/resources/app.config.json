@@ -1,0 +1,14 @@
+{
+  "appName": "File Organizer",
+  "heading": "File Organizer",
+  "subtitle": "Clean and Organize your Files",
+  "website": "www.updev.in",
+  "iconPaths": {
+    "ico": "icons/icon.ico",
+    "png32": "icons/32x32.png",
+    "png128": "icons/128x128.png",
+    "png256": "icons/128x128@2x.png",
+    "icns": "icons/icon.icns"
+  },
+  "version": "0.0.8"
+}

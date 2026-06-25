@@ -32,8 +32,8 @@ fi
 
 # Install dependencies
 echo ""
-echo "Installing dependencies in the frontend directory..."
-cd frontend && npm install
+echo "Installing dependencies in the ui directory..."
+cd ui && npm install
 if [ $? -ne 0 ]; then
     echo "[ERROR] Failed to install npm dependencies."
     exit 1

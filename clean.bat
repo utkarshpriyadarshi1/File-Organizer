@@ -1,2 +1,2 @@
 @echo off
-call "%~dp0builder\clean.bat"
+call "%~dp0scripts\clean.bat"

@@ -14,18 +14,18 @@ if %errorlevel% neq 0 (
 )
 
 :: Sync config file
-echo Copying app.config.json to frontend/src/ and backend resources...
+echo Copying app.config.json to ui/src/ and server resources...
 if exist "app.config.json" (
-    copy /y "app.config.json" "frontend\src\app.config.json" >nul
-    copy /y "app.config.json" "backend\src\main\resources\app.config.json" >nul
+    copy /y "app.config.json" "ui\src\app.config.json" >nul
+    copy /y "app.config.json" "server\src\main\resources\app.config.json" >nul
 )
 
 :: Start Spring Boot Backend in a separate window
-start "File Organizer Backend" cmd /c "set PATH=%PATH% && cd backend && mvn spring-boot:run"
+start "File Organizer Backend" cmd /c "set PATH=%PATH% && cd server && mvn spring-boot:run"
 
 :: Prevent React dev server from opening standard browser window
 set BROWSER=none
 
 :: Start Electron + React Frontend
 echo Starting Frontend dev server and Electron window...
-cd frontend && npm run dev
+cd ui && npm run dev
