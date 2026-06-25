@@ -3,15 +3,15 @@ import axios from "axios";
 import { useTasks } from "../services/TaskContext";
 import { useI18n } from "../services/I18nContext";
 import Logs from "./Logs";
-import { Card, Input, Button, Tabs, Select, Tag, Popconfirm, Spin, Space, Typography, Row, Col } from "antd";
+import { Card, Input, Button, Tabs, Select, Tag, Popconfirm, Spin, Space, Typography, Row, Col } from "../components/common";
 import { 
     SlidersOutlined, 
     DatabaseOutlined, 
-    TerminalOutlined, 
+    CodeOutlined, 
     FolderOpenOutlined, 
     SaveOutlined,
     GlobalOutlined,
-    BanOutlined,
+    StopOutlined,
     PlusOutlined,
     CloseOutlined,
     BranchesOutlined,
@@ -358,7 +358,7 @@ const Settings = ({ defaultSubTab }) => {
                 bodyStyle={{ padding: '20px' }}
                 title={
                     <div className="flex items-center gap-2">
-                        <BanOutlined className="text-rose-500 text-base" />
+                        <StopOutlined className="text-rose-500 text-base" />
                         <div>
                             <span className="text-xs font-black text-slate-800 dark:text-slate-100 block leading-tight">{t("globalExclusions")}</span>
                             <span className="text-[10px] text-slate-450 dark:text-slate-450 font-semibold block mt-0.5">{t("globalExclusionsDesc")}</span>
@@ -400,7 +400,7 @@ const Settings = ({ defaultSubTab }) => {
                                             closeIcon={<CloseOutlined style={{ fontSize: '10px' }} />}
                                             className="flex items-center gap-1 bg-slate-50 dark:bg-slate-850/50 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 rounded-xl px-3 py-1.5 shadow-sm text-xs font-mono font-bold text-slate-700 dark:text-slate-300"
                                         >
-                                            <BanOutlined style={{ marginRight: '4px', fontSize: '10px' }} className="text-rose-500" />
+                                            <StopOutlined style={{ marginRight: '4px', fontSize: '10px' }} className="text-rose-500" />
                                             {rule.pattern}
                                         </Tag>
                                     ))}
@@ -513,7 +513,7 @@ const Settings = ({ defaultSubTab }) => {
                             } else if (c.folderName === "logs") {
                                 label = "Diagnostic System Logs";
                                 desc = "Application event log reports and debug trace logs stored locally.";
-                                icon = <TerminalOutlined style={{ color: '#6366f1' }} />;
+                                icon = <CodeOutlined style={{ color: '#6366f1' }} />;
                                 bgIcon = "bg-indigo-50 dark:bg-indigo-950/20";
                             }
 
@@ -584,7 +584,7 @@ const Settings = ({ defaultSubTab }) => {
             key: 'logs',
             label: (
                 <span>
-                    <TerminalOutlined />
+                    <CodeOutlined />
                     {t("systemLogs") || "System Logs"}
                 </span>
             ),

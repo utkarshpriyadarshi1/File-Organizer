@@ -19,7 +19,7 @@ import {
     Col, 
     Space,
     Typography
-} from "antd";
+} from "../components/common";
 import { 
     FolderOpenOutlined, 
     SafetyCertificateOutlined, 
@@ -33,7 +33,6 @@ import {
     ReloadOutlined,
     StopOutlined,
     InfoCircleOutlined,
-    BanOutlined,
     FolderFilled,
     PlayCircleOutlined
 } from "@ant-design/icons";
@@ -318,7 +317,7 @@ const Tasks = () => {
                                     danger
                                     type="primary"
                                     onClick={handleBulkCancel}
-                                    icon={<BanOutlined />}
+                                    icon={<StopOutlined />}
                                     className="h-8 text-xs font-bold px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm active:scale-95 border-0"
                                 >
                                     Cancel Selected ({selectedTasks.length})

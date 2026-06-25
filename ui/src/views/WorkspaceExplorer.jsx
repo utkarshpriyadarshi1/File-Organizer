@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useTasks } from "../services/TaskContext";
 import { useI18n } from "../services/I18nContext";
-import { Card, Input, Button, Tabs, Spin, Space, Typography } from "antd";
+import { Card, Input, Button, Tabs, Spin, Space, Typography } from "../components/common";
 import { 
     FolderOpenOutlined, 
     SearchOutlined,
@@ -17,7 +17,7 @@ import {
     FileZipOutlined,
     PlaySquareOutlined,
     CustomerServiceOutlined,
-    FileCodeOutlined,
+    CodeOutlined,
     FileTextOutlined,
     FileOutlined,
     DatabaseOutlined,
@@ -45,7 +45,7 @@ const FileIcon = ({ name }) => {
     } else if (["mp3", "wav", "ogg", "flac"].includes(ext)) {
         icon = <CustomerServiceOutlined style={{ color: '#06b6d4' }} />;
     } else if (["js", "jsx", "ts", "tsx", "html", "css", "json", "java", "py", "sh", "bat"].includes(ext)) {
-        icon = <FileCodeOutlined style={{ color: '#14b8a6' }} />;
+        icon = <CodeOutlined style={{ color: '#14b8a6' }} />;
     } else if (["txt", "md"].includes(ext)) {
         icon = <FileTextOutlined style={{ color: '#64748b' }} />;
     }

@@ -7,7 +7,6 @@ import {
     Card, 
     Row, 
     Col, 
-    Statistic, 
     Input, 
     Button, 
     Table, 
@@ -15,8 +14,9 @@ import {
     Progress, 
     Spin, 
     Badge, 
-    Typography 
-} from "antd";
+    Typography,
+    Statistic
+} from "../components/common";
 import { 
     SyncOutlined, 
     FolderOpenOutlined, 

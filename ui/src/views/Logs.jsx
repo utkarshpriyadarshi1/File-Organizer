@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { FrontendLogger } from "../services/FrontendLogger";
-import { Card, Row, Col, Statistic, Input, Select, Button, Tag, Badge, Space, Typography } from "antd";
+import { Card, Row, Col, Statistic, Input, Select, Button, Tag, Badge, Space, Typography } from "../components/common";
 import { 
-    TerminalOutlined, 
+    CodeOutlined, 
     SearchOutlined,
     DownloadOutlined,
     DeleteOutlined,
@@ -242,7 +242,7 @@ const Logs = () => {
                 {/* Window Topbar */}
                 <div className="bg-slate-900 px-5 py-3 flex justify-between items-center border-b border-slate-950">
                     <div className="flex items-center gap-2 text-slate-400 text-xs font-bold font-mono">
-                        <TerminalOutlined className="text-emerald-400 animate-pulse" />
+                        <CodeOutlined className="text-emerald-400 animate-pulse" />
                         <span className="tracking-wide text-slate-200">developer@file-organizer:~</span>
                     </div>
                     <div className="flex items-center gap-1.5">

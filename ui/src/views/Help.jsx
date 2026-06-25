@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useI18n } from "../services/I18nContext";
 import { marked } from "marked";
-import { Card, Button, Tabs, Spin, Typography } from "antd";
+import { Card, Button, Tabs, Spin, Typography } from "../components/common";
 import { 
     QuestionCircleOutlined, 
     BugOutlined, 
     BookOutlined, 
     GithubOutlined, 
     LoadingOutlined, 
-    FileInvoiceOutlined
+    FileTextOutlined
 } from "@ant-design/icons";
 
 const { Title, Text, Paragraph } = Typography;
@@ -124,7 +124,7 @@ const Help = () => {
                     </div>
                 ) : helpGuides.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 text-slate-450 gap-3">
-                        <FileInvoiceOutlined className="text-3xl text-slate-300 dark:text-slate-700" />
+                        <FileTextOutlined className="text-3xl text-slate-300 dark:text-slate-700" />
                         <span className="text-xs font-bold text-slate-500">{t("noManuals") || "No manuals found."}</span>
                     </div>
                 ) : (
