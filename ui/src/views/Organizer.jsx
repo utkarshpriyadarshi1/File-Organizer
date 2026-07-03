@@ -2,14 +2,16 @@ import axios from "axios";
 import React, { useState, useEffect } from "react";
 import { useTasks } from "../services/TaskContext";
 import { Card, Input, Button, Checkbox, Space, Typography } from "../components/common";
-import { 
-    FolderOpenOutlined, 
-    FolderOutlined, 
-    ExperimentOutlined, 
+import { PageWrapper, PanelCard, FieldLabel } from "../components/wrappers";
+import {
+    FolderOpenOutlined,
+    FolderOutlined,
+    ExperimentOutlined,
     ThunderboltOutlined,
     ExportOutlined,
     ImportOutlined
 } from "@ant-design/icons";
+import appConfig from "../app.config.json";
 
 const { Text } = Typography;
 
@@ -17,7 +19,8 @@ const Organizer = () => {
     const { addToast, selectFolder, syncActiveTasks } = useTasks();
     const [sourceFolder, setSourceFolder] = useState("");
     const [destinationFolder, setDestinationFolder] = useState("");
-    const [dryRun, setDryRun] = useState(false);
+    const [dryRun, setDryRun] = useState(appConfig.behavior.organizerDryRunDefault);
+    const [cleanEmptyFolders, setCleanEmptyFolders] = useState(appConfig.behavior.organizerCleanEmptyFoldersDefault);
 
     // Fetch default directory on load
     useEffect(() => {
@@ -63,91 +66,96 @@ const Organizer = () => {
     };
 
     return (
-        <Card 
-            className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-md rounded-2xl max-w-2xl mx-auto"
-            title={
-                <div className="flex items-center gap-2 py-1">
-                    <FolderOutlined className="text-blue-600 text-lg" />
-                    <div>
-                        <span className="text-sm font-black text-slate-800 dark:text-slate-100 block leading-tight">File Organizer</span>
-                        <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">Automatically clean, organize, and categorize files in your directories</span>
-                    </div>
-                </div>
-            }
+        <PageWrapper style={{ maxWidth: '42rem' }}>
+        <PanelCard
+            title="File Organizer"
+            subtitle="Automatically clean, organize, and categorize files in your directories"
+            icon={<FolderOutlined style={{ color: '#2563eb' }} />}
         >
-            <div className="space-y-5">
-                <div className="space-y-4">
+            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+
                     <div>
-                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
-                            <ImportOutlined style={{ color: '#2563eb' }} />
+                        <FieldLabel icon={<ImportOutlined style={{ color: '#2563eb' }} />}>
                             Source Directory
-                        </span>
-                        <div className="flex gap-2">
-                            <Input 
-                                value={sourceFolder} 
+                        </FieldLabel>
+                        <Space.Compact style={{ width: '100%' }}>
+                            <Input
+                                value={sourceFolder}
                                 readOnly
                                 placeholder="No directory selected"
-                                className="bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 flex-grow font-mono font-bold text-slate-700 dark:text-slate-205"
+                                style={{ fontFamily: 'monospace', fontWeight: 'bold' }}
                             />
-                            <Button 
-                                onClick={() => handleSelectFolder(setSourceFolder)} 
+                            <Button
+                                onClick={() => handleSelectFolder(setSourceFolder)}
                                 icon={<FolderOpenOutlined />}
-                                className="h-full border-slate-200 dark:border-slate-700 hover:border-slate-305 bg-slate-50 dark:bg-slate-800 text-slate-705 dark:text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm active:scale-95 shrink-0"
+                                type="default"
                             >
                                 Select
                             </Button>
-                        </div>
+                        </Space.Compact>
                     </div>
 
                     <div>
-                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-505 uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
-                            <ExportOutlined style={{ color: '#10b981' }} />
+                        <FieldLabel icon={<ExportOutlined style={{ color: '#10b981' }} />}>
                             Destination Directory
-                        </span>
-                        <div className="flex gap-2">
-                            <Input 
-                                value={destinationFolder} 
+                        </FieldLabel>
+                        <Space.Compact style={{ width: '100%' }}>
+                            <Input
+                                value={destinationFolder}
                                 readOnly
                                 placeholder="No directory selected"
-                                className="bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 flex-grow font-mono font-bold text-slate-700 dark:text-slate-200"
+                                style={{ fontFamily: 'monospace', fontWeight: 'bold' }}
                             />
-                            <Button 
-                                onClick={() => handleSelectFolder(setDestinationFolder)} 
+                            <Button
+                                onClick={() => handleSelectFolder(setDestinationFolder)}
                                 icon={<FolderOpenOutlined />}
-                                className="h-full border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm active:scale-95 shrink-0"
+                                type="default"
                             >
                                 Select
                             </Button>
-                        </div>
+                        </Space.Compact>
                     </div>
 
-                    <div className="pt-2">
-                        <Checkbox 
+                    <div>
+                        <Checkbox
                             id="organizeDryRun"
-                            checked={dryRun} 
-                            onChange={(e) => setDryRun(e.target.checked)} 
-                            className="text-xs text-slate-655 dark:text-slate-400 font-semibold flex items-center gap-1 cursor-pointer"
+                            checked={dryRun}
+                            onChange={(e) => setDryRun(e.target.checked)}
                         >
-                            <span className="flex items-center gap-1">
-                                <ExperimentOutlined style={{ color: '#f59e0b', fontSize: '13px' }} />
-                                Dry Run Simulation (Analyze only, do not write to disk)
-                            </span>
+                            <Space align="center" size="small">
+                                <ExperimentOutlined style={{ color: '#f59e0b' }} />
+                                <Text strong style={{ fontSize: '12px' }}>Dry Run Simulation (Analyze only, do not write to disk)</Text>
+                            </Space>
                         </Checkbox>
                     </div>
-                </div>
+                    <div>
+                        <Checkbox
+                            id="cleanEmptyFolders"
+                            checked={cleanEmptyFolders}
+                            onChange={(e) => setCleanEmptyFolders(e.target.checked)}
+                        >
+                            <Space align="center" size="small">
+                                <FolderOutlined style={{ color: '#f59e0b' }} />
+                                <Text strong style={{ fontSize: '12px' }}>Delete Empty Folders</Text>
+                            </Space>
+                        </Checkbox>
+                    </div>
+                </Space>
 
-                <div className="pt-2">
-                    <Button 
+                <div>
+                    <Button
                         type="primary"
-                        onClick={startOrganization} 
+                        onClick={startOrganization}
                         icon={<ThunderboltOutlined />}
-                        className="w-full bg-blue-600 hover:bg-blue-750 text-white font-semibold text-xs py-5 rounded-xl shadow-md flex items-center justify-center gap-2 border-0 active:scale-[0.98]"
+                        style={{ width: '100%', height: '48px', fontWeight: 'bold' }}
                     >
                         Start File Organization
                     </Button>
                 </div>
-            </div>
-        </Card>
+            </Space>
+        </PanelCard>
+        </PageWrapper>
     );
 };
 

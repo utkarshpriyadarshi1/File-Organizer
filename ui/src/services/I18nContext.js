@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState } from "react";
 import { translations } from "../translations";
+import appConfig from "../app.config.json";
 
 const I18nContext = createContext();
 
 export const I18nProvider = ({ children }) => {
     const [language, setLanguageState] = useState(() => {
-        return localStorage.getItem("file_organizer_language") || "en";
+        return localStorage.getItem("file_organizer_language") || appConfig.ui.defaultLanguage;
     });
 
     const changeLanguage = (lang) => {

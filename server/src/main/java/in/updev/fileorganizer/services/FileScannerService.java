@@ -1,23 +1,27 @@
 package in.updev.fileorganizer.services;
 
-import in.updev.fileorganizer.entities.DbFile;
-import in.updev.fileorganizer.repositories.DbFileRepository;
-import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import in.updev.fileorganizer.entities.DbFile;
+import in.updev.fileorganizer.repositories.DbFileRepository;
+import in.updev.fileorganizer.utils.FileUtils;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -33,31 +37,7 @@ public class FileScannerService {
             throw new IllegalArgumentException("Invalid scan folder path.");
         }
 
-        List<Path> paths = new ArrayList<>();
-        Files.walkFileTree(folderPath, new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                String name = dir.getFileName() != null ? dir.getFileName().toString() : "";
-                if (name.equals("node_modules") || name.equals(".git") || name.equals("target") || name.equals(".idea") || name.equals("build")) {
-                    return FileVisitResult.SKIP_SUBTREE;
-                }
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if (attrs.isRegularFile()) {
-                    paths.add(file);
-                }
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-                logger.warn("Scanner skipping path due to restriction: {} ({})", file, exc.getMessage());
-                return FileVisitResult.CONTINUE;
-            }
-        });
+        List<Path> paths = FileUtils.getAllRegularFiles(folderPath, null, null);
 
         String folderPrefix = folderPath.toAbsolutePath().toString();
         if (!folderPrefix.endsWith(java.io.File.separator)) {
@@ -72,11 +52,11 @@ public class FileScannerService {
                 String absolutePath = path.toAbsolutePath().toString();
                 LocalDateTime modifiedTime = LocalDateTime.ofInstant(
                         Files.getLastModifiedTime(path).toInstant(),
-                        ZoneId.systemDefault()
-                );
+                        ZoneId.systemDefault());
                 long fileSize = Files.size(path);
                 String fileName = path.getFileName().toString();
-                String fileType = fileName.contains(".") ? fileName.substring(fileName.lastIndexOf(".") + 1) : "unknown";
+                String fileType = fileName.contains(".") ? fileName.substring(fileName.lastIndexOf(".") + 1)
+                        : "unknown";
 
                 DbFile existingFile = existingFilesMap.get(absolutePath);
                 boolean needsUpdate = true;
@@ -84,10 +64,12 @@ public class FileScannerService {
 
                 if (existingFile != null) {
                     if (existingFile.getSize().equals(fileSize) &&
-                        (existingFile.getModifiedAt() != null &&
-                         Math.abs(existingFile.getModifiedAt().atZone(ZoneId.systemDefault()).toEpochSecond() -
-                                  modifiedTime.atZone(ZoneId.systemDefault()).toEpochSecond()) < 2) &&
-                        Boolean.TRUE.equals(existingFile.getIsActive())) {
+                            (existingFile.getModifiedAt() != null &&
+                                    Math.abs(existingFile.getModifiedAt().atZone(ZoneId.systemDefault()).toEpochSecond()
+                                            -
+                                            modifiedTime.atZone(ZoneId.systemDefault()).toEpochSecond()) < 2)
+                            &&
+                            Boolean.TRUE.equals(existingFile.getIsActive())) {
                         needsUpdate = false;
                         targetFile = existingFile;
                         redisCacheService.cacheFile(existingFile);

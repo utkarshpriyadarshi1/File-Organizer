@@ -1,17 +1,16 @@
 package in.updev.fileorganizer.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import java.io.File;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import jakarta.annotation.PostConstruct;
-import java.io.File;
-import java.nio.file.Files;
-import java.util.HashMap;
-import java.util.Map;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -39,7 +38,8 @@ public class PreferencesService {
     }
 
     public synchronized void savePreferences(AppPreferences newPrefs) {
-        if (newPrefs == null) return;
+        if (newPrefs == null)
+            return;
         this.preferences = newPrefs;
         try {
             File dir = new File(PREF_DIR);
@@ -61,7 +61,7 @@ public class PreferencesService {
                 this.preferences = objectMapper.readValue(file, AppPreferences.class);
                 logger.info("Preferences loaded from: {}", PREF_FILE);
             } else {
-                logger.info("No preferences.json found. Using default layout preference: {}", 
+                logger.info("No preferences.json found. Using default layout preference: {}",
                         preferences.getFolderLayoutPattern());
                 // Save default preference immediately
                 savePreferences(this.preferences);

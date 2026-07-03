@@ -1,31 +1,32 @@
 import { TaskType, TaskStatus } from "../enums/SystemTypes";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { useTasks } from "../services/TaskContext";
 import GenericResultViewer from "../components/GenericResultViewer";
-import { 
-    Card, 
-    Input, 
-    Button, 
-    Select, 
-    Checkbox, 
-    Progress, 
-    Table, 
-    Tag, 
-    Badge, 
-    Alert, 
-    Spin, 
-    Row, 
-    Col, 
+import { PageWrapper, PanelCard } from "../components/wrappers";
+import {
+    Card,
+    Input,
+    Button,
+    Select,
+    Checkbox,
+    Progress,
+    Table,
+    Tag,
+    Badge,
+    Alert,
+    Spin,
+    Row,
+    Col,
     Space,
     Typography
 } from "../components/common";
-import { 
-    FolderOpenOutlined, 
-    SafetyCertificateOutlined, 
-    CopyOutlined, 
-    SyncOutlined, 
-    UnorderedListOutlined, 
+import {
+    FolderOpenOutlined,
+    SafetyCertificateOutlined,
+    CopyOutlined,
+    SyncOutlined,
+    UnorderedListOutlined,
     CheckCircleOutlined,
     CloseCircleOutlined,
     ClockCircleOutlined,
@@ -116,25 +117,25 @@ const Tasks = () => {
     };
 
     // Filtered & Sorted Active Tasks
-    const getFilteredActiveTasks = () => {
+    const filteredActiveTasks = useMemo(() => {
         return activeList.filter(t => {
             if (activeFilter === "ALL") return true;
             if (activeFilter === "RUNNING" || activeFilter === "QUEUED") return t.status === activeFilter;
             return t.taskType === activeFilter;
         });
-    };
+    }, [activeList, activeFilter]);
 
-    const getSortedActiveTasks = () => {
-        return [...getFilteredActiveTasks()].sort((a, b) => {
+    const sortedActiveTasks = useMemo(() => {
+        return [...filteredActiveTasks].sort((a, b) => {
             if (activeSort === "timeDesc") return new Date(b.createdAt) - new Date(a.createdAt);
             if (activeSort === "timeAsc") return new Date(a.createdAt) - new Date(b.createdAt);
             if (activeSort === "type") return a.taskType.localeCompare(b.taskType);
             return 0;
         });
-    };
+    }, [filteredActiveTasks, activeSort]);
 
     // Filtered & Sorted History
-    const getFilteredHistoryTasks = () => {
+    const filteredHistoryTasks = useMemo(() => {
         return history.filter(t => {
             const matchesType = historyFilterType === "ALL" || t.taskType === historyFilterType;
             const matchesStatus = historyFilterStatus === "ALL" || t.status === historyFilterStatus;
@@ -143,13 +144,13 @@ const Tasks = () => {
                 (t.actionDetails && t.actionDetails.toLowerCase().includes(historySearch.toLowerCase())) ||
                 (t.sourcePath && t.sourcePath.toLowerCase().includes(historySearch.toLowerCase())) ||
                 (t.destinationPath && t.destinationPath.toLowerCase().includes(historySearch.toLowerCase())) ||
-                t.id.toLowerCase().includes(historySearch.toLowerCase());
+                (t.id && t.id.toLowerCase().includes(historySearch.toLowerCase()));
             return matchesType && matchesStatus && matchesSearch;
         });
-    };
+    }, [history, historyFilterType, historyFilterStatus, historySearch]);
 
-    const getSortedHistoryTasks = () => {
-        return [...getFilteredHistoryTasks()].sort((a, b) => {
+    const sortedHistoryTasks = useMemo(() => {
+        return [...filteredHistoryTasks].sort((a, b) => {
             if (historySort === "completedDesc") {
                 return new Date(b.completedAt || b.createdAt) - new Date(a.completedAt || a.createdAt);
             }
@@ -160,7 +161,7 @@ const Tasks = () => {
             if (historySort === "status") return a.status.localeCompare(b.status);
             return 0;
         });
-    };
+    }, [filteredHistoryTasks, historySort]);
 
     // Icons mapping for operations
     const getTaskIcon = (taskType) => {
@@ -200,8 +201,8 @@ const Tasks = () => {
         }
     };
 
-    const sortedActive = getSortedActiveTasks();
-    const sortedHistory = getSortedHistoryTasks().slice(0, 1000);
+    const sortedActive = sortedActiveTasks;
+    const sortedHistory = sortedHistoryTasks.slice(0, 1000);
     const allActiveVisibleSelected = sortedActive.length > 0 && sortedActive.every(t => selectedTasks.includes(t.id));
 
     const columns = [
@@ -224,7 +225,7 @@ const Tasks = () => {
                 let icon = <InfoCircleOutlined />;
                 if (text === TaskStatus.COMPLETED) icon = <CheckCircleOutlined />;
                 else if (text === TaskStatus.FAILED) icon = <CloseCircleOutlined />;
-                
+
                 return (
                     <Tag icon={icon} color={getStatusColor(text)} className="font-bold uppercase text-[9px] rounded-full px-2 py-0.5 border-0">
                         {text.replace(/_/g, " ")}
@@ -277,7 +278,7 @@ const Tasks = () => {
 
     if (selectedTask) {
         return (
-            <div className="max-w-6xl mx-auto space-y-8 mt-4 pb-12">
+            <PageWrapper>
                 <GenericResultViewer
                     task={selectedTask}
                     onClose={() => {
@@ -286,52 +287,46 @@ const Tasks = () => {
                         fetchHistory();
                     }}
                 />
-            </div>
+            </PageWrapper>
         );
     }
 
     return (
-        <div className="space-y-6 max-w-6xl mx-auto pb-12">
+        <PageWrapper>
             {/* Active Task Control Center */}
-            <Card 
-                className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-md rounded-2xl text-left"
-                title={
-                    <div className="flex justify-between items-center w-full py-1">
-                        <div>
-                            <span className="text-sm font-black text-slate-800 dark:text-slate-100 block leading-tight">Active Tasks</span>
-                            <span className="text-[10px] text-slate-450 dark:text-slate-400 font-semibold block mt-0.5">Manage active or queued background operations</span>
-                        </div>
-                        <Space size={8}>
-                            <Button 
-                                onClick={() => {
-                                    syncActiveTasks();
-                                    fetchHistory();
-                                }}
-                                icon={<ReloadOutlined />}
-                                className="h-8 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm active:scale-95"
+            <PanelCard
+                title="Active Tasks"
+                subtitle="Manage active or queued background operations"
+                extra={
+                    <Space size={8}>
+                        <Button
+                            onClick={() => {
+                                syncActiveTasks();
+                                fetchHistory();
+                            }}
+                            icon={<ReloadOutlined />}
+                            className="h-8 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm active:scale-95"
+                        >
+                            Refresh All
+                        </Button>
+                        {selectedTasks.length > 0 && (
+                            <Button
+                                danger
+                                type="primary"
+                                onClick={handleBulkCancel}
+                                icon={<StopOutlined />}
                             >
-                                Refresh All
+                                Cancel Selected ({selectedTasks.length})
                             </Button>
-                            {selectedTasks.length > 0 && (
-                                <Button 
-                                    danger
-                                    type="primary"
-                                    onClick={handleBulkCancel}
-                                    icon={<StopOutlined />}
-                                    className="h-8 text-xs font-bold px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm active:scale-95 border-0"
-                                >
-                                    Cancel Selected ({selectedTasks.length})
-                                </Button>
-                            )}
-                        </Space>
-                    </div>
+                        )}
+                    </Space>
                 }
             >
-                <div className="space-y-4">
+                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                     {/* Filters and Sorting for Active Tasks */}
-                    <div className="flex flex-wrap gap-4 text-xs font-semibold text-slate-600 bg-slate-50/50 dark:bg-slate-850/30 p-3 rounded-xl border border-slate-150 dark:border-slate-800 justify-between items-center">
-                        <div className="flex flex-wrap gap-3 items-center">
-                            <span className="text-slate-450 dark:text-slate-500 uppercase text-[9px] tracking-wider font-bold">Filter By:</span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fafafa', padding: '12px', borderRadius: '8px', border: '1px solid #f0f0f0' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+                            <Text type="secondary" strong style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Filter By:</Text>
                             <Select
                                 onChange={(val) => setActiveFilter(val)}
                                 value={activeFilter}
@@ -349,8 +344,8 @@ const Tasks = () => {
                             />
                         </div>
 
-                        <div className="flex flex-wrap gap-3 items-center">
-                            <span className="text-slate-450 dark:text-slate-500 uppercase text-[9px] tracking-wider font-bold">Sort By:</span>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+                            <Text type="secondary" strong style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sort By:</Text>
                             <Select
                                 onChange={(val) => setActiveSort(val)}
                                 value={activeSort}
@@ -442,36 +437,31 @@ const Tasks = () => {
                             </div>
                         )}
                     </div>
-                </div>
-            </Card>
+                </Space>
+            </PanelCard>
 
             {/* Execution & Notification History */}
-            <Card 
-                className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-md rounded-2xl text-left"
-                title={
-                    <div className="py-1">
-                        <span className="text-sm font-black text-slate-800 dark:text-slate-100 block leading-tight">Task History</span>
-                        <span className="text-[10px] text-slate-450 dark:text-slate-400 font-semibold block mt-0.5">Review historical completed task logs and their results</span>
-                    </div>
-                }
+            <PanelCard
+                title="Task History"
+                subtitle="Review historical completed task logs and their results"
             >
-                <div className="space-y-4">
+                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                     {/* Filters, Sorting, and Searching for History */}
-                    <div className="space-y-3 bg-slate-50/50 dark:bg-slate-850/30 p-3.5 rounded-xl border border-slate-150 dark:border-slate-800">
-                        <div className="flex flex-col sm:flex-row gap-2">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', backgroundColor: '#fafafa', padding: '14px', borderRadius: '8px', border: '1px solid #f0f0f0' }}>
+                        <div style={{ display: 'flex', gap: '8px' }}>
                             <Input
                                 prefix={<SearchOutlined />}
                                 value={historySearch}
                                 onChange={(e) => setHistorySearch(e.target.value)}
                                 placeholder="Search by Task Summary or ID..."
-                                className="h-9 text-xs rounded-xl flex-grow"
+                                style={{ flexGrow: 1 }}
                                 allowClear
                             />
                         </div>
 
-                        <div className="flex flex-wrap gap-4 text-xs font-semibold text-slate-600 justify-between items-center">
-                            <div className="flex flex-wrap gap-3 items-center">
-                                <span className="text-slate-450 dark:text-slate-550 uppercase text-[9px] tracking-wider font-bold">Filter Type:</span>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+                                <Text type="secondary" strong style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Filter Type:</Text>
                                 <Select
                                     onChange={(val) => setHistoryFilterType(val)}
                                     value={historyFilterType}
@@ -486,7 +476,7 @@ const Tasks = () => {
                                     ]}
                                 />
 
-                                <span className="text-slate-450 dark:text-slate-550 uppercase text-[9px] tracking-wider font-bold ml-2">Status:</span>
+                                <Text type="secondary" strong style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', marginLeft: '8px' }}>Status:</Text>
                                 <Select
                                     onChange={(val) => setHistoryFilterStatus(val)}
                                     value={historyFilterStatus}
@@ -501,8 +491,8 @@ const Tasks = () => {
                                 />
                             </div>
 
-                            <div className="flex flex-wrap gap-3 items-center">
-                                <span className="text-slate-450 dark:text-slate-550 uppercase text-[9px] tracking-wider font-bold">Sort By:</span>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+                                <Text type="secondary" strong style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sort By:</Text>
                                 <Select
                                     onChange={(val) => setHistorySort(val)}
                                     value={historySort}
@@ -518,19 +508,19 @@ const Tasks = () => {
                         </div>
                     </div>
 
-                    {getSortedHistoryTasks().length > 1000 && (
-                        <Alert 
-                            message="Showing top 1000 completed tasks to prevent browser rendering lag. Please use searching or filters above to view other records." 
-                            type="warning" 
-                            showIcon 
-                            className="rounded-xl"
+                    {sortedHistoryTasks.length > 1000 && (
+                        <Alert
+                            message="Showing top 1000 completed tasks to prevent browser rendering lag. Please use searching or filters above to view other records."
+                            type="warning"
+                            showIcon
+                            style={{ borderRadius: '8px' }}
                         />
                     )}
 
                     {/* History Table */}
-                    <Table 
-                        columns={columns} 
-                        dataSource={sortedHistory} 
+                    <Table
+                        columns={columns}
+                        dataSource={sortedHistory}
                         rowKey="id"
                         pagination={false}
                         size="small"
@@ -549,9 +539,9 @@ const Tasks = () => {
                             )
                         }}
                     />
-                </div>
-            </Card>
-        </div>
+                </Space>
+            </PanelCard>
+        </PageWrapper>
     );
 };
 

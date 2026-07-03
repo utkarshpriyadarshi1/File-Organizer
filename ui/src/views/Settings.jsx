@@ -222,7 +222,7 @@ const Settings = ({ defaultSubTab }) => {
     };
 
     const renderGeneralPreferences = () => (
-        <div className="space-y-6 pt-2">
+        <Space direction="vertical" size="large" style={{ display: 'flex', width: '100%' }}>
             {/* Default Scan Path Panel */}
             <Card
                 className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-md rounded-2xl text-left"
@@ -385,7 +385,7 @@ const Settings = ({ defaultSubTab }) => {
                     {ignoreLoading ? (
                         <p className="text-xs text-slate-500 font-semibold animate-pulse">Loading exclusions...</p>
                     ) : (
-                        <div className="pt-2">
+                        <div>
                             {ignoreRules.length === 0 ? (
                                 <p className="text-xs text-slate-400 text-center py-4">{t("noExclusions")}</p>
                             ) : (
@@ -442,12 +442,12 @@ const Settings = ({ defaultSubTab }) => {
                     )}
                 </div>
             </Card>
-        </div>
+        </Space>
     );
 
     const renderStorageAndCache = () => (
         <Card
-            className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-md rounded-2xl text-left pt-2"
+            className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-md rounded-2xl text-left"
             bodyStyle={{ padding: '20px' }}
             title={
                 <div className="flex items-center gap-2 py-1">
@@ -459,7 +459,7 @@ const Settings = ({ defaultSubTab }) => {
                 </div>
             }
         >
-            <div className="space-y-5">
+            <Space direction="vertical" size="large" style={{ display: 'flex', width: '100%' }}>
                 <div className="flex gap-3 text-xs font-bold text-slate-600">
                     <Select
                         onChange={(val) => setCacheFilter(val)}
@@ -554,7 +554,7 @@ const Settings = ({ defaultSubTab }) => {
                         })}
                     </div>
                 )}
-            </div>
+            </Space>
         </Card>
     );
 
@@ -588,7 +588,7 @@ const Settings = ({ defaultSubTab }) => {
                 </span>
             ),
             children: (
-                <div className="pt-2">
+                <div>
                     <Logs />
                 </div>
             )
@@ -596,14 +596,14 @@ const Settings = ({ defaultSubTab }) => {
     ];
 
     return (
-        <div className="max-w-4xl mx-auto space-y-4 text-left">
+        <Space direction="vertical" size="large" style={{ display: 'flex', width: '100%', maxWidth: '56rem', margin: '0 auto', textAlign: 'left' }}>
             <Tabs
                 activeKey={activeSection}
                 onChange={(key) => setActiveSection(key)}
                 items={tabItems}
                 className="bg-transparent border-0"
             />
-        </div>
+        </Space>
     );
 };
 

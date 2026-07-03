@@ -1,6 +1,9 @@
 package in.updev.fileorganizer.services;
 
-import lombok.RequiredArgsConstructor;
+import java.io.File;
+import java.nio.file.Files;
+import java.util.Arrays;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -8,10 +11,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
@@ -37,7 +37,7 @@ public class DatabaseMigrationService implements ApplicationRunner {
 
             logger.info("Found schema file at: {}", schemaFile.getAbsolutePath());
             String sqlContent = Files.readString(schemaFile.toPath());
-            
+
             // Clean content: remove SQL comments and split by semi-colons
             String[] rawStatements = sqlContent.split(";");
             int executedCount = 0;
@@ -63,7 +63,7 @@ public class DatabaseMigrationService implements ApplicationRunner {
                 }
             }
 
-            logger.info("Database schema migration completed. Executed {} statements, skipped {} (already existing).", 
+            logger.info("Database schema migration completed. Executed {} statements, skipped {} (already existing).",
                     executedCount, skippedCount);
 
         } catch (Exception e) {
@@ -72,7 +72,8 @@ public class DatabaseMigrationService implements ApplicationRunner {
     }
 
     private String cleanSql(String sql) {
-        if (sql == null) return "";
+        if (sql == null)
+            return "";
         return Arrays.stream(sql.split("\n"))
                 .map(line -> {
                     int commentIdx = line.indexOf("--");

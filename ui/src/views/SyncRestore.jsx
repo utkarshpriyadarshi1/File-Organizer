@@ -2,6 +2,7 @@ import axios from "axios";
 import React, { useState, useEffect } from "react";
 import { useTasks } from "../services/TaskContext";
 import { Card, Row, Col, Input, Button, Select, List, Badge, Space, Tag, Typography } from "../components/common";
+import { PageWrapper, PanelCard, FieldLabel } from "../components/wrappers";
 import { 
     FolderOpenOutlined, 
     PlayCircleOutlined, 
@@ -13,10 +14,14 @@ import {
     PlusOutlined,
     ImportOutlined,
     ExportOutlined,
-    DeploymentUnitOutlined
+    DeploymentUnitOutlined,
+    SwapOutlined,
+    ArrowRightOutlined,
+    RetweetOutlined
 } from "@ant-design/icons";
+import appConfig from "../app.config.json";
 
-const { Text } = Typography;
+const { Text, Paragraph } = Typography;
 
 const SyncRestore = () => {
     const { addToast, selectFolder, syncActiveTasks } = useTasks();
@@ -24,7 +29,7 @@ const SyncRestore = () => {
     // Sync state
     const [sourceFolder, setSourceFolder] = useState("");
     const [destinationFolder, setDestinationFolder] = useState("");
-    const [syncType, setSyncType] = useState("ONE_WAY");
+    const [syncType, setSyncType] = useState(appConfig.behavior.syncDefaultType);
     const [syncJobs, setSyncJobs] = useState([]);
     const [jobsFilterType, setJobsFilterType] = useState("ALL");
     const [jobsSort, setJobsSort] = useState("name");
@@ -180,75 +185,66 @@ const SyncRestore = () => {
     };
 
     return (
-        <Row gutter={[16, 16]} className="max-w-7xl mx-auto">
+        <PageWrapper style={{ maxWidth: '80rem' }}>
+            <Row gutter={[16, 16]}>
             {/* Folder Synchronization Panel */}
             <Col xs={24} lg={12}>
-                <Card 
-                    className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-md rounded-2xl h-full flex flex-col justify-between"
-                    title={
-                        <div className="flex items-center gap-2 py-1">
-                            <SyncOutlined className="text-blue-600 text-lg" />
-                            <div>
-                                <span className="text-sm font-black text-slate-800 dark:text-slate-100 block leading-tight">Sync Folders</span>
-                                <span className="text-[10px] text-slate-450 dark:text-slate-400 font-semibold block mt-0.5">Keep files updated across directories (one-way or two-way mirror)</span>
-                            </div>
-                        </div>
-                    }
+                <PanelCard 
+                    title="Sync Folders"
+                    subtitle="Keep files updated across directories (one-way or two-way mirror)"
+                    icon={<SyncOutlined style={{ color: '#2563eb' }} />}
                 >
-                    <div className="space-y-4">
+                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                         <div>
-                            <span className="text-[10px] font-black text-slate-450 dark:text-slate-505 uppercase tracking-wider block mb-1 flex items-center gap-1.5">
-                                <ImportOutlined style={{ color: '#2563eb' }} />
+                            <FieldLabel icon={<ImportOutlined style={{ color: '#2563eb' }} />}>
                                 Source Directory
-                            </span>
-                            <div className="flex gap-2">
+                            </FieldLabel>
+                            <Space.Compact style={{ width: '100%' }}>
                                 <Input 
                                     value={sourceFolder} 
                                     readOnly 
                                     placeholder="No source folder selected"
-                                    className="bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 flex-grow font-mono font-bold text-slate-700 dark:text-slate-200"
+                                    style={{ fontFamily: 'monospace', fontWeight: 'bold' }}
                                 />
                                 <Button 
                                     onClick={() => handleSelectFolder(setSourceFolder)}
                                     icon={<FolderOpenOutlined />}
-                                    className="h-full border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm active:scale-95 shrink-0"
+                                    type="default"
                                 >
                                     Select
                                 </Button>
-                            </div>
+                            </Space.Compact>
                         </div>
 
                         <div>
-                            <span className="text-[10px] font-black text-slate-450 dark:text-slate-505 uppercase tracking-wider block mb-1 flex items-center gap-1.5">
-                                <ExportOutlined style={{ color: '#10b981' }} />
+                            <FieldLabel icon={<ExportOutlined style={{ color: '#10b981' }} />}>
                                 Destination Directory
-                            </span>
-                            <div className="flex gap-2">
+                            </FieldLabel>
+                            <Space.Compact style={{ width: '100%' }}>
                                 <Input 
                                     value={destinationFolder} 
                                     readOnly 
                                     placeholder="No destination folder selected"
-                                    className="bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 flex-grow font-mono font-bold text-slate-700 dark:text-slate-200"
+                                    style={{ fontFamily: 'monospace', fontWeight: 'bold' }}
                                 />
                                 <Button 
                                     onClick={() => handleSelectFolder(setDestinationFolder)}
                                     icon={<FolderOpenOutlined />}
-                                    className="h-full border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm active:scale-95 shrink-0"
+                                    type="default"
                                 >
                                     Select
                                 </Button>
-                            </div>
+                            </Space.Compact>
                         </div>
 
                         <div>
-                            <span className="text-[10px] font-black text-slate-450 dark:text-slate-505 uppercase tracking-wider block mb-1 flex items-center gap-1.5">
-                                <DeploymentUnitOutlined style={{ color: '#6366f1' }} />
+                            <FieldLabel icon={<DeploymentUnitOutlined style={{ color: '#6366f1' }} />}>
                                 Sync Type
-                            </span>
+                            </FieldLabel>
                             <Select 
                                 onChange={(val) => setSyncType(val)} 
                                 value={syncType}
-                                className="w-full h-10 text-xs"
+                                style={{ width: '100%' }}
                                 options={[
                                     { value: 'ONE_WAY', label: 'One-Way Mirroring' },
                                     { value: 'TWO_WAY', label: 'Two-Way Synchronization' },
@@ -260,11 +256,11 @@ const SyncRestore = () => {
                             type="primary"
                             onClick={handleCreateSyncJob}
                             icon={<PlusOutlined />}
-                            className="w-full bg-blue-600 hover:bg-blue-750 text-white font-semibold text-xs py-5 rounded-xl shadow-md flex items-center justify-center gap-2 border-0 active:scale-[0.98]"
+                            style={{ width: '100%', height: '48px', fontWeight: 'bold' }}
                         >
                             Register Sync Job
                         </Button>
-                    </div>
+                    </Space>
 
                     <div className="border-t border-slate-100 dark:border-slate-800 pt-4 mt-4">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
@@ -331,51 +327,43 @@ const SyncRestore = () => {
                             ))}
                         </div>
                     </div>
-                </Card>
+                </PanelCard>
             </Col>
 
             {/* Versioned Restore Panel */}
             <Col xs={24} lg={12}>
-                <Card 
-                    className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-md rounded-2xl h-full flex flex-col justify-between"
-                    title={
-                        <div className="flex items-center gap-2 py-1">
-                            <ClockCircleOutlined className="text-indigo-500 text-lg" />
-                            <div>
-                                <span className="text-sm font-black text-slate-800 dark:text-slate-100 block leading-tight">Version Restore</span>
-                                <span className="text-[10px] text-slate-450 dark:text-slate-400 font-semibold block mt-0.5">Lookup file backups version history and restore to any folder location</span>
-                            </div>
-                        </div>
-                    }
+                <PanelCard 
+                    title="Version Restore"
+                    subtitle="Lookup file backups version history and restore to any folder location"
+                    icon={<ClockCircleOutlined style={{ color: '#6366f1' }} />}
                 >
-                    <div className="space-y-4">
-                        <div className="flex gap-2">
+                    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                        <Space.Compact style={{ width: '100%' }}>
                             <Input 
                                 value={fileIdToSearch}
                                 onChange={(e) => setFileIdToSearch(e.target.value)}
                                 placeholder="Enter File Database ID (e.g. 1)"
-                                className="bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 rounded-xl p-2 flex-grow font-semibold text-slate-800 dark:text-slate-200"
+                                style={{ fontFamily: 'monospace', fontWeight: 'bold' }}
                                 onPressEnter={handleSearchVersions}
                             />
                             <Button 
                                 type="primary"
                                 onClick={handleSearchVersions}
                                 icon={<SearchOutlined />}
-                                className="h-full bg-blue-600 hover:bg-blue-750 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm active:scale-95"
                             >
                                 Search
                             </Button>
-                        </div>
+                        </Space.Compact>
 
                         {fileVersions.length > 0 && (
-                            <div className="space-y-4">
-                                <div className="flex flex-wrap items-center justify-between gap-2.5">
-                                    <span className="text-[10px] font-black text-slate-450 dark:text-slate-500 uppercase tracking-wider block">Select Restore Version</span>
-                                    <div className="flex flex-wrap items-center gap-2">
+                            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                                    <Text type="secondary" strong style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Select Restore Version</Text>
+                                    <Space size="small" wrap>
                                         <Select 
                                             onChange={(val) => setVersionsSort(val)}
                                             value={versionsSort}
-                                            className="h-7 w-32 text-[9px]"
+                                            style={{ width: '130px' }}
                                             options={[
                                                 { value: 'numberDesc', label: 'Version: Newest' },
                                                 { value: 'numberAsc', label: 'Version: Oldest' },
@@ -388,60 +376,68 @@ const SyncRestore = () => {
                                             size="small"
                                             onClick={handleRestoreVersion}
                                             icon={<CloudUploadOutlined />}
-                                            className="bg-emerald-500 hover:bg-emerald-650 border-0 text-white font-bold text-[10px] h-7 rounded-lg shadow-sm flex items-center gap-1"
+                                            style={{ backgroundColor: '#10b981', borderColor: '#10b981' }}
                                         >
                                             Restore Selected
                                         </Button>
-                                    </div>
+                                    </Space>
                                 </div>
 
-                                <div className="space-y-2 max-h-56 overflow-y-auto border border-slate-100 dark:border-slate-800 p-2 rounded-xl bg-slate-50/50 dark:bg-slate-900/40">
-                                    {getSortedVersions().map(ver => (
-                                        <div 
-                                            key={ver.id}
-                                            onClick={() => setSelectedVersionId(ver.id)}
-                                            className={`p-2.5 rounded-lg text-xs cursor-pointer border flex justify-between items-center transition-all overflow-x-auto ${selectedVersionId === ver.id ? "bg-blue-50 dark:bg-blue-950/20 border-blue-500 text-blue-900 dark:text-blue-300 font-bold" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40"}`}
-                                        >
-                                            <div className="flex items-center gap-2.5 min-w-0">
-                                                <ClockCircleOutlined className="text-slate-400 shrink-0" />
-                                                <div className="min-w-0">
-                                                    <p className="m-0 text-xs">Version #{ver.versionNumber}</p>
-                                                    <p className="text-[9px] text-slate-450 dark:text-slate-400 truncate max-w-[200px] mt-0.5 m-0" title={ver.backupPath}>{ver.backupPath}</p>
+                                <div style={{ maxHeight: '224px', overflowY: 'auto', border: '1px solid #f0f0f0', padding: '8px', borderRadius: '8px' }}>
+                                    <List
+                                        dataSource={getSortedVersions()}
+                                        renderItem={ver => (
+                                            <List.Item
+                                                onClick={() => setSelectedVersionId(ver.id)}
+                                                style={{
+                                                    cursor: 'pointer',
+                                                    padding: '8px',
+                                                    borderRadius: '8px',
+                                                    border: '1px solid transparent',
+                                                    backgroundColor: selectedVersionId === ver.id ? '#e6f7ff' : 'transparent',
+                                                    borderColor: selectedVersionId === ver.id ? '#91d5ff' : '#f0f0f0',
+                                                    marginBottom: '4px'
+                                                }}
+                                            >
+                                                <List.Item.Meta
+                                                    avatar={<ClockCircleOutlined style={{ color: selectedVersionId === ver.id ? '#1890ff' : '#bfbfbf' }} />}
+                                                    title={<Text strong style={{ fontSize: '12px', color: selectedVersionId === ver.id ? '#096dd9' : 'inherit' }}>Version #{ver.versionNumber}</Text>}
+                                                    description={<Text type="secondary" style={{ fontSize: '10px' }} ellipsis={{ tooltip: ver.backupPath }}>{ver.backupPath}</Text>}
+                                                />
+                                                <div style={{ fontSize: '10px', color: '#8c8c8c' }}>
+                                                    <CalendarOutlined style={{ marginRight: '4px' }} />
+                                                    {new Date(ver.backedUpAt).toLocaleDateString()}
                                                 </div>
-                                            </div>
-                                            <span className="text-[9px] text-slate-450 dark:text-slate-400 font-mono flex items-center gap-1 shrink-0">
-                                                <CalendarOutlined style={{ fontSize: '9px' }} />
-                                                {new Date(ver.backedUpAt).toLocaleDateString()}
-                                            </span>
-                                        </div>
-                                    ))}
+                                            </List.Item>
+                                        )}
+                                    />
                                 </div>
 
                                 <div>
-                                    <span className="text-[10px] font-black text-slate-450 dark:text-slate-505 uppercase tracking-wider block mb-1 flex items-center gap-1.5">
-                                        <FolderOpenOutlined style={{ color: '#6366f1' }} />
+                                    <FieldLabel icon={<FolderOpenOutlined style={{ color: '#6366f1' }} />}>
                                         Restore Target Directory Override (Optional)
-                                    </span>
+                                    </FieldLabel>
                                     <Input 
                                         value={targetOverridePath}
                                         onChange={(e) => setTargetOverridePath(e.target.value)}
                                         placeholder="Original path is used if empty"
-                                        className="w-full text-xs border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-slate-800 dark:text-slate-200 font-semibold"
+                                        style={{ fontWeight: 'bold' }}
                                     />
                                 </div>
-                            </div>
+                            </Space>
                         )}
                         
                         {fileVersions.length === 0 && (
-                            <div className="text-xs text-slate-400 dark:text-slate-500 text-center py-14 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center gap-2 bg-slate-50/50 dark:bg-slate-900/40 mt-4">
-                                <ClockCircleOutlined style={{ fontSize: '28px', color: '#94a3b8' }} />
-                                <p className="m-0">Enter a File Database ID to view and restore its backup versions.</p>
+                            <div style={{ textAlign: 'center', padding: '3rem 0', border: '1px dashed #d9d9d9', borderRadius: '1rem', marginTop: '1rem' }}>
+                                <ClockCircleOutlined style={{ fontSize: '28px', color: '#bfbfbf', marginBottom: '8px' }} />
+                                <Text type="secondary" style={{ display: 'block' }}>Enter a File Database ID to view and restore its backup versions.</Text>
                             </div>
                         )}
-                    </div>
-                </Card>
+                    </Space>
+                </PanelCard>
             </Col>
         </Row>
+        </PageWrapper>
     );
 };
 

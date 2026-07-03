@@ -1,23 +1,28 @@
 package in.updev.fileorganizer.services;
 
-import in.updev.fileorganizer.entities.SyncJob;
-import in.updev.fileorganizer.enums.SyncType;
-import in.updev.fileorganizer.enums.TaskType;
-import in.updev.fileorganizer.repositories.SyncJobRepository;
-import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import in.updev.fileorganizer.entities.SyncJob;
+import in.updev.fileorganizer.enums.SyncType;
+import in.updev.fileorganizer.enums.TaskType;
+import in.updev.fileorganizer.repositories.SyncJobRepository;
+import in.updev.fileorganizer.utils.FileUtils;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -47,74 +52,54 @@ public class SyncService {
                 .orElseThrow(() -> new IllegalArgumentException("Sync job not found: " + jobId));
 
         String actionDetails = "Sync Job: " + job.getJobName() + " (" + job.getSyncType().name() + ")";
-        return backgroundTaskManager.submitTask(TaskType.SYNC, job.getSourcePath(), job.getDestinationPath(), actionDetails, (taskId, reporter) -> {
-            sqliteWriteQueueService.executeWrite(() -> {
-                job.setStatus("RUNNING");
-                return syncJobRepository.save(job);
-            });
+        return backgroundTaskManager.submitTask(TaskType.SYNC, job.getSourcePath(), job.getDestinationPath(),
+                actionDetails, (taskId, reporter) -> {
+                    sqliteWriteQueueService.executeWrite(() -> {
+                        job.setStatus("RUNNING");
+                        return syncJobRepository.save(job);
+                    });
 
-            Path sourcePath = Paths.get(job.getSourcePath());
-            Path destPath = Paths.get(job.getDestinationPath());
+                    Path sourcePath = Paths.get(job.getSourcePath());
+                    Path destPath = Paths.get(job.getDestinationPath());
 
-            if (!Files.exists(sourcePath) || !Files.isDirectory(sourcePath)) {
-                throw new IOException("Source path is invalid or is not a directory.");
-            }
-            Files.createDirectories(destPath);
+                    if (!Files.exists(sourcePath) || !Files.isDirectory(sourcePath)) {
+                        throw new IOException("Source path is invalid or is not a directory.");
+                    }
+                    Files.createDirectories(destPath);
 
-            if (SyncType.TWO_WAY == job.getSyncType()) {
-                runTwoWaySync(sourcePath, destPath, reporter);
-            } else {
-                runOneWaySync(sourcePath, destPath, reporter);
-            }
+                    if (SyncType.TWO_WAY == job.getSyncType()) {
+                        runTwoWaySync(sourcePath, destPath, reporter);
+                    } else {
+                        runOneWaySync(sourcePath, destPath, reporter);
+                    }
 
-            sqliteWriteQueueService.executeWrite(() -> {
-                job.setStatus("COMPLETED");
-                job.setLastRun(LocalDateTime.now());
-                return syncJobRepository.save(job);
-            });
+                    sqliteWriteQueueService.executeWrite(() -> {
+                        job.setStatus("COMPLETED");
+                        job.setLastRun(LocalDateTime.now());
+                        return syncJobRepository.save(job);
+                    });
 
-            auditLogService.logAction("SYNC_JOB_COMPLETED", null, "Sync job completed: " + job.getJobName());
-        });
+                    auditLogService.logAction("SYNC_JOB_COMPLETED", null, "Sync job completed: " + job.getJobName());
+                });
     }
 
-    private void runOneWaySync(Path source, Path destination, BackgroundTaskManager.TaskProgressReporter reporter) throws IOException {
-        List<Path> allFiles = new ArrayList<>();
-        Files.walkFileTree(source, new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                String name = dir.getFileName() != null ? dir.getFileName().toString() : "";
-                if (name.equals("node_modules") || name.equals(".git") || name.equals("target") || name.equals(".idea") || name.equals("build")) {
-                    return FileVisitResult.SKIP_SUBTREE;
-                }
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if (attrs.isRegularFile()) {
-                    allFiles.add(file);
-                }
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-                logger.warn("Sync scan (source) skipping path due to restriction: {} ({})", file, exc.getMessage());
-                Map<String, Object> errorItem = new HashMap<>();
-                errorItem.put("filePath", file.toAbsolutePath().toString());
-                errorItem.put("action", "SYNC_SKIP");
-                errorItem.put("failed", true);
-                errorItem.put("error", "Access Denied (Source): " + exc.getMessage());
-                reporter.appendResult(errorItem);
-                return FileVisitResult.CONTINUE;
-            }
+    private void runOneWaySync(Path source, Path destination, BackgroundTaskManager.TaskProgressReporter reporter)
+            throws IOException {
+        List<Path> allFiles = FileUtils.getAllRegularFiles(source, (file, exc) -> {
+            Map<String, Object> errorItem = new HashMap<>();
+            errorItem.put("filePath", file.toAbsolutePath().toString());
+            errorItem.put("action", "SYNC_SKIP");
+            errorItem.put("failed", true);
+            errorItem.put("error", "Access Denied (Source): " + exc.getMessage());
+            reporter.appendResult(errorItem);
         });
 
         int total = allFiles.size();
         int count = 0;
 
         for (Path file : allFiles) {
-            if (reporter.isCancelled()) break;
+            if (reporter.isCancelled())
+                break;
 
             Map<String, Object> fileResult = new HashMap<>();
             fileResult.put("filePath", file.toAbsolutePath().toString());
@@ -155,40 +140,18 @@ public class SyncService {
         }
 
         // Delete target files not in source (mirroring)
-        List<Path> destFiles = new ArrayList<>();
-        Files.walkFileTree(destination, new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                String name = dir.getFileName() != null ? dir.getFileName().toString() : "";
-                if (name.equals("node_modules") || name.equals(".git") || name.equals("target") || name.equals(".idea") || name.equals("build")) {
-                    return FileVisitResult.SKIP_SUBTREE;
-                }
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if (attrs.isRegularFile()) {
-                    destFiles.add(file);
-                }
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-                logger.warn("Sync scan (destination) skipping path due to restriction: {} ({})", file, exc.getMessage());
-                Map<String, Object> errorItem = new HashMap<>();
-                errorItem.put("filePath", file.toAbsolutePath().toString());
-                errorItem.put("action", "CLEANUP_SKIP");
-                errorItem.put("failed", true);
-                errorItem.put("error", "Access Denied (Destination): " + exc.getMessage());
-                reporter.appendResult(errorItem);
-                return FileVisitResult.CONTINUE;
-            }
+        List<Path> destFiles = FileUtils.getAllRegularFiles(destination, (file, exc) -> {
+            Map<String, Object> errorItem = new HashMap<>();
+            errorItem.put("filePath", file.toAbsolutePath().toString());
+            errorItem.put("action", "CLEANUP_SKIP");
+            errorItem.put("failed", true);
+            errorItem.put("error", "Access Denied (Destination): " + exc.getMessage());
+            reporter.appendResult(errorItem);
         });
 
         for (Path target : destFiles) {
-            if (reporter.isCancelled()) break;
+            if (reporter.isCancelled())
+                break;
             try {
                 Path rel = destination.relativize(target);
                 Path file = source.resolve(rel);
@@ -206,69 +169,24 @@ public class SyncService {
         }
     }
 
-    private void runTwoWaySync(Path source, Path destination, BackgroundTaskManager.TaskProgressReporter reporter) throws IOException {
-        List<Path> sourceFiles = new ArrayList<>();
-        Files.walkFileTree(source, new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                String name = dir.getFileName() != null ? dir.getFileName().toString() : "";
-                if (name.equals("node_modules") || name.equals(".git") || name.equals("target") || name.equals(".idea") || name.equals("build")) {
-                    return FileVisitResult.SKIP_SUBTREE;
-                }
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if (attrs.isRegularFile()) {
-                    sourceFiles.add(file);
-                }
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-                logger.warn("Sync scan (source) skipping path due to restriction: {} ({})", file, exc.getMessage());
-                Map<String, Object> errorItem = new HashMap<>();
-                errorItem.put("filePath", file.toAbsolutePath().toString());
-                errorItem.put("action", "SYNC_SKIP");
-                errorItem.put("failed", true);
-                errorItem.put("error", "Access Denied (Source): " + exc.getMessage());
-                reporter.appendResult(errorItem);
-                return FileVisitResult.CONTINUE;
-            }
+    private void runTwoWaySync(Path source, Path destination, BackgroundTaskManager.TaskProgressReporter reporter)
+            throws IOException {
+        List<Path> sourceFiles = FileUtils.getAllRegularFiles(source, (file, exc) -> {
+            Map<String, Object> errorItem = new HashMap<>();
+            errorItem.put("filePath", file.toAbsolutePath().toString());
+            errorItem.put("action", "SYNC_SKIP");
+            errorItem.put("failed", true);
+            errorItem.put("error", "Access Denied (Source): " + exc.getMessage());
+            reporter.appendResult(errorItem);
         });
 
-        List<Path> destFiles = new ArrayList<>();
-        Files.walkFileTree(destination, new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                String name = dir.getFileName() != null ? dir.getFileName().toString() : "";
-                if (name.equals("node_modules") || name.equals(".git") || name.equals("target") || name.equals(".idea") || name.equals("build")) {
-                    return FileVisitResult.SKIP_SUBTREE;
-                }
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if (attrs.isRegularFile()) {
-                    destFiles.add(file);
-                }
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-                logger.warn("Sync scan (destination) skipping path due to restriction: {} ({})", file, exc.getMessage());
-                Map<String, Object> errorItem = new HashMap<>();
-                errorItem.put("filePath", file.toAbsolutePath().toString());
-                errorItem.put("action", "CLEANUP_SKIP");
-                errorItem.put("failed", true);
-                errorItem.put("error", "Access Denied (Destination): " + exc.getMessage());
-                reporter.appendResult(errorItem);
-                return FileVisitResult.CONTINUE;
-            }
+        List<Path> destFiles = FileUtils.getAllRegularFiles(destination, (file, exc) -> {
+            Map<String, Object> errorItem = new HashMap<>();
+            errorItem.put("filePath", file.toAbsolutePath().toString());
+            errorItem.put("action", "CLEANUP_SKIP");
+            errorItem.put("failed", true);
+            errorItem.put("error", "Access Denied (Destination): " + exc.getMessage());
+            reporter.appendResult(errorItem);
         });
 
         int total = sourceFiles.size() + destFiles.size();
@@ -276,7 +194,8 @@ public class SyncService {
 
         // 1. Copy source files that are new or newer to destination
         for (Path file : sourceFiles) {
-            if (reporter.isCancelled()) break;
+            if (reporter.isCancelled())
+                break;
 
             Map<String, Object> fileResult = new HashMap<>();
             fileResult.put("filePath", file.toAbsolutePath().toString());
@@ -315,7 +234,8 @@ public class SyncService {
 
         // 2. Copy destination files that are new or newer to source
         for (Path target : destFiles) {
-            if (reporter.isCancelled()) break;
+            if (reporter.isCancelled())
+                break;
 
             Map<String, Object> fileResult = new HashMap<>();
             fileResult.put("filePath", target.toAbsolutePath().toString());

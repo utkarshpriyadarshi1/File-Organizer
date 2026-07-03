@@ -1,9 +1,9 @@
 package in.updev.fileorganizer.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import in.updev.fileorganizer.entities.RegisteredVersion;
-import in.updev.fileorganizer.repositories.RegisteredVersionRepository;
-import lombok.RequiredArgsConstructor;
+import java.io.InputStream;
+import java.time.LocalDateTime;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -11,9 +11,11 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
-import java.io.InputStream;
-import java.time.LocalDateTime;
-import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import in.updev.fileorganizer.entities.RegisteredVersion;
+import in.updev.fileorganizer.repositories.RegisteredVersionRepository;
+import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor

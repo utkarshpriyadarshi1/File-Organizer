@@ -1,17 +1,19 @@
 package in.updev.fileorganizer.services;
 
-import in.updev.fileorganizer.repositories.BackgroundTaskRepository;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
-
-import static org.junit.jupiter.api.Assertions.*;
+import in.updev.fileorganizer.repositories.BackgroundTaskRepository;
 
 @SpringBootTest
 public class BackupServiceTest {
@@ -55,7 +57,8 @@ public class BackupServiceTest {
         String taskId2 = backupService.createBackup(tempSource.toString(), tempBackup.toString());
         waitForTaskCompletion(taskId2);
 
-        // Modify file1 content (changing size) and timestamp to trigger incremental update
+        // Modify file1 content (changing size) and timestamp to trigger incremental
+        // update
         Files.writeString(file1, "Modified Content for File 1 with different size");
         long newModTime = System.currentTimeMillis() + 5000;
         Files.setLastModifiedTime(file1, FileTime.fromMillis(newModTime));
@@ -65,8 +68,10 @@ public class BackupServiceTest {
         waitForTaskCompletion(taskId3);
 
         // Verify only modified file was copied and updated, others remained unchanged
-        assertEquals("Modified Content for File 1 with different size", Files.readString(backupFile1), "file1 should be updated in backup");
-        assertEquals("Original Content for File 2", Files.readString(backupFile2), "file2 should remain original in backup");
+        assertEquals("Modified Content for File 1 with different size", Files.readString(backupFile1),
+                "file1 should be updated in backup");
+        assertEquals("Original Content for File 2", Files.readString(backupFile2),
+                "file2 should remain original in backup");
     }
 
     private void waitForTaskCompletion(String taskId) throws InterruptedException {
@@ -75,10 +80,10 @@ public class BackupServiceTest {
             var taskOpt = backgroundTaskRepository.findById(taskId);
             if (taskOpt.isPresent()) {
                 var status = taskOpt.get().getStatus();
-                if (status == in.updev.fileorganizer.enums.TaskStatus.COMPLETED || 
-                    status == in.updev.fileorganizer.enums.TaskStatus.COMPLETED_WITH_FAILURES ||
-                    status == in.updev.fileorganizer.enums.TaskStatus.FAILED || 
-                    status == in.updev.fileorganizer.enums.TaskStatus.CANCELED) {
+                if (status == in.updev.fileorganizer.enums.TaskStatus.COMPLETED ||
+                        status == in.updev.fileorganizer.enums.TaskStatus.COMPLETED_WITH_FAILURES ||
+                        status == in.updev.fileorganizer.enums.TaskStatus.FAILED ||
+                        status == in.updev.fileorganizer.enums.TaskStatus.CANCELED) {
                     break;
                 }
             }

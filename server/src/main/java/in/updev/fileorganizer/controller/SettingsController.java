@@ -1,20 +1,48 @@
 package in.updev.fileorganizer.controller;
 
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import in.updev.fileorganizer.entities.AppSetting;
 import in.updev.fileorganizer.entities.BackgroundTask;
 import in.updev.fileorganizer.entities.IgnoreRule;
 import in.updev.fileorganizer.entities.RegisteredVersion;
-import in.updev.fileorganizer.repositories.*;
-import in.updev.fileorganizer.services.*;
+import in.updev.fileorganizer.repositories.ActivityLogRepository;
+import in.updev.fileorganizer.repositories.AppSettingRepository;
+import in.updev.fileorganizer.repositories.BackgroundTaskRepository;
+import in.updev.fileorganizer.repositories.BackupJobRepository;
+import in.updev.fileorganizer.repositories.DbFileRepository;
+import in.updev.fileorganizer.repositories.ErrorLogRepository;
+import in.updev.fileorganizer.repositories.FileHashRepository;
+import in.updev.fileorganizer.repositories.FileReversalRepository;
+import in.updev.fileorganizer.repositories.FileVersionRepository;
+import in.updev.fileorganizer.repositories.IgnoreRuleRepository;
+import in.updev.fileorganizer.repositories.RegisteredVersionRepository;
+import in.updev.fileorganizer.repositories.SyncJobRepository;
+import in.updev.fileorganizer.repositories.TagRepository;
+import in.updev.fileorganizer.services.DirectoryStatsProvider;
 import in.updev.fileorganizer.services.DirectoryStatsProvider.FolderStats;
+import in.updev.fileorganizer.services.FilePurgeService;
+import in.updev.fileorganizer.services.RedisCacheService;
+import in.updev.fileorganizer.services.SqliteWriteQueueService;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.web.bind.annotation.*;
-
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/settings")
@@ -60,14 +88,14 @@ public class SettingsController {
         if (path == null || path.trim().isEmpty()) {
             throw new IllegalArgumentException("Path cannot be empty.");
         }
-        
+
         String targetPath = path.trim();
         AppSetting setting = appSettingRepository.findByKey("default_path")
                 .orElse(new AppSetting());
         setting.setKey("default_path");
         setting.setValue(targetPath);
         appSettingRepository.save(setting);
-        
+
         Map<String, String> response = new HashMap<>();
         response.put("defaultPath", targetPath);
         return response;
@@ -111,7 +139,7 @@ public class SettingsController {
         stats.add(directoryStatsProvider.getStats(Paths.get(REPORTS_DIR), "reports"));
         stats.add(directoryStatsProvider.getStats(Paths.get(TEMP_DIR), "temp"));
         stats.add(directoryStatsProvider.getStats(Paths.get(LOGS_DIR), "logs"));
-        logger.debug("Compiled folder cache stats: reports={}, temp={}, logs={}", 
+        logger.debug("Compiled folder cache stats: reports={}, temp={}, logs={}",
                 stats.get(0).getFileCount(), stats.get(1).getFileCount(), stats.get(2).getFileCount());
         return stats;
     }
@@ -149,7 +177,7 @@ public class SettingsController {
     @PostMapping("/reset")
     public String resetApplication() throws Exception {
         logger.info("Request received to factory reset application databases & cache");
-        
+
         sqliteWriteQueueService.executeWrite(() -> {
             activityLogRepository.deleteAll();
             fileHashRepository.deleteAll();
@@ -191,4 +219,3 @@ public class SettingsController {
         return registeredVersionRepository.findAll();
     }
 }
-

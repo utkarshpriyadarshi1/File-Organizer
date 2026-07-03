@@ -1,27 +1,38 @@
 package in.updev.fileorganizer.services;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
 import in.updev.fileorganizer.config.WebSocketHandler;
 import in.updev.fileorganizer.entities.BackgroundTask;
-import in.updev.fileorganizer.enums.TaskType;
-import in.updev.fileorganizer.enums.TaskStatus;
 import in.updev.fileorganizer.entities.FileReversal;
+import in.updev.fileorganizer.enums.TaskStatus;
+import in.updev.fileorganizer.enums.TaskType;
 import in.updev.fileorganizer.repositories.BackgroundTaskRepository;
 import in.updev.fileorganizer.repositories.DbFileRepository;
 import in.updev.fileorganizer.repositories.FileReversalRepository;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.springframework.stereotype.Service;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.*;
 
 @Service
 @RequiredArgsConstructor
@@ -50,6 +61,7 @@ public class BackgroundTaskManager {
         private String destinationPath;
         private String actionDetails;
     }
+
     private final Map<String, TaskMeta> taskMetaCache = new ConcurrentHashMap<>();
 
     @FunctionalInterface
@@ -59,7 +71,9 @@ public class BackgroundTaskManager {
 
     public interface TaskProgressReporter {
         void reportProgress(double progress, String currentMessage);
+
         void appendResult(Object resultItem);
+
         boolean isCancelled();
     }
 
@@ -67,9 +81,10 @@ public class BackgroundTaskManager {
         return submitTask(taskType, null, null, null, action);
     }
 
-    public String submitTask(TaskType taskType, String sourcePath, String destinationPath, String actionDetails, TaskAction action) {
+    public String submitTask(TaskType taskType, String sourcePath, String destinationPath, String actionDetails,
+            TaskAction action) {
         String taskId = UUID.randomUUID().toString();
-        
+
         if (sourcePath != null || destinationPath != null || actionDetails != null) {
             taskMetaCache.put(taskId, new TaskMeta(sourcePath, destinationPath, actionDetails));
         }
@@ -99,7 +114,8 @@ public class BackgroundTaskManager {
     private void triggerNextTask(TaskType taskType, TaskAction action) {
         executorService.submit(() -> {
             String taskId = localTaskQueue.poll();
-            if (taskId == null) return;
+            if (taskId == null)
+                return;
 
             final String finalTaskId = taskId;
             sqliteWriteQueueService.submitWrite(() -> {
@@ -126,7 +142,7 @@ public class BackgroundTaskManager {
                     resultList.add(resultItem);
                     itemsSinceCheckpoint++;
                     long elapsed = System.currentTimeMillis() - lastCheckpointTime;
-                    
+
                     if (itemsSinceCheckpoint >= 500 || elapsed >= 30000) {
                         doCheckpoint();
                     }
@@ -153,7 +169,7 @@ public class BackgroundTaskManager {
             Future<?> future = CompletableFuture.runAsync(() -> {
                 try {
                     action.execute(finalTaskId, reporter);
-                    
+
                     if (reporter.isCancelled()) {
                         handleCancellation(finalTaskId, taskType, resultList);
                     } else {
@@ -265,7 +281,8 @@ public class BackgroundTaskManager {
                 int count = 0;
 
                 for (FileReversal rev : reversals) {
-                    if (reporter.isCancelled()) break;
+                    if (reporter.isCancelled())
+                        break;
 
                     Map<String, Object> fileResult = new HashMap<>();
                     fileResult.put("sourcePath", rev.getSourcePath());
@@ -274,7 +291,7 @@ public class BackgroundTaskManager {
                     try {
                         Path source = Paths.get(rev.getSourcePath());
                         Path dest = Paths.get(rev.getOriginalPath());
-                        
+
                         // Perform the aggressive revert move
                         secureStorageService.secureMove(source, dest, false, null);
                         fileResult.put("failed", false);
@@ -296,7 +313,8 @@ public class BackgroundTaskManager {
 
                     reporter.appendResult(fileResult);
                     count++;
-                    reporter.reportProgress(((double) count / total) * 100, "Reverted: " + Paths.get(rev.getOriginalPath()).getFileName());
+                    reporter.reportProgress(((double) count / total) * 100,
+                            "Reverted: " + Paths.get(rev.getOriginalPath()).getFileName());
                 }
             }
         });
@@ -310,14 +328,14 @@ public class BackgroundTaskManager {
             payload.put("status", status.name());
             payload.put("progress", progress);
             payload.put("message", message);
-            
+
             TaskMeta meta = taskMetaCache.get(taskId);
             if (meta != null) {
                 payload.put("sourcePath", meta.getSourcePath());
                 payload.put("destinationPath", meta.getDestinationPath());
                 payload.put("actionDetails", meta.getActionDetails());
             }
-            
+
             WebSocketHandler.broadcastMessage(objectMapper.writeValueAsString(payload));
         } catch (Exception e) {
             logger.error("Failed to broadcast task status", e);
@@ -328,4 +346,3 @@ public class BackgroundTaskManager {
         return backgroundTaskRepository.findByStatusIn(List.of(TaskStatus.RUNNING, TaskStatus.QUEUED));
     }
 }
-

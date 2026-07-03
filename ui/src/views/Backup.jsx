@@ -2,6 +2,7 @@ import axios from "axios";
 import React, { useState, useEffect } from "react";
 import { useTasks } from "../services/TaskContext";
 import { Card, Input, Button, Space, Typography } from "../components/common";
+import { PageWrapper, PanelCard, FieldLabel } from "../components/wrappers";
 import { 
     FolderOpenOutlined, 
     PlayCircleOutlined, 
@@ -83,84 +84,77 @@ const Backup = () => {
     };
 
     return (
-        <Card 
-            className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-md rounded-2xl max-w-2xl mx-auto"
-            title={
-                <div className="flex items-center gap-2 py-1">
-                    <SafetyCertificateOutlined className="text-amber-500 text-lg" />
+        <PageWrapper style={{ maxWidth: '42rem' }}>
+            <PanelCard 
+                title="Backup & Restore"
+                subtitle="Secure, update, and manage compressed backups of critical directories"
+                icon={<SafetyCertificateOutlined style={{ color: '#f59e0b' }} />}
+            >
+            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                     <div>
-                        <span className="text-sm font-black text-slate-800 dark:text-slate-100 block leading-tight">Backup & Restore</span>
-                        <span className="text-[10px] text-slate-450 dark:text-slate-400 font-semibold block mt-0.5">Secure, update, and manage compressed backups of critical directories</span>
-                    </div>
-                </div>
-            }
-        >
-            <div className="space-y-5">
-                <div className="space-y-4">
-                    <div>
-                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
-                            <ImportOutlined style={{ color: '#2563eb' }} />
+                        <FieldLabel icon={<ImportOutlined style={{ color: '#2563eb' }} />}>
                             Source Directory
-                        </span>
-                        <div className="flex gap-2">
+                        </FieldLabel>
+                        <Space.Compact style={{ width: '100%' }}>
                             <Input 
                                 value={sourceFolder} 
                                 readOnly
                                 placeholder="No directory selected"
-                                className="bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 flex-grow font-mono font-bold text-slate-700 dark:text-slate-200"
+                                style={{ fontFamily: 'monospace', fontWeight: 'bold' }}
                             />
                             <Button 
                                 onClick={() => handleSelectFolder(setSourceFolder)} 
                                 icon={<FolderOpenOutlined />}
-                                className="h-full border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm active:scale-95 shrink-0"
+                                type="default"
                             >
                                 Select
                             </Button>
-                        </div>
+                        </Space.Compact>
                     </div>
 
                     <div>
-                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-505 uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
-                            <ExportOutlined style={{ color: '#d97706' }} />
+                        <FieldLabel icon={<ExportOutlined style={{ color: '#d97706' }} />}>
                             Backup Destination
-                        </span>
-                        <div className="flex gap-2">
+                        </FieldLabel>
+                        <Space.Compact style={{ width: '100%' }}>
                             <Input 
                                 value={backupFolder} 
                                 readOnly
                                 placeholder="No directory selected"
-                                className="bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 flex-grow font-mono font-bold text-slate-700 dark:text-slate-200"
+                                style={{ fontFamily: 'monospace', fontWeight: 'bold' }}
                             />
                             <Button 
                                 onClick={() => handleSelectFolder(setBackupFolder)} 
                                 icon={<FolderOpenOutlined />}
-                                className="h-full border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm active:scale-95 shrink-0"
+                                type="default"
                             >
                                 Select
                             </Button>
-                        </div>
+                        </Space.Compact>
                     </div>
-                </div>
+                </Space>
 
-                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <Space style={{ width: '100%', display: 'flex', gap: '12px' }}>
                     <Button 
                         type="primary"
                         onClick={startBackup} 
                         icon={<PlayCircleOutlined />}
-                        className="w-full bg-blue-600 hover:bg-blue-750 text-white font-semibold text-xs py-5 rounded-xl shadow-md flex items-center justify-center gap-2 border-0 active:scale-[0.98]"
+                        style={{ flex: 1, height: '48px', fontWeight: 'bold' }}
                     >
                         Start Full Backup
                     </Button>
                     <Button 
                         onClick={updateBackup} 
                         icon={<SyncOutlined />}
-                        className="w-full bg-amber-500 hover:bg-amber-600 hover:text-white border-0 text-white font-semibold text-xs py-5 rounded-xl shadow-md flex items-center justify-center gap-2 active:scale-[0.98]"
+                        style={{ flex: 1, height: '48px', fontWeight: 'bold', backgroundColor: '#f59e0b', color: '#fff', borderColor: '#f59e0b' }}
                     >
                         Update Backup
                     </Button>
-                </div>
-            </div>
-        </Card>
+                </Space>
+            </Space>
+            </PanelCard>
+        </PageWrapper>
     );
 };
 
