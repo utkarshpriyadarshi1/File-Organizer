@@ -37,7 +37,7 @@ public class FileScannerService {
             throw new IllegalArgumentException("Invalid scan folder path.");
         }
 
-        List<Path> paths = FileUtils.getAllRegularFiles(folderPath, null, null);
+        List<Path> paths = FileUtils.getAllRegularFiles(folderPath, null);
 
         String folderPrefix = folderPath.toAbsolutePath().toString();
         if (!folderPrefix.endsWith(java.io.File.separator)) {

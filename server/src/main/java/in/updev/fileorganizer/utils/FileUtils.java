@@ -14,10 +14,18 @@ public class FileUtils {
     private static final Logger logger = LoggerFactory.getLogger(FileUtils.class);
 
     public static List<Path> getAllRegularFiles(Path sourceDir, BiConsumer<Path, IOException> errorHandler) throws IOException {
-        return getAllRegularFiles(sourceDir, new ArrayList<>(), errorHandler);
+        return getAllRegularFiles(sourceDir, new ArrayList<>(), errorHandler, () -> false);
+    }
+
+    public static List<Path> getAllRegularFiles(Path sourceDir, BiConsumer<Path, IOException> errorHandler, java.util.function.Supplier<Boolean> cancelChecker) throws IOException {
+        return getAllRegularFiles(sourceDir, new ArrayList<>(), errorHandler, cancelChecker);
     }
 
     public static List<Path> getAllRegularFiles(Path sourceDir, List<String> extraIgnoredDirs, BiConsumer<Path, IOException> errorHandler) throws IOException {
+        return getAllRegularFiles(sourceDir, extraIgnoredDirs, errorHandler, () -> false);
+    }
+
+    public static List<Path> getAllRegularFiles(Path sourceDir, List<String> extraIgnoredDirs, BiConsumer<Path, IOException> errorHandler, java.util.function.Supplier<Boolean> cancelChecker) throws IOException {
         List<Path> allFiles = new ArrayList<>();
         if (!Files.exists(sourceDir)) {
             return allFiles;
@@ -26,6 +34,9 @@ public class FileUtils {
         Files.walkFileTree(sourceDir, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                if (cancelChecker != null && cancelChecker.get()) {
+                    return FileVisitResult.TERMINATE;
+                }
                 String name = dir.getFileName() != null ? dir.getFileName().toString() : "";
                 if (name.equals("node_modules") || name.equals(".git") || name.equals("target") || name.equals(".idea") || name.equals("build")) {
                     return FileVisitResult.SKIP_SUBTREE;
@@ -38,6 +49,9 @@ public class FileUtils {
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                if (cancelChecker != null && cancelChecker.get()) {
+                    return FileVisitResult.TERMINATE;
+                }
                 if (attrs.isRegularFile()) {
                     allFiles.add(file);
                 }

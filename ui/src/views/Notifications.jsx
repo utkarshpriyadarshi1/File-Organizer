@@ -266,8 +266,9 @@ const Notifications = () => {
                                             <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" title="Unread"></span>
                                         )}
                                         {notification.metadata && (
-                                            <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono font-bold">
-                                                (Click to show details)
+                                            <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono font-bold flex items-center gap-1">
+                                                <i className={`fa-solid ${isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'}`}></i>
+                                                {isExpanded ? "(Click to hide details)" : "(Click to show details)"}
                                             </span>
                                         )}
                                     </div>

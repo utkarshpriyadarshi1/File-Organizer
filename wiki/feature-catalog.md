@@ -12,16 +12,7 @@ The Automatic File Organizer categorizes loose files in a source directory and m
 - **Integrity Enforcement & Safety**: Files are moved using atomic copy-verify-delete methods.
 - **Reversal History**: The database registers every moved path, enabling a polymorphic **Undo** tool to revert changes.
 
----
 
-## 2. Incremental Backup & Restore
-
-Provides dynamic data security by backing up files without duplicate copies.
-
-- **Incremental Change Detection**: Compares file size and last-modified time to skip copying matching files.
-- **Integrity Validation**: Verifies hashes to ensure backup files copy successfully and match original source documents.
-
----
 
 ## 3. Duplicate Cleaner
 

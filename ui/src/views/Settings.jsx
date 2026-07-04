@@ -3,6 +3,7 @@ import axios from "axios";
 import { useTasks } from "../services/TaskContext";
 import { useI18n } from "../services/I18nContext";
 import Logs from "./Logs";
+import Help from "./Help";
 import { Card, Input, Button, Tabs, Select, Tag, Popconfirm, Spin, Space, Typography, Row, Col } from "../components/common";
 import {
     SlidersOutlined,
@@ -19,7 +20,9 @@ import {
     FileProtectOutlined,
     UnlockOutlined,
     FolderOutlined,
-    AppstoreAddOutlined
+    AppstoreAddOutlined,
+    GithubOutlined,
+    QuestionCircleOutlined
 } from "@ant-design/icons";
 
 const { Text } = Typography;

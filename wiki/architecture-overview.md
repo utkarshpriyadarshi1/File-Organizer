@@ -11,10 +11,7 @@
 - **File Organizer:** Browse, tag, move, and edit file attributes with fully reversible (undoable) actions.
 - **Duplicate Cleaning:** Detect and remove duplicate files via fast hashing with live progress and selection.
 - **Deep Cleaning:** Identify and clean redundant, large, or rarely used files.
-- **Incremental Backup:** Efficiently back up only changed or new files, verifying integrity post-backup.
-- **Sync:** One-way and two-way folder synchronization with conflict handling and task progress display.
-- **Restore:** Granular and full restore options, with preview and alternate path support.
-- **Document Locker:** Upload, categorize, and search documents using user-supplied metadata and system attributes.
+
 - **Task & Cache Settings:** Detailed panel to monitor active tasks, force-cancel queued/running tasks (bulk or partial), and prune finished cache directories folder-wise.
 - **Security:** Local encryption (AES-CBC), permission checks, and audit logs.
 - **Accessibility:** Multi-language support and accessibility options bundled.
@@ -74,46 +71,7 @@ CREATE TABLE file_tags (
 );
 ```
 
-### 4. `file_versions`
-Backup version tracking.
-```sql
-CREATE TABLE file_versions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    file_id INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
-    backup_job_id INTEGER REFERENCES backup_jobs(id) ON DELETE SET NULL,
-    version_number INTEGER NOT NULL,
-    backup_path TEXT NOT NULL,
-    backed_up_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-```
 
-### 5. `backup_jobs` and `sync_jobs`
-Job definitions.
-```sql
-CREATE TABLE backup_jobs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    job_name TEXT NOT NULL,
-    job_type TEXT NOT NULL,
-    source_path TEXT NOT NULL,
-    destination_path TEXT NOT NULL,
-    schedule TEXT,
-    status TEXT,
-    last_run TEXT,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE sync_jobs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    job_name TEXT NOT NULL,
-    source_path TEXT NOT NULL,
-    destination_path TEXT NOT NULL,
-    sync_type TEXT NOT NULL,
-    schedule TEXT,
-    status TEXT,
-    last_run TEXT,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-```
 
 ### 6. `background_tasks`
 Tracks execution status, summary, and report locations for all operations.

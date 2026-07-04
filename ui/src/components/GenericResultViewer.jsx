@@ -307,27 +307,31 @@ const GenericResultViewer = ({ task, onClose }) => {
                                 <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mr-1">Auto-Select:</span>
                                 <button 
                                     onClick={() => autoSelectDuplicates("keepOldest")}
-                                    className="bg-white hover:bg-slate-100 border border-gray-200 px-2 py-1 rounded-md active:scale-95 transition-all text-[10px] font-bold text-blue-600 hover:text-blue-700 shadow-sm flex items-center gap-1 cursor-pointer"
+                                    title="Keep Oldest"
+                                    className="bg-white hover:bg-slate-100 border border-gray-200 px-2 py-1 rounded-md active:scale-95 transition-all text-[10px] font-bold text-blue-600 hover:text-blue-700 shadow-sm flex items-center justify-center cursor-pointer w-7 h-7"
                                 >
-                                    <i className="fa-solid fa-clock-rotate-left"></i> Keep Oldest
+                                    <i className="fa-solid fa-clock-rotate-left"></i>
                                 </button>
                                 <button 
                                     onClick={() => autoSelectDuplicates("keepLatest")}
-                                    className="bg-white hover:bg-slate-100 border border-gray-200 px-2 py-1 rounded-md active:scale-95 transition-all text-[10px] font-bold text-indigo-600 hover:text-indigo-700 shadow-sm flex items-center gap-1 cursor-pointer"
+                                    title="Keep Latest"
+                                    className="bg-white hover:bg-slate-100 border border-gray-200 px-2 py-1 rounded-md active:scale-95 transition-all text-[10px] font-bold text-indigo-600 hover:text-indigo-700 shadow-sm flex items-center justify-center cursor-pointer w-7 h-7"
                                 >
-                                    <i className="fa-solid fa-clock"></i> Keep Latest
+                                    <i className="fa-solid fa-clock"></i>
                                 </button>
                                 <button 
                                     onClick={() => autoSelectDuplicates("selectAll")}
-                                    className="bg-white hover:bg-slate-100 border border-gray-200 px-2 py-1 rounded-md active:scale-95 transition-all text-[10px] font-bold text-rose-600 hover:text-rose-700 shadow-sm flex items-center gap-1 cursor-pointer"
+                                    title="Select All"
+                                    className="bg-white hover:bg-slate-100 border border-gray-200 px-2 py-1 rounded-md active:scale-95 transition-all text-[10px] font-bold text-rose-600 hover:text-rose-700 shadow-sm flex items-center justify-center cursor-pointer w-7 h-7"
                                 >
-                                    <i className="fa-solid fa-check-double"></i> Select All
+                                    <i className="fa-solid fa-check-double"></i>
                                 </button>
                                 <button 
                                     onClick={() => autoSelectDuplicates("clearAll")}
-                                    className="bg-white hover:bg-slate-100 border border-gray-200 px-2 py-1 rounded-md active:scale-95 transition-all text-[10px] font-bold text-gray-600 hover:text-gray-805 shadow-sm flex items-center gap-1 cursor-pointer"
+                                    title="Clear"
+                                    className="bg-white hover:bg-slate-100 border border-gray-200 px-2 py-1 rounded-md active:scale-95 transition-all text-[10px] font-bold text-gray-600 hover:text-gray-805 shadow-sm flex items-center justify-center cursor-pointer w-7 h-7"
                                 >
-                                    <i className="fa-solid fa-circle-xmark"></i> Clear
+                                    <i className="fa-solid fa-circle-xmark"></i>
                                 </button>
                             </div>
                         </div>
@@ -441,23 +445,25 @@ const GenericResultViewer = ({ task, onClose }) => {
                                     <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mr-1">Auto-Select:</span>
                                     <button 
                                         onClick={() => autoSelectFiles("selectAll")}
-                                        className="bg-white hover:bg-slate-100 border border-gray-200 px-3 py-1 rounded-md active:scale-95 transition-all text-[10px] font-bold text-blue-600 hover:text-blue-755 shadow-sm flex items-center gap-1 cursor-pointer"
+                                        title="Select All Eligible"
+                                        className="bg-white hover:bg-slate-100 border border-gray-200 rounded-md active:scale-95 transition-all text-[10px] font-bold text-blue-600 hover:text-blue-755 shadow-sm flex items-center justify-center cursor-pointer w-7 h-7"
                                     >
-                                        <i className="fa-solid fa-check-double"></i> Select All Eligible
+                                        <i className="fa-solid fa-check-double"></i>
                                     </button>
                                     <button 
                                         onClick={() => autoSelectFiles("clearAll")}
-                                        className="bg-white hover:bg-slate-100 border border-gray-200 px-3 py-1 rounded-md active:scale-95 transition-all text-[10px] font-bold text-gray-600 hover:text-gray-805 shadow-sm flex items-center gap-1 cursor-pointer"
+                                        title="Clear All"
+                                        className="bg-white hover:bg-slate-100 border border-gray-200 rounded-md active:scale-95 transition-all text-[10px] font-bold text-gray-600 hover:text-gray-805 shadow-sm flex items-center justify-center cursor-pointer w-7 h-7"
                                     >
-                                        <i className="fa-solid fa-circle-xmark"></i> Clear
+                                        <i className="fa-solid fa-circle-xmark"></i>
                                     </button>
                                 </div>
                                 <button 
                                     onClick={() => handleReversalAction("REVERT_MOVES")}
-                                    className="bg-blue-600 hover:bg-blue-700 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-white font-semibold text-xs px-3.5 py-1.5 rounded-xl transition-all duration-150 flex items-center gap-1.5 shadow-sm ml-auto"
+                                    title="Undo Selected Moves"
+                                    className="bg-blue-600 hover:bg-blue-700 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-white font-semibold text-xs px-3.5 py-1.5 rounded-xl transition-all duration-150 flex items-center justify-center shadow-sm ml-auto w-8 h-8"
                                 >
                                     <i className="fa-solid fa-rotate-left"></i>
-                                    Undo Selected Moves
                                 </button>
                             </div>
                         </div>

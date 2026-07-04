@@ -55,8 +55,8 @@ const Tasks = () => {
     const [historySearch, setHistorySearch] = useState("");
     const [selectedTask, setSelectedTask] = useState(null);
 
-    // Loading states
     const [historyLoading, setHistoryLoading] = useState(false);
+    const [restartingTaskId, setRestartingTaskId] = useState(null);
 
     // Fetch Completed History
     const fetchHistory = () => {
@@ -101,7 +101,6 @@ const Tasks = () => {
         }
     };
 
-    // Bulk force-cancel active tasks
     const handleBulkCancel = async () => {
         if (selectedTasks.length === 0) {
             alert("No tasks selected.");
@@ -114,6 +113,22 @@ const Tasks = () => {
             syncActiveTasks();
             fetchHistory();
         }, 1000);
+    };
+
+    const handleRestart = (taskId, e) => {
+        e.stopPropagation();
+        setRestartingTaskId(taskId);
+        axios.post(`http://localhost:8080/api/tasks/${taskId}/restart`)
+            .then(res => {
+                console.log("[Tasks] Successfully restarted task. New ID:", res.data);
+                syncActiveTasks();
+                setRestartingTaskId(null);
+            })
+            .catch(err => {
+                console.error("[Tasks] Failed to restart task:", err);
+                alert("Failed to restart task.");
+                setRestartingTaskId(null);
+            });
     };
 
     // Filtered & Sorted Active Tasks
@@ -272,6 +287,34 @@ const Tasks = () => {
                     <ClockCircleOutlined style={{ fontSize: '10px' }} />
                     {text ? new Date(text).toLocaleString() : "Running..."}
                 </span>
+            )
+        },
+        {
+            title: <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Actions</span>,
+            key: 'actions',
+            render: (_, record) => (
+                <div className="flex gap-2 items-center" onClick={e => e.stopPropagation()}>
+                    <Button 
+                        size="small" 
+                        type="primary" 
+                        ghost
+                        icon={<ReloadOutlined />} 
+                        onClick={(e) => handleRestart(record.id, e)}
+                        loading={restartingTaskId === record.id}
+                        className="text-[10px] font-bold"
+                        title="Restart Task"
+                    />
+                    <Button 
+                        size="small"
+                        icon={<InfoCircleOutlined />}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedTask(record);
+                        }}
+                        className="text-[10px] font-bold"
+                        title="View Details"
+                    />
+                </div>
             )
         }
     ];
@@ -526,8 +569,7 @@ const Tasks = () => {
                         size="small"
                         loading={historyLoading}
                         onRow={(record) => ({
-                            onClick: () => setSelectedTask(record),
-                            className: "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-805/50 transition-colors"
+                            className: "hover:bg-slate-50 dark:hover:bg-slate-805/50 transition-colors"
                         })}
                         className="text-xs"
                         locale={{

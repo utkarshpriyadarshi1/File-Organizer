@@ -22,6 +22,7 @@ public class TaskController {
     private final BackgroundTaskManager backgroundTaskManager;
     private final BackgroundTaskRepository backgroundTaskRepository;
     private final ReportSerializationService reportSerializationService;
+    private final in.updev.fileorganizer.services.TaskRestartService taskRestartService;
 
     @GetMapping("/active")
     public List<BackgroundTask> getActiveTasks() {
@@ -85,6 +86,19 @@ public class TaskController {
         String result = backgroundTaskManager.executeReversalAction(id, actionType, targetPaths);
         logger.info("Reversal action execution result for task ID {}: {}", id, result);
         return result;
+    }
+
+    @PostMapping("/{id}/restart")
+    public String restartTask(@PathVariable String id) {
+        logger.info("Received request to restart task ID: {}", id);
+        try {
+            String newTaskId = taskRestartService.restartTask(id);
+            logger.info("Restarted successfully. New task ID: {}", newTaskId);
+            return newTaskId;
+        } catch (Exception e) {
+            logger.error("Failed to restart task ID: {}", id, e);
+            throw new RuntimeException("Failed to restart task", e);
+        }
     }
 }
 

@@ -18,11 +18,9 @@ import {
 } from "@ant-design/icons";
 import Overview from "./Overview";
 import Organizer from "./Organizer";
-import Backup from "./Backup";
 import Duplicates from "./Duplicates";
 import Tasks from "./Tasks";
 import Settings from "./Settings";
-import SyncRestore from "./SyncRestore";
 import Notifications from "./Notifications";
 import Help from "./Help";
 import WorkspaceExplorer from "./WorkspaceExplorer";
@@ -50,12 +48,8 @@ const Dashboard = ({ theme, toggleTheme, layoutMode, toggleLayoutMode }) => {
                 return <Overview setActiveTab={setActiveTab} />;
             case "organizer":
                 return <Organizer />;
-            case "backup":
-                return <Backup />;
             case "duplicates":
                 return <Duplicates />;
-            case "sync":
-                return <SyncRestore />;
             case "tasks":
                 return <Tasks />;
             case "notifications":
@@ -64,8 +58,6 @@ const Dashboard = ({ theme, toggleTheme, layoutMode, toggleLayoutMode }) => {
                 return <WorkspaceExplorer />;
             case "settings":
                 return <Settings defaultSubTab={settingsSubTab} />;
-            case "help":
-                return <Help />;
             default:
                 return <Overview setActiveTab={setActiveTab} />;
         }
@@ -92,21 +84,13 @@ const Dashboard = ({ theme, toggleTheme, layoutMode, toggleLayoutMode }) => {
                     icon: <DeploymentUnitOutlined style={{ fontSize: '14px' }} />,
                     label: <span className="font-bold text-xs">{t("workspaceExplorer")}</span>,
                 },
-                {
-                    key: 'backup',
-                    icon: <SafetyCertificateOutlined style={{ fontSize: '14px' }} />,
-                    label: <span className="font-bold text-xs">{t("backupRestore")}</span>,
-                },
+
                 {
                     key: 'duplicates',
                     icon: <CopyOutlined style={{ fontSize: '14px' }} />,
                     label: <span className="font-bold text-xs">{t("duplicateCleaner")}</span>,
                 },
-                {
-                    key: 'sync',
-                    icon: <SyncOutlined style={{ fontSize: '14px' }} />,
-                    label: <span className="font-bold text-xs">{t("syncVersioning")}</span>,
-                },
+
             ]
         },
         {
@@ -253,12 +237,6 @@ const Dashboard = ({ theme, toggleTheme, layoutMode, toggleLayoutMode }) => {
                                 setSettingsSubTab("general");
                                 setActiveTab("settings");
                             }}
-                        />
-
-                        <Button
-                            className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-gray-200 dark:border-gray-700 shadow-sm active:scale-95 w-9 h-9 rounded-xl flex items-center justify-center p-0"
-                            icon={<QuestionCircleOutlined style={{ fontSize: '14px', color: '#f43f5e' }} />}
-                            onClick={() => setActiveTab("help")}
                         />
                     </div>
                 </Header>

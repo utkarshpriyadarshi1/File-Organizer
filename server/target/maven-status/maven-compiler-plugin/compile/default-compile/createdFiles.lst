@@ -6,10 +6,12 @@ in\updev\fileorganizer\entities\BackupJob.class
 in\updev\fileorganizer\services\VersionInitializer.class
 in\updev\fileorganizer\entities\ActivityLog$ActivityLogBuilder.class
 in\updev\fileorganizer\services\ErrorLoggingService.class
+in\updev\fileorganizer\utils\FileUtils$1.class
 in\updev\fileorganizer\config\WebSocketHandler.class
 in\updev\fileorganizer\entities\RegisteredVersion.class
 in\updev\fileorganizer\services\SecureStorageService.class
 in\updev\fileorganizer\entities\FileReversal.class
+in\updev\fileorganizer\services\TaskRestartService.class
 in\updev\fileorganizer\controller\DirectoryAnalysisController.class
 in\updev\fileorganizer\controller\WorkspaceExplorerController$1.class
 in\updev\fileorganizer\services\BackgroundTaskManager$TaskMeta.class
@@ -39,6 +41,7 @@ in\updev\fileorganizer\controller\LogsController.class
 in\updev\fileorganizer\repositories\BackupJobRepository.class
 in\updev\fileorganizer\entities\BackupJob$BackupJobBuilder.class
 in\updev\fileorganizer\services\DuplicateService.class
+in\updev\fileorganizer\services\TaskRestartService$1.class
 in\updev\fileorganizer\services\IgnoreRulesInitializer.class
 in\updev\fileorganizer\entities\AppSetting.class
 in\updev\fileorganizer\services\BackgroundTaskManager$TaskProgressReporter.class
@@ -72,6 +75,7 @@ in\updev\fileorganizer\entities\BackgroundTask$BackgroundTaskBuilder.class
 in\updev\fileorganizer\entities\FileVersion.class
 in\updev\fileorganizer\repositories\RegisteredVersionRepository.class
 in\updev\fileorganizer\services\SyncService.class
+in\updev\fileorganizer\utils\FileUtils.class
 in\updev\fileorganizer\controller\DirectoryAnalysisController$1.class
 in\updev\fileorganizer\entities\IgnoreRule.class
 in\updev\fileorganizer\controller\OrganizeController.class

@@ -176,8 +176,13 @@ public class BackgroundTaskManager {
                         handleCompletion(finalTaskId, taskType, resultList, null);
                     }
                 } catch (Exception e) {
-                    logger.error("Error executing task: {}", finalTaskId, e);
-                    handleCompletion(finalTaskId, taskType, resultList, e);
+                    if (reporter.isCancelled()) {
+                        logger.info("Task {} interrupted/canceled during execution", finalTaskId);
+                        handleCancellation(finalTaskId, taskType, resultList);
+                    } else {
+                        logger.error("Error executing task: {}", finalTaskId, e);
+                        handleCompletion(finalTaskId, taskType, resultList, e);
+                    }
                 } finally {
                     activeFutures.remove(finalTaskId);
                     taskCancellationManager.cleanCancellationKey(finalTaskId);

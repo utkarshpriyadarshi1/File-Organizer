@@ -10,7 +10,7 @@
     "png256": "icons/128x128@2x.png",
     "icns": "icons/icon.icns"
   },
-  "version": "0.0.8",
+  "version": "0.0.10",
   "ui": {
     "defaultTheme": "light",
     "defaultLayout": "app",

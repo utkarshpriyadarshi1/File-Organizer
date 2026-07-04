@@ -23,8 +23,7 @@ Welcome to **File Organizer**, a premium, production-ready desktop application d
 *   **Offline-First & Cloud-Free:** Zero external APIs or cloud synchronization pipelines. Your data remains fully stored on your local disk.
 *   **File Organizer:** Walk large directory trees, assign category and custom tags, edit file metadata (titles, descriptions), and perform fully reversible actions (Undo moves/restorations).
 *   **Fast Duplicate Detection:** Uses optimized chunked hashing (SHA-256) with local database indexing, allowing it to quickly identify duplicates in folders with millions of files.
-*   **Versioned Incremental Backups:** Back up files incrementally (only newly added/modified files) with full metadata persistence and post-copy SHA-256 validation.
-*   **Document Locker:** Securely store and search critical documents with password-protected AES-256 local encryption.
+*   *(Note: Backup, Sync, and Restore features have been extracted to a separate `file-backup-sync` project).*
 *   **Serialized SQLite Database Queue:** Uses a sequential write queue (`SqliteWriteQueueService`) to completely bypass SQLite locking exceptions (`SQLITE_BUSY`) during high-frequency parallel write requests.
 *   **In-Memory Simulated Cache:** Features a thread-safe, bounded LRU caching service (`RedisCacheService`) implemented in pure Java memory (`ConcurrentHashMap`) to optimize file scans and tags lookups with zero local installation overhead.
 *   **Interactive Task drawer:** Displays real-time progress of jobs (scans, backups, reversions) via WebSockets, allowing user force-cancellations (bulk or individual).
