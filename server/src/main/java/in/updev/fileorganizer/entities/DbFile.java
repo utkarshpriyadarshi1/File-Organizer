@@ -8,7 +8,9 @@ import java.util.Set;
 import java.io.Serializable;
 
 @Entity
-@Table(name = "files")
+@Table(name = "files", indexes = {
+    @Index(name = "idx_dbfile_path", columnList = "path")
+})
 @Getter
 @Setter
 @NoArgsConstructor

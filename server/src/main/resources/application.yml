@@ -3,7 +3,7 @@ spring:
     url: jdbc:sqlite:file-organizer.db?journal_mode=WAL&busy_timeout=5000
     driver-class-name: org.sqlite.JDBC
     hikari:
-      maximum-pool-size: 5
+      maximum-pool-size: 10
       minimum-idle: 1
       idle-timeout: 30000
   jpa:
@@ -14,3 +14,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true

@@ -185,4 +185,4 @@ const TaskHistoryWidget = ({ filterTaskType = "ALL", limit = 10 }) => {
     );
 };
 
-export default TaskHistoryWidget;
+export default React.memo(TaskHistoryWidget);

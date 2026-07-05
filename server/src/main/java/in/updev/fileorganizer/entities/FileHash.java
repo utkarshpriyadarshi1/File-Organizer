@@ -5,7 +5,9 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "file_hashes")
+@Table(name = "file_hashes", indexes = {
+    @Index(name = "idx_filehash_hash", columnList = "hash")
+})
 @Getter
 @Setter
 @NoArgsConstructor

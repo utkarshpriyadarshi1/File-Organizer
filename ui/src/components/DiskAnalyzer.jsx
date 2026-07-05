@@ -91,7 +91,7 @@ const DiskAnalyzer = ({ targetPath }) => {
 
                         {/* Visual breakdown list */}
                         <Row gutter={[12, 12]}>
-                            {Object.entries(analysisResult.categories).map(([catName, catStats]) => {
+                            {React.useMemo(() => Object.entries(analysisResult.categories).map(([catName, catStats]) => {
                                 const sizePercentage = analysisResult.totalSize > 0
                                     ? ((catStats.totalSize / analysisResult.totalSize) * 100)
                                     : 0;
@@ -154,7 +154,7 @@ const DiskAnalyzer = ({ targetPath }) => {
                                         </Card>
                                     </Col>
                                 );
-                            })}
+                            }), [analysisResult])}
                         </Row>
                     </div>
                 )}
@@ -163,4 +163,4 @@ const DiskAnalyzer = ({ targetPath }) => {
     );
 };
 
-export default DiskAnalyzer;
+export default React.memo(DiskAnalyzer);

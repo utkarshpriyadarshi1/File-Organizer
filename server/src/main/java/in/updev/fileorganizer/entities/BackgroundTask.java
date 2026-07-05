@@ -8,7 +8,10 @@ import java.time.LocalDateTime;
 import java.io.Serializable;
 
 @Entity
-@Table(name = "background_tasks")
+@Table(name = "background_tasks", indexes = {
+    @Index(name = "idx_bgtask_status", columnList = "status"),
+    @Index(name = "idx_bgtask_type", columnList = "task_type")
+})
 @Getter
 @Setter
 @NoArgsConstructor

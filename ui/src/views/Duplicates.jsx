@@ -358,35 +358,39 @@ const Duplicates = ({ targetPath }) => {
                         </div>
                         
                         <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-                            {getSortedDuplicates().length === 0 ? (
-                                <p className="text-xs text-slate-400 text-center py-6">No duplicate sets match your search filter.</p>
-                            ) : getSortedDuplicates().map((dup, index) => (
-                                <div key={index} className="border border-slate-200 dark:border-slate-800 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-900/40">
-                                    <p className="text-[11px] font-mono text-slate-500 dark:text-slate-450 mb-2 truncate flex items-center gap-1.5">
-                                        <Text code className="text-[9px] uppercase px-1 rounded bg-slate-200 dark:bg-slate-800 border-0 text-slate-600 dark:text-slate-400 font-black">MD5</Text>
-                                        {dup.hash}
-                                    </p>
-                                    <div className="space-y-1.5">
-                                        {dup.files.map((file, i) => (
-                                            <div key={i} className="flex items-center justify-between gap-4 p-2 rounded-lg hover:bg-slate-100/50 dark:hover:bg-slate-800/40 transition-colors">
-                                                <div className="flex items-center gap-2 min-w-0">
-                                                    <Checkbox
-                                                        onChange={() => toggleSelection(file.path)}
-                                                        checked={selectedFiles.includes(file.path)}
-                                                    />
-                                                    <span className="text-xs text-slate-700 dark:text-slate-300 truncate flex items-center gap-1.5" title={file.path}>
-                                                        <FileTextOutlined style={{ color: '#94a3b8' }} />
-                                                        {file.path}
+                            {React.useMemo(() => {
+                                const sorted = getSortedDuplicates();
+                                if (sorted.length === 0) {
+                                    return <p className="text-xs text-slate-400 text-center py-6">No duplicate sets match your search filter.</p>;
+                                }
+                                return sorted.map((dup, index) => (
+                                    <div key={index} className="border border-slate-200 dark:border-slate-800 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-900/40">
+                                        <p className="text-[11px] font-mono text-slate-500 dark:text-slate-450 mb-2 truncate flex items-center gap-1.5">
+                                            <Text code className="text-[9px] uppercase px-1 rounded bg-slate-200 dark:bg-slate-800 border-0 text-slate-600 dark:text-slate-400 font-black">MD5</Text>
+                                            {dup.hash}
+                                        </p>
+                                        <div className="space-y-1.5">
+                                            {dup.files.map((file, i) => (
+                                                <div key={i} className="flex items-center justify-between gap-4 p-2 rounded-lg hover:bg-slate-100/50 dark:hover:bg-slate-800/40 transition-colors">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <Checkbox
+                                                            onChange={() => toggleSelection(file.path)}
+                                                            checked={selectedFiles.includes(file.path)}
+                                                        />
+                                                        <span className="text-xs text-slate-700 dark:text-slate-300 truncate flex items-center gap-1.5" title={file.path}>
+                                                            <FileTextOutlined style={{ color: '#94a3b8' }} />
+                                                            {file.path}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold shrink-0">
+                                                        {file.modifiedAt ? new Date(file.modifiedAt.replace("T", " ")).toLocaleString() : "Unknown date"}
                                                     </span>
                                                 </div>
-                                                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold shrink-0">
-                                                    {file.modifiedAt ? new Date(file.modifiedAt.replace("T", " ")).toLocaleString() : "Unknown date"}
-                                                </span>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                ));
+                            }, [duplicates, dupSearch, dupSort, selectedFiles])}
                         </div>
                     </div>
                 </Card>
@@ -396,4 +400,4 @@ const Duplicates = ({ targetPath }) => {
     );
 };
 
-export default Duplicates;
+export default React.memo(Duplicates);
