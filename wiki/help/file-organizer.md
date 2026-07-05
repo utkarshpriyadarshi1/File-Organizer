@@ -13,3 +13,5 @@ The **File Organizer** allows you to scan folders, categorize files, edit detail
 3. Click **Scan Folder** to index all files.
 4. Set categories, tags, or descriptions for individual documents.
 5. Apply mutations (moves/deletions) and use the **Undo** drawer to revert actions at any point.
+
+*For details on custom layout rules, auto-pausing, or system resource protections, please read the **Advanced Settings & System Monitoring** manual.*

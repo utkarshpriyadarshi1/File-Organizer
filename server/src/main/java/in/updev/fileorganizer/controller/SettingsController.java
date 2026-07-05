@@ -174,6 +174,36 @@ public class SettingsController {
         }
     }
 
+    @DeleteMapping("/database")
+    public String clearSelectedDatabaseTables(@RequestParam String tables) {
+        logger.info("Request received to clear selected database tables: {}", tables);
+        String[] tableList = tables.split(",");
+
+        sqliteWriteQueueService.executeWrite(() -> {
+            for (String table : tableList) {
+                switch (table.trim().toLowerCase()) {
+                    case "tasks":
+                        backgroundTaskRepository.deleteAll();
+                        break;
+                    case "files":
+                        dbFileRepository.deleteAll();
+                        break;
+                    case "reversals":
+                        fileReversalRepository.deleteAll();
+                        break;
+                    case "audit":
+                        activityLogRepository.deleteAll();
+                        break;
+                    default:
+                        logger.warn("Unknown table requested for clearing: {}", table);
+                }
+            }
+            return null;
+        });
+
+        return "Selected database tables cleared successfully.";
+    }
+
     @PostMapping("/reset")
     public String resetApplication() throws Exception {
         logger.info("Request received to factory reset application databases & cache");

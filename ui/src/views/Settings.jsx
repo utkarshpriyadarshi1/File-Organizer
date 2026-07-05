@@ -48,6 +48,7 @@ const Settings = ({ defaultSubTab }) => {
     const [cacheFilter, setCacheFilter] = useState("ALL");
     const [cacheSort, setCacheSort] = useState("sizeDesc");
     const [cacheLoading, setCacheLoading] = useState(false);
+    const [selectedTables, setSelectedTables] = useState([]);
 
     // Ignore rules states
     const [ignoreRules, setIgnoreRules] = useState([]);
@@ -175,6 +176,26 @@ const Settings = ({ defaultSubTab }) => {
         }
     };
 
+    const insertToken = (token) => {
+        const val = layoutPattern + (layoutPattern.endsWith("/") || layoutPattern === "" ? "" : "/") + token;
+        setLayoutPattern(val);
+    };
+
+    const generatePreview = (pattern) => {
+        if (!pattern) return "/";
+        return pattern
+            .replace(/{fileType}/g, "image_jpeg")
+            .replace(/{extension}/g, "jpg")
+            .replace(/{yearMonth}/g, "2026-07")
+            .replace(/{year}/g, "2026")
+            .replace(/{month}/g, "07")
+            .replace(/{day}/g, "05")
+            .replace(/{quarter}/g, "Q3")
+            .replace(/{decade}/g, "2020s")
+            .replace(/{alpha}/g, "H")
+            .replace(/{sizeCategory}/g, "03_Medium");
+    };
+
     useEffect(() => {
         fetchCacheStats();
         fetchIgnoreRules();
@@ -213,14 +234,19 @@ const Settings = ({ defaultSubTab }) => {
         }
     };
 
-    const handleClearTaskHistory = async () => {
-        console.log(`[Settings] Requesting clear all task history`);
+    const handleClearDatabaseTables = async () => {
+        if (selectedTables.length === 0) {
+            addToast("Please select at least one table to clear.", "warning");
+            return;
+        }
+        console.log(`[Settings] Requesting clear for tables: ${selectedTables}`);
         try {
-            const res = await axios.delete(`http://localhost:8080/api/tasks/history`);
-            addToast("All historical task records cleared.", "success");
+            await axios.delete(`http://localhost:8080/api/settings/database?tables=${selectedTables.join(",")}`);
+            addToast("Selected database tables cleared.", "success");
+            setSelectedTables([]);
         } catch (e) {
-            console.error(`[Settings] Failed to clear task history`, e);
-            addToast("Failed to clear task history.", "error");
+            console.error(`[Settings] Failed to clear tables`, e);
+            addToast("Failed to clear database tables.", "error");
         }
     };
 
@@ -378,23 +404,37 @@ const Settings = ({ defaultSubTab }) => {
                         </Button>
                     </div>
 
-                    <div className="space-y-2">
-                        <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">{t("layoutPreset")}</span>
+                    <div className="space-y-3">
+                        <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Available Tokens</span>
                         <div className="flex flex-wrap gap-2">
                             {[
-                                "{fileType}/{yearMonth}",
-                                "{fileType}/{year}/{month}",
-                                "{extension}/{yearMonth}",
-                                "{year}/{fileType}/{extension}"
-                            ].map(preset => (
+                                { token: "{alpha}", label: "Alpha (A-Z)" },
+                                { token: "{sizeCategory}", label: "Size Group" },
+                                { token: "{quarter}", label: "Quarter (Q1-Q4)" },
+                                { token: "{decade}", label: "Decade" },
+                                { token: "{yearMonth}", label: "Year-Month" },
+                                { token: "{year}", label: "Year" },
+                                { token: "{month}", label: "Month" },
+                                { token: "{day}", label: "Day" },
+                                { token: "{fileType}", label: "MIME Type" },
+                                { token: "{extension}", label: "Extension" }
+                            ].map(item => (
                                 <Button
-                                    key={preset}
-                                    onClick={() => handleSavePreferences(preset)}
-                                    className="bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 hover:border-slate-300 border border-slate-200 dark:border-slate-700 text-[10px] font-mono font-bold h-7 rounded-lg text-slate-600 dark:text-slate-400 active:scale-95"
+                                    key={item.token}
+                                    onClick={() => insertToken(item.token)}
+                                    className="bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 hover:border-indigo-300 border border-indigo-200 dark:border-indigo-700/50 text-[10px] font-mono font-bold h-7 rounded-lg text-indigo-600 dark:text-indigo-400 active:scale-95 transition-all"
                                 >
-                                    {preset}
+                                    + {item.token}
                                 </Button>
                             ))}
+                        </div>
+                    </div>
+
+                    <div className="bg-slate-50/50 dark:bg-slate-950/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                        <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Live Preview (Holiday_Photo.jpg)</span>
+                        <div className="font-mono text-xs text-slate-700 dark:text-slate-300 break-all">
+                            <span className="text-blue-500">Output Folder: </span>
+                            {generatePreview(layoutPattern)}/Holiday_Photo.jpg
                         </div>
                     </div>
                 </div>
@@ -542,30 +582,46 @@ const Settings = ({ defaultSubTab }) => {
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {/* Task History DB Cleared */}
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border border-slate-100 dark:border-slate-800 p-5 rounded-2xl bg-slate-50/40 dark:bg-slate-950/20 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-all duration-150 hover:shadow-sm">
-                            <div className="flex items-start gap-3.5 min-w-0">
+                            <div className="flex items-start gap-3.5 min-w-0 w-full sm:w-auto">
                                 <div className={`w-11 h-11 rounded-xl bg-purple-50 dark:bg-purple-950/20 text-purple-500 flex items-center justify-center text-lg shrink-0 shadow-inner`}>
                                     <DatabaseOutlined />
                                 </div>
-                                <div className="min-w-0">
+                                <div className="min-w-0 flex-grow">
                                     <p className="text-sm font-black text-slate-800 dark:text-slate-205 m-0">DATABASE RECORDS</p>
-                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed max-w-lg m-0">Permanent background task execution logs stored in your local database. Clearing this will wipe the History table but not your local cache files.</p>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed max-w-lg m-0">Select and permanently truncate specific local database tables. This will not delete actual files on your drive.</p>
+                                    <div className="mt-3">
+                                        <Select
+                                            mode="multiple"
+                                            placeholder="Select tables to clean..."
+                                            value={selectedTables}
+                                            onChange={setSelectedTables}
+                                            className="w-full sm:w-80 text-xs"
+                                            options={[
+                                                { value: 'tasks', label: 'Task History Logs' },
+                                                { value: 'files', label: 'Organized Files Index' },
+                                                { value: 'reversals', label: 'Operation Reversal Logs' },
+                                                { value: 'audit', label: 'Audit Events' }
+                                            ]}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                             <Popconfirm
-                                title="Clear Database History"
-                                description="Are you sure you want to permanently delete all task history?"
-                                onConfirm={handleClearTaskHistory}
-                                okText="Clear"
+                                title="Prune Selected Tables"
+                                description="Are you sure you want to permanently delete records from these tables?"
+                                onConfirm={handleClearDatabaseTables}
+                                okText="Prune"
                                 cancelText="Cancel"
                                 okButtonProps={{ danger: true, type: 'primary' }}
+                                disabled={selectedTables.length === 0}
                             >
                                 <Button
                                     danger
-                                    className="rounded-xl text-xs font-black px-4 h-9 flex items-center justify-center shadow-sm shrink-0 self-end sm:self-center"
+                                    disabled={selectedTables.length === 0}
+                                    className="rounded-xl text-xs font-black px-4 h-9 flex items-center justify-center shadow-sm shrink-0 self-end sm:self-center mt-2 sm:mt-0"
                                 >
-                                    Clear DB History
+                                    Prune Selected Tables
                                 </Button>
                             </Popconfirm>
                         </div>

@@ -189,6 +189,26 @@ public class OrganizerService {
         String month = String.format("%02d", lastModified.getMonthValue());
         String day = String.format("%02d", lastModified.getDayOfMonth());
         String yearMonth = year + "-" + month;
+        String quarter = "Q" + ((lastModified.getMonthValue() - 1) / 3 + 1);
+        String decade = (lastModified.getYear() / 10 * 10) + "s";
+
+        String alpha = "#";
+        if (!fileName.isEmpty()) {
+            char first = Character.toUpperCase(fileName.charAt(0));
+            if (first >= 'A' && first <= 'Z') alpha = String.valueOf(first);
+        }
+
+        String sizeCategory = "Unknown";
+        try {
+            long bytes = Files.size(file);
+            if (bytes < 1024 * 1024) sizeCategory = "01_Tiny";
+            else if (bytes < 10 * 1024 * 1024) sizeCategory = "02_Small";
+            else if (bytes < 100 * 1024 * 1024) sizeCategory = "03_Medium";
+            else if (bytes < 1024 * 1024 * 1024) sizeCategory = "04_Large";
+            else sizeCategory = "05_Huge";
+        } catch (Exception e) {
+            // ignore
+        }
 
         Path resolved = destPath;
         String[] segments = pattern.split("/");
@@ -202,7 +222,11 @@ public class OrganizerService {
                     .replace("{yearMonth}", yearMonth)
                     .replace("{year}", year)
                     .replace("{month}", month)
-                    .replace("{day}", day);
+                    .replace("{day}", day)
+                    .replace("{quarter}", quarter)
+                    .replace("{decade}", decade)
+                    .replace("{alpha}", alpha)
+                    .replace("{sizeCategory}", sizeCategory);
             resolved = resolved.resolve(resolvedSegment);
         }
         return resolved;
