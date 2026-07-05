@@ -60,6 +60,22 @@ public class TaskController {
         return "Task cancel signaled.";
     }
 
+    @PostMapping("/{id}/pause")
+    public String pauseTask(@PathVariable String id) {
+        logger.info("Received request to pause task ID: {}", id);
+        backgroundTaskManager.pauseTask(id);
+        logger.info("Pause signal successfully routed for task ID: {}", id);
+        return "Task pause signaled.";
+    }
+
+    @PostMapping("/{id}/resume")
+    public String resumeTask(@PathVariable String id) {
+        logger.info("Received request to resume task ID: {}", id);
+        backgroundTaskManager.resumeTask(id);
+        logger.info("Resume signal successfully routed for task ID: {}", id);
+        return "Task resume signaled.";
+    }
+
     @PostMapping("/cancel")
     public String cancelTasksBulk(@RequestBody Map<String, List<String>> payload) {
         List<String> taskIds = payload.get("taskIds");
@@ -74,6 +90,27 @@ public class TaskController {
             logger.warn("Bulk cancel request payload has null taskIds list");
         }
         return "Cancellations signaled.";
+    }
+
+    @PostMapping("/delete")
+    public String deleteTasksBulk(@RequestBody Map<String, List<String>> payload) {
+        List<String> taskIds = payload.get("taskIds");
+        logger.info("Received request to delete tasks in bulk. Task IDs: {}", taskIds);
+        if (taskIds != null) {
+            for (String id : taskIds) {
+                backgroundTaskRepository.deleteById(id);
+            }
+            logger.info("Deleted {} historical tasks", taskIds.size());
+        }
+        return "Tasks deleted.";
+    }
+
+    @DeleteMapping("/history")
+    public String clearAllHistory() {
+        logger.info("Received request to clear all task history");
+        backgroundTaskRepository.deleteAll();
+        logger.info("Successfully cleared all historical tasks");
+        return "All history cleared.";
     }
 
     @PostMapping("/{id}/action")

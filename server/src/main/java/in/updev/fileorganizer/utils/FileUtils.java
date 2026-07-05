@@ -38,10 +38,23 @@ public class FileUtils {
                     return FileVisitResult.TERMINATE;
                 }
                 String name = dir.getFileName() != null ? dir.getFileName().toString() : "";
-                if (name.equals("node_modules") || name.equals(".git") || name.equals("target") || name.equals(".idea") || name.equals("build")) {
+                String lowerName = name.toLowerCase();
+                if (lowerName.equals("node_modules") || lowerName.equals(".git") || lowerName.equals("target") || lowerName.equals(".idea") || lowerName.equals("build")) {
                     return FileVisitResult.SKIP_SUBTREE;
                 }
-                if (extraIgnoredDirs != null && extraIgnoredDirs.contains(name.toLowerCase())) {
+                
+                // OS-based global exclusions
+                if (lowerName.equals("system volume information") || 
+                    lowerName.equals("$recycle.bin") || 
+                    lowerName.equals("windows") || 
+                    lowerName.equals("program files") || 
+                    lowerName.equals("program files (x86)") || 
+                    lowerName.equals("programdata") || 
+                    lowerName.equals("appdata")) {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+
+                if (extraIgnoredDirs != null && extraIgnoredDirs.contains(lowerName)) {
                     return FileVisitResult.SKIP_SUBTREE;
                 }
                 return FileVisitResult.CONTINUE;

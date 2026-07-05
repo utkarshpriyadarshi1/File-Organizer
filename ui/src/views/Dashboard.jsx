@@ -14,11 +14,11 @@ import {
     SunOutlined,
     MoonOutlined,
     DesktopOutlined,
-    GlobalOutlined
+    GlobalOutlined,
+    HomeOutlined,
+    HistoryOutlined
 } from "@ant-design/icons";
-import Overview from "./Overview";
 import Organizer from "./Organizer";
-import Duplicates from "./Duplicates";
 import Tasks from "./Tasks";
 import Settings from "./Settings";
 import Notifications from "./Notifications";
@@ -30,13 +30,13 @@ import { useTasks } from "../services/TaskContext";
 import { useI18n } from "../services/I18nContext";
 import appConfig from "../app.config.json";
 
-const { Sider, Header, Content } = Layout;
+const { Header, Content } = Layout;
 
-const Dashboard = ({ theme, toggleTheme, layoutMode, toggleLayoutMode }) => {
+const Dashboard = ({ theme, toggleTheme }) => {
     useEffect(() => {
         document.title = `${appConfig.heading} - v${appConfig.version}`;
     }, []);
-    const [activeTab, setActiveTab] = useState("dashboard");
+    const [activeTab, setActiveTab] = useState("organizer");
     const [settingsSubTab, setSettingsSubTab] = useState("general");
     const { unreadCount, activeTasks } = useTasks();
     const { t } = useI18n();
@@ -44,12 +44,8 @@ const Dashboard = ({ theme, toggleTheme, layoutMode, toggleLayoutMode }) => {
 
     const renderComponent = () => {
         switch (activeTab) {
-            case "dashboard":
-                return <Overview setActiveTab={setActiveTab} />;
             case "organizer":
                 return <Organizer />;
-            case "duplicates":
-                return <Duplicates />;
             case "tasks":
                 return <Tasks />;
             case "notifications":
@@ -59,7 +55,7 @@ const Dashboard = ({ theme, toggleTheme, layoutMode, toggleLayoutMode }) => {
             case "settings":
                 return <Settings defaultSubTab={settingsSubTab} />;
             default:
-                return <Overview setActiveTab={setActiveTab} />;
+                return <Organizer />;
         }
     };
 
@@ -70,11 +66,6 @@ const Dashboard = ({ theme, toggleTheme, layoutMode, toggleLayoutMode }) => {
             label: <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t("operations")}</span>,
             children: [
                 {
-                    key: 'dashboard',
-                    icon: <DashboardOutlined style={{ fontSize: '14px' }} />,
-                    label: <span className="font-bold text-xs">{t("dashboardStats")}</span>,
-                },
-                {
                     key: 'organizer',
                     icon: <FolderOpenOutlined style={{ fontSize: '14px' }} />,
                     label: <span className="font-bold text-xs">{t("fileOrganizer")}</span>,
@@ -84,13 +75,6 @@ const Dashboard = ({ theme, toggleTheme, layoutMode, toggleLayoutMode }) => {
                     icon: <DeploymentUnitOutlined style={{ fontSize: '14px' }} />,
                     label: <span className="font-bold text-xs">{t("workspaceExplorer")}</span>,
                 },
-
-                {
-                    key: 'duplicates',
-                    icon: <CopyOutlined style={{ fontSize: '14px' }} />,
-                    label: <span className="font-bold text-xs">{t("duplicateCleaner")}</span>,
-                },
-
             ]
         },
         {
@@ -129,101 +113,42 @@ const Dashboard = ({ theme, toggleTheme, layoutMode, toggleLayoutMode }) => {
 
     return (
         <Layout style={{ minHeight: '100vh', overflow: 'hidden' }} className="select-none font-sans">
-            {layoutMode === "app" && (
-                <Sider
-                    width={260}
-                    theme="white"
-                    style={{
-                        boxShadow: '4px 0 24px rgba(0,0,0,0.15)',
-                        zIndex: 10,
-                    }}
-                    className="bg-slate-900 border-r border-slate-800"
-                >
-                    <div className="flex flex-col h-full justify-between">
-                        <div>
-                            {/* Brand Logo Header */}
-                            <div className="p-6 border-b border-slate-800 flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white text-base shadow-lg shadow-blue-500/20">
-                                    <i className="fa-solid fa-server"></i>
-                                </div>
-                                <div>
-                                    <span className="text-sm font-black tracking-wider block text-white">{appConfig.appName}</span>
-                                    <span className="text-[10px] font-bold text-slate-400 block leading-tight">{appConfig.subtitle}</span>
-                                </div>
-                            </div>
-
-                            {/* Navigation Items */}
-                            <Menu
-                                mode="inline"
-                                theme="dark"
-                                selectedKeys={[activeTab]}
-                                onClick={({ key }) => {
-                                    if (key === "settings") {
-                                        setSettingsSubTab("general");
-                                    }
-                                    setActiveTab(key);
-                                }}
-                                items={menuItems}
-                                className="bg-slate-900 border-r-0 mt-4 text-slate-400"
-                            />
-                        </div>
-
-                        {/* Sidebar Footer Status Indicator */}
-                        <div className="p-4 border-t border-slate-800 bg-slate-950/40 text-[10px] text-slate-500 flex flex-col gap-1.5">
-                            <div className="flex items-center justify-between font-semibold">
-                                <span>{t("status")}:</span>
-                                <span className="flex items-center gap-1 text-emerald-400 font-bold">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                                    {t("online")}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between font-semibold">
-                                <span>{t("appVersion")}:</span>
-                                <span className="text-slate-400">v{appConfig.version}</span>
-                            </div>
-                        </div>
-                    </div>
-                </Sider>
-            )}
-
             <Layout className="bg-slate-50 dark:bg-slate-950">
-                <Header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 h-16 flex items-center justify-between px-6 shadow-sm">
-                    {layoutMode === "web" ? (
-                        <div className="flex items-center gap-6" style={{ flex: 1, minWidth: 0 }}>
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm shadow-md">
-                                    <i className="fa-solid fa-server"></i>
-                                </div>
-                                <span className="text-sm font-black tracking-wider text-slate-800 dark:text-slate-100 hidden sm:block">{appConfig.appName}</span>
-                            </div>
-                            <Menu
-                                mode="horizontal"
-                                selectedKeys={[activeTab]}
-                                onClick={({ key }) => {
-                                    if (key === "settings") {
-                                        setSettingsSubTab("general");
-                                    }
-                                    setActiveTab(key);
-                                }}
-                                items={menuItems}
-                                className="bg-transparent border-b-0 text-slate-600 dark:text-slate-300"
-                                style={{ flex: 1, minWidth: 0, lineHeight: '62px' }}
-                            />
+                <Header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/50 h-16 flex items-center justify-between px-6 shadow-sm sticky top-0 z-50 transition-colors duration-300">
+                    <div 
+                        className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => setActiveTab("organizer")}
+                    >
+                        <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm shadow-md">
+                            <i className="fa-solid fa-server"></i>
                         </div>
-                    ) : (
-                        <div className="text-sm font-bold text-slate-700 dark:text-slate-200 capitalize">
-                            {t(activeTab) || activeTab}
-                        </div>
-                    )}
+                        <span className="text-sm font-black tracking-wider text-slate-800 dark:text-slate-100 hidden sm:block">{appConfig.appName}</span>
+                        {activeTab !== "organizer" && (
+                            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 ml-2 capitalize">
+                                / {t(activeTab) || activeTab}
+                            </span>
+                        )}
+                    </div>
 
                     {/* Top Right Actions */}
                     <div className="flex items-center gap-3 ml-4">
                         <Button
-                            className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-gray-200 dark:border-gray-700 shadow-sm active:scale-95 w-9 h-9 rounded-xl flex items-center justify-center p-0"
-                            icon={layoutMode === "app" ? <GlobalOutlined style={{ fontSize: '14px', color: '#10b981' }} /> : <DesktopOutlined style={{ fontSize: '14px', color: '#6366f1' }} />}
-                            onClick={toggleLayoutMode}
-                            title="Toggle Layout Mode"
-                        />
+                            className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-gray-200 dark:border-gray-700 shadow-sm active:scale-95 rounded-xl flex items-center justify-center h-9 px-3"
+                            icon={<HomeOutlined style={{ fontSize: '14px', color: '#10b981' }} />}
+                            onClick={() => setActiveTab("organizer")}
+                            title="Home"
+                        >
+                            <span className="text-xs font-bold ml-1 hidden sm:inline">Home</span>
+                        </Button>
+                        <Button
+                            className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-gray-200 dark:border-gray-700 shadow-sm active:scale-95 rounded-xl flex items-center justify-center h-9 px-3"
+                            icon={<HistoryOutlined style={{ fontSize: '14px', color: '#2563eb' }} />}
+                            onClick={() => setActiveTab("tasks")}
+                            title="History & Tasks"
+                        >
+                            <span className="text-xs font-bold ml-1">History</span>
+                            {activeTasksCount > 0 && <Badge count={activeTasksCount} size="small" style={{ backgroundColor: '#2563eb', marginLeft: '8px' }} />}
+                        </Button>
                         <Button
                             className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-gray-200 dark:border-gray-700 shadow-sm active:scale-95 w-9 h-9 rounded-xl flex items-center justify-center p-0"
                             icon={theme === "dark" ? <SunOutlined style={{ fontSize: '14px', color: '#f59e0b' }} /> : <MoonOutlined style={{ fontSize: '14px', color: '#2563eb' }} />}
@@ -242,7 +167,7 @@ const Dashboard = ({ theme, toggleTheme, layoutMode, toggleLayoutMode }) => {
                 </Header>
 
                 <Content className="overflow-y-auto bg-slate-50 dark:bg-[#0b0f19]">
-                    <div className="p-6" style={{ margin: '0 auto', maxWidth: layoutMode === "web" ? '1400px' : 'none' }}>
+                    <div className="p-6" style={{ margin: '0 auto', maxWidth: 'none' }}>
                         {renderComponent()}
                     </div>
                 </Content>

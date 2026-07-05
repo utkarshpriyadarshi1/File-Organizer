@@ -2,6 +2,9 @@ import axios from "axios";
 import React, { useState, useEffect } from "react";
 import { useTasks } from "../services/TaskContext";
 import { Card, Input, Button, Select, Checkbox, Space, Badge, Alert, Spin, Typography } from "../components/common";
+import TaskHistoryWidget from "../components/TaskHistoryWidget";
+import EstimatedTimeWidget from "../components/EstimatedTimeWidget";
+import { TaskType } from "../enums/SystemTypes";
 import { 
     FolderOpenOutlined, 
     FolderMagnifyingGlassIcon,
@@ -18,9 +21,8 @@ import {
 
 const { Text } = Typography;
 
-const Duplicates = () => {
-    const { activeTasks, addToast, selectFolder, syncActiveTasks } = useTasks();
-    const [folderPath, setFolderPath] = useState("");
+const Duplicates = ({ targetPath }) => {
+    const { activeTasks, addToast, syncActiveTasks } = useTasks();
     const [scanTaskId, setScanTaskId] = useState(null);
     const [duplicates, setDuplicates] = useState([]);
     const [selectedFiles, setSelectedFiles] = useState([]);
@@ -31,16 +33,7 @@ const Duplicates = () => {
     const [targetFolder, setTargetFolder] = useState("");
     const [dryRun, setDryRun] = useState(false);
 
-    // Fetch default directory on load
-    useEffect(() => {
-        axios.get("http://localhost:8080/api/settings/default-path")
-            .then(res => {
-                if (res.data.defaultPath) {
-                    setFolderPath(res.data.defaultPath);
-                }
-            })
-            .catch(err => console.error("[Duplicates] Failed to fetch default path:", err));
-    }, []);
+
 
     const autoSelectDuplicates = (strategy) => {
         if (strategy === "selectAll") {
@@ -113,14 +106,7 @@ const Duplicates = () => {
         });
     };
 
-    const handleSelectFolder = async () => {
-        console.log("[Duplicates] Prompting user to select target folder...");
-        const selectedFolder = await selectFolder();
-        if (selectedFolder) {
-            console.log(`[Duplicates] Target folder selected: "${selectedFolder}"`);
-            setFolderPath(selectedFolder);
-        }
-    };
+
 
     // Monitor scanning progress if scanTaskId is active
     useEffect(() => {
@@ -150,17 +136,17 @@ const Duplicates = () => {
     }, [activeTasks, scanTaskId]);
 
     const findDuplicates = async () => {
-        console.log(`[Duplicates] Requesting duplicates scan in path: "${folderPath}"`);
-        if (!folderPath) {
+        console.log(`[Duplicates] Requesting duplicates scan in path: "${targetPath}"`);
+        if (!targetPath) {
             console.warn("[Duplicates] Missing target folder path for scan operation.");
-            alert("Please select a folder first.");
+            alert("Please select a master directory above first.");
             return;
         }
 
         setStatus("Initializing scanning task...");
         setDuplicates([]);
         try {
-            const response = await axios.post("http://localhost:8080/api/duplicates/find", { folderPath });
+            const response = await axios.post("http://localhost:8080/api/duplicates/find", { folderPath: targetPath });
             console.info(`[Duplicates] Duplicate scan task successfully triggered. Server Task ID: ${response.data}`);
             setScanTaskId(response.data);
             addToast("Duplicate scan triggered! Task ID: " + response.data, "info");
@@ -224,27 +210,7 @@ const Duplicates = () => {
                 }
             >
                 <div className="space-y-4">
-                    <div>
-                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
-                            <FilterOutlined style={{ color: '#2563eb' }} />
-                            Target Directory
-                        </span>
-                        <div className="flex gap-2">
-                            <Input 
-                                value={folderPath} 
-                                readOnly
-                                placeholder="No directory selected"
-                                className="bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 flex-grow font-mono font-bold text-slate-700 dark:text-slate-200"
-                            />
-                            <Button 
-                                onClick={handleSelectFolder} 
-                                icon={<FolderOpenOutlined />}
-                                className="h-full border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm active:scale-95 shrink-0"
-                            >
-                                Select Folder
-                            </Button>
-                        </div>
-                    </div>
+                    <EstimatedTimeWidget folderPath={targetPath} operationType="DUPLICATES" />
 
                     <Button 
                         type="primary"
@@ -425,6 +391,7 @@ const Duplicates = () => {
                     </div>
                 </Card>
             )}
+            <TaskHistoryWidget filterTaskType={TaskType.DUPLICATE_SCAN} />
         </div>
     );
 };

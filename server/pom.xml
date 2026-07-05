@@ -77,6 +77,13 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- Metadata Extraction (EXIF/ID3) -->
+        <dependency>
+            <groupId>com.drewnoakes</groupId>
+            <artifactId>metadata-extractor</artifactId>
+            <version>2.19.0</version>
+        </dependency>
+
 
 
     </dependencies>

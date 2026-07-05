@@ -10,4 +10,5 @@ import java.util.Collection;
 @Repository
 public interface BackgroundTaskRepository extends JpaRepository<BackgroundTask, String> {
     List<BackgroundTask> findByStatusIn(Collection<TaskStatus> statuses);
+    long countByStatus(TaskStatus status);
 }

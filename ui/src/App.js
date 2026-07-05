@@ -4,6 +4,7 @@ import './App.css';
 import Dashboard from "./views/Dashboard";
 import { TaskProvider } from "./services/TaskContext";
 import { I18nProvider } from "./services/I18nContext";
+import ErrorBoundary from './components/ErrorBoundary';
 import appConfig from "./app.config.json";
 
 function App() {
@@ -48,16 +49,18 @@ function App() {
             }}
         >
             <AntdApp>
-                <I18nProvider>
-                    <TaskProvider>
-                        <Dashboard 
-                            theme={theme} 
-                            toggleTheme={toggleTheme} 
-                            layoutMode={layoutMode} 
-                            toggleLayoutMode={toggleLayoutMode} 
-                        />
-                    </TaskProvider>
-                </I18nProvider>
+                <ErrorBoundary>
+                    <I18nProvider>
+                        <TaskProvider>
+                            <Dashboard 
+                                theme={theme} 
+                                toggleTheme={toggleTheme} 
+                                layoutMode={layoutMode} 
+                                toggleLayoutMode={toggleLayoutMode} 
+                            />
+                        </TaskProvider>
+                    </I18nProvider>
+                </ErrorBoundary>
             </AntdApp>
         </ConfigProvider>
     );

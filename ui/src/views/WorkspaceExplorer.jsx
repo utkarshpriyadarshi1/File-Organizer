@@ -21,8 +21,11 @@ import {
     FileTextOutlined,
     FileOutlined,
     DatabaseOutlined,
-    ExperimentOutlined
+    ExperimentOutlined,
+    InfoCircleOutlined
 } from "@ant-design/icons";
+import { Modal, DatePicker, InputNumber, Table } from "antd";
+import TaskHistoryWidget from "../components/TaskHistoryWidget";
 
 const { Text } = Typography;
 
@@ -61,7 +64,7 @@ const FormatBytes = (bytes) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };
 
-const TreeNodeItem = ({ node, depth = 0 }) => {
+const TreeNodeItem = ({ node, depth = 0, onExtractMetadata }) => {
     const isDir = node.type === "directory";
     const [isOpen, setIsOpen] = useState(depth === 0); // Open root directory by default
 
@@ -106,6 +109,14 @@ const TreeNodeItem = ({ node, depth = 0 }) => {
                         {node.modified && (
                             <span className="font-mono text-[9px]">{new Date(node.modified).toLocaleDateString()}</span>
                         )}
+                        <Button 
+                            type="text" 
+                            icon={<InfoCircleOutlined />} 
+                            size="small"
+                            title="Extract Metadata"
+                            onClick={(e) => { e.stopPropagation(); onExtractMetadata(node.path); }}
+                            className="text-blue-500 hover:text-blue-700 p-0 m-0"
+                        />
                     </div>
                 )}
             </div>
@@ -113,7 +124,7 @@ const TreeNodeItem = ({ node, depth = 0 }) => {
             {isDir && isOpen && node.children && node.children.length > 0 && (
                 <div className="mt-0.5 space-y-0.5 border-l border-slate-100 dark:border-slate-800 ml-5">
                     {node.children.map((child, index) => (
-                        <TreeNodeItem key={child.path + "_" + index} node={child} depth={depth + 1} />
+                        <TreeNodeItem key={child.path + "_" + index} node={child} depth={depth + 1} onExtractMetadata={onExtractMetadata} />
                     ))}
                 </div>
             )}
@@ -138,6 +149,14 @@ const WorkspaceExplorer = () => {
     const [isVirtual, setIsVirtual] = useState(false);
     const [treeData, setTreeData] = useState(null);
     const [loading, setLoading] = useState(false);
+    
+    // Search state
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [searchResults, setSearchResults] = useState(null);
+    const [searchLoading, setSearchLoading] = useState(false);
+    const [searchParams, setSearchParams] = useState({
+        keyword: "", minSize: null, maxSize: null, startDate: null, endDate: null
+    });
 
     // Fetch default directory on load
     useEffect(() => {
@@ -185,6 +204,33 @@ const WorkspaceExplorer = () => {
         });
     };
 
+    const handleExtractMetadata = (filePath) => {
+        addToast("Extracting metadata...", "info");
+        axios.post(`http://localhost:8080/api/metadata/extract-by-path`, null, { params: { path: filePath } })
+            .then(res => {
+                addToast("Metadata extracted successfully!", "success");
+            })
+            .catch(err => {
+                addToast("Failed to extract metadata.", "error");
+            });
+    };
+
+    const executeSearch = () => {
+        setSearchLoading(true);
+        axios.post(`http://localhost:8080/api/search`, searchParams)
+            .then(res => {
+                setSearchResults(res.data.content || []);
+                setSearchLoading(false);
+                setIsSearchOpen(false);
+                addToast(`Found ${res.data.totalElements || res.data.content?.length || 0} results.`, "success");
+            })
+            .catch(err => {
+                console.error("[WorkspaceExplorer] Search failed:", err);
+                setSearchLoading(false);
+                addToast("Search failed.", "error");
+            });
+    };
+
     useEffect(() => {
         if (explorerPath && treeData) {
             fetchTree();
@@ -213,8 +259,9 @@ const WorkspaceExplorer = () => {
     ];
 
     return (
+        <div className="space-y-4 max-w-4xl mx-auto">
         <Card 
-            className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-md rounded-2xl max-w-4xl mx-auto"
+            className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-md rounded-2xl w-full"
             title={
                 <div className="flex items-center gap-2 py-1">
                     <DatabaseOutlined className="text-indigo-500 text-lg" />
@@ -248,11 +295,23 @@ const WorkspaceExplorer = () => {
                         <Button 
                             type="primary"
                             onClick={fetchTree}
-                            icon={<SearchOutlined />}
+                            icon={<FolderOpenOutlined />}
                             className="h-full bg-blue-600 hover:bg-blue-750 text-white text-xs font-bold px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm active:scale-95 shrink-0 border-0"
                         >
                             {t("scanFolder")}
                         </Button>
+                        <Button 
+                            onClick={() => setIsSearchOpen(true)}
+                            icon={<SearchOutlined />}
+                            className="h-full bg-indigo-600 hover:bg-indigo-750 text-white text-xs font-bold px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm active:scale-95 shrink-0 border-0"
+                        >
+                            Search
+                        </Button>
+                        {searchResults !== null && (
+                            <Button onClick={() => setSearchResults(null)} className="h-full bg-slate-500 hover:bg-slate-600 text-white text-xs font-bold px-4 rounded-xl border-0">
+                                Clear Search
+                            </Button>
+                        )}
                     </div>
                 </div>
 
@@ -266,14 +325,34 @@ const WorkspaceExplorer = () => {
 
                 {/* Explorer Display Area */}
                 <div className="bg-slate-50/50 dark:bg-slate-950/20 p-4 rounded-xl border border-slate-150 dark:border-slate-800 min-h-[300px] max-h-[600px] overflow-y-auto">
-                    {loading ? (
+                    {searchLoading ? (
+                        <div className="flex flex-col items-center justify-center h-[280px] text-slate-400 dark:text-slate-500 space-y-3 font-semibold text-xs">
+                            <Spin size="medium" />
+                            <span>Searching...</span>
+                        </div>
+                    ) : searchResults !== null ? (
+                        <Table 
+                            dataSource={searchResults} 
+                            rowKey="id"
+                            size="small"
+                            pagination={{ pageSize: 50 }}
+                            columns={[
+                                { title: 'Name', dataIndex: 'name', key: 'name' },
+                                { title: 'Size', dataIndex: 'size', key: 'size', render: FormatBytes },
+                                { title: 'Path', dataIndex: 'path', key: 'path' },
+                                { title: 'Actions', key: 'actions', render: (_, r) => (
+                                    <Button size="small" icon={<InfoCircleOutlined />} onClick={() => handleExtractMetadata(r.path)}>Extract Metadata</Button>
+                                )}
+                            ]}
+                        />
+                    ) : loading ? (
                         <div className="flex flex-col items-center justify-center h-[280px] text-slate-400 dark:text-slate-500 space-y-3 font-semibold text-xs">
                             <Spin size="medium" />
                             <span>Scanning workspace directory...</span>
                         </div>
                     ) : treeData ? (
                         <div className="space-y-1">
-                            <TreeNodeItem node={treeData} depth={0} />
+                            <TreeNodeItem node={treeData} depth={0} onExtractMetadata={handleExtractMetadata} />
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center h-[280px] text-slate-400 dark:text-slate-550 space-y-2">
@@ -284,7 +363,40 @@ const WorkspaceExplorer = () => {
                     )}
                 </div>
             </div>
+
+            <Modal 
+                title="Advanced Search" 
+                open={isSearchOpen} 
+                onOk={executeSearch} 
+                onCancel={() => setIsSearchOpen(false)}
+                okText="Search"
+                confirmLoading={searchLoading}
+            >
+                <div className="space-y-3 mt-4">
+                    <Input 
+                        placeholder="Keyword (name, description, title)" 
+                        value={searchParams.keyword}
+                        onChange={e => setSearchParams({...searchParams, keyword: e.target.value})}
+                    />
+                    <div className="flex gap-2">
+                        <InputNumber 
+                            placeholder="Min Size (Bytes)" 
+                            className="w-full"
+                            value={searchParams.minSize}
+                            onChange={v => setSearchParams({...searchParams, minSize: v})}
+                        />
+                        <InputNumber 
+                            placeholder="Max Size (Bytes)" 
+                            className="w-full"
+                            value={searchParams.maxSize}
+                            onChange={v => setSearchParams({...searchParams, maxSize: v})}
+                        />
+                    </div>
+                </div>
+            </Modal>
         </Card>
+        <TaskHistoryWidget filterTaskType="ALL" />
+        </div>
     );
 };
 

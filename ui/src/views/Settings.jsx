@@ -22,8 +22,11 @@ import {
     FolderOutlined,
     AppstoreAddOutlined,
     GithubOutlined,
-    QuestionCircleOutlined
+    QuestionCircleOutlined,
+    LineChartOutlined,
+    CopyOutlined
 } from "@ant-design/icons";
+import { Modal } from "antd";
 
 const { Text } = Typography;
 
@@ -60,6 +63,38 @@ const Settings = ({ defaultSubTab }) => {
     // Custom folder layout rule state
     const [layoutPattern, setLayoutPattern] = useState("");
     const [preferencesLoading, setPreferencesLoading] = useState(false);
+
+    // Telemetry reporting state
+    const [isReportModalVisible, setIsReportModalVisible] = useState(false);
+    const [reportData, setReportData] = useState(null);
+    const [reportLoading, setReportLoading] = useState(false);
+
+    const handleGenerateReport = async () => {
+        setReportLoading(true);
+        try {
+            const res = await axios.get("http://localhost:8080/api/telemetry/report");
+            setReportData(res.data);
+            setIsReportModalVisible(true);
+        } catch (err) {
+            console.error("Failed to fetch telemetry report", err);
+            addToast("Failed to generate report", "error");
+        } finally {
+            setReportLoading(false);
+        }
+    };
+
+    const handleCopyReport = () => {
+        if (!reportData) return;
+        const text = `### App Improvement Statistics\n\n\`\`\`json\n${JSON.stringify(reportData, null, 2)}\n\`\`\``;
+        navigator.clipboard.writeText(text).then(() => {
+            addToast("Report copied to clipboard", "success");
+        });
+    };
+
+    const handleOpenGitHub = () => {
+        const repoUrl = "https://github.com/utkarshpriyadarshi1/File-Organizer/issues/new";
+        window.open(repoUrl, "_blank");
+    };
 
     const fetchCacheStats = () => {
         console.log("[Settings] Fetching cache folder statistics...");
@@ -175,6 +210,17 @@ const Settings = ({ defaultSubTab }) => {
         } catch (e) {
             console.error(`[Settings] Failed to clear cache folder: "${folderName}"`, e);
             addToast("Failed to clear cache folder.", "error");
+        }
+    };
+
+    const handleClearTaskHistory = async () => {
+        console.log(`[Settings] Requesting clear all task history`);
+        try {
+            const res = await axios.delete(`http://localhost:8080/api/tasks/history`);
+            addToast("All historical task records cleared.", "success");
+        } catch (e) {
+            console.error(`[Settings] Failed to clear task history`, e);
+            addToast("Failed to clear task history.", "error");
         }
     };
 
@@ -496,6 +542,34 @@ const Settings = ({ defaultSubTab }) => {
                     </div>
                 ) : (
                     <div className="space-y-4">
+                        {/* Task History DB Cleared */}
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border border-slate-100 dark:border-slate-800 p-5 rounded-2xl bg-slate-50/40 dark:bg-slate-950/20 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-all duration-150 hover:shadow-sm">
+                            <div className="flex items-start gap-3.5 min-w-0">
+                                <div className={`w-11 h-11 rounded-xl bg-purple-50 dark:bg-purple-950/20 text-purple-500 flex items-center justify-center text-lg shrink-0 shadow-inner`}>
+                                    <DatabaseOutlined />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-sm font-black text-slate-800 dark:text-slate-205 m-0">DATABASE RECORDS</p>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed max-w-lg m-0">Permanent background task execution logs stored in your local database. Clearing this will wipe the History table but not your local cache files.</p>
+                                </div>
+                            </div>
+                            <Popconfirm
+                                title="Clear Database History"
+                                description="Are you sure you want to permanently delete all task history?"
+                                onConfirm={handleClearTaskHistory}
+                                okText="Clear"
+                                cancelText="Cancel"
+                                okButtonProps={{ danger: true, type: 'primary' }}
+                            >
+                                <Button
+                                    danger
+                                    className="rounded-xl text-xs font-black px-4 h-9 flex items-center justify-center shadow-sm shrink-0 self-end sm:self-center"
+                                >
+                                    Clear DB History
+                                </Button>
+                            </Popconfirm>
+                        </div>
+
                         {getSortedCaches().map(c => {
                             let label = c.folderName.toUpperCase();
                             let desc = "Temporary system logs, report metadata, or decryption cache dump files.";
@@ -594,6 +668,63 @@ const Settings = ({ defaultSubTab }) => {
                 <div>
                     <Logs />
                 </div>
+            )
+        },
+        {
+            key: 'telemetry',
+            label: (
+                <span>
+                    <LineChartOutlined />
+                    {t("dataCollection") || "Data & Reporting"}
+                </span>
+            ),
+            children: (
+                <Card
+                    className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-md rounded-2xl text-left"
+                    bodyStyle={{ padding: '20px' }}
+                    title={
+                        <div className="flex items-center gap-2">
+                            <LineChartOutlined className="text-emerald-600 text-base" />
+                            <div>
+                                <span className="text-xs font-black text-slate-800 dark:text-slate-100 block leading-tight">Usage Statistics & Improvement</span>
+                                <span className="text-[10px] text-slate-450 dark:text-slate-450 font-semibold block mt-0.5">Generate reports to help us improve the app</span>
+                            </div>
+                        </div>
+                    }
+                >
+                    <div className="space-y-4">
+                        <p className="text-xs text-slate-600 dark:text-slate-400">
+                            We value your privacy. You can manually generate an anonymized usage statistics report. Review it, copy it, and share it with us on GitHub if you consent!
+                        </p>
+                        <Button 
+                            type="primary" 
+                            loading={reportLoading} 
+                            onClick={handleGenerateReport}
+                            className="bg-emerald-600 hover:bg-emerald-700 border-0"
+                        >
+                            Generate Usage Statistics Report
+                        </Button>
+                    </div>
+
+                    <Modal
+                        title="Usage Statistics Report"
+                        visible={isReportModalVisible}
+                        onCancel={() => setIsReportModalVisible(false)}
+                        footer={[
+                            <Button key="copy" icon={<CopyOutlined />} onClick={handleCopyReport}>
+                                Copy Report
+                            </Button>,
+                            <Button key="github" type="primary" icon={<GithubOutlined />} onClick={handleOpenGitHub}>
+                                Report on GitHub
+                            </Button>
+                        ]}
+                    >
+                        <p className="text-xs mb-2">Review the data below before sharing:</p>
+                        <pre className="bg-slate-50 dark:bg-slate-800 p-4 rounded text-xs overflow-auto max-h-64">
+                            {reportData ? JSON.stringify(reportData, null, 2) : "Loading..."}
+                        </pre>
+                    </Modal>
+                </Card>
             )
         }
     ];

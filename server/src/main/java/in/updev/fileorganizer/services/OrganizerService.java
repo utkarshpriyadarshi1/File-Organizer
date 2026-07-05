@@ -69,6 +69,7 @@ public class OrganizerService {
                             logger.info("Organize files task {} canceled at file loop.", taskId);
                             break;
                         }
+                        reporter.checkPauseState();
 
                         Map<String, Object> fileResult = new HashMap<>();
                         String oldPath = file.toAbsolutePath().toString();
@@ -86,7 +87,18 @@ public class OrganizerService {
                             String fileName = targetPath.getFileName().toString();
                             long fileSize = Files.size(file);
 
-                            if (!dryRun) {
+                            if (dryRun) {
+                                if (!Files.isReadable(file) || !Files.isWritable(file)) {
+                                    throw new java.nio.file.AccessDeniedException(file.toString(), null, "Insufficient permissions to read or write file");
+                                }
+                                Path checkDir = targetDir;
+                                while (checkDir != null && !Files.exists(checkDir)) {
+                                    checkDir = checkDir.getParent();
+                                }
+                                if (checkDir != null && !Files.isWritable(checkDir)) {
+                                    throw new java.nio.file.AccessDeniedException(checkDir.toString(), null, "Insufficient permissions to write to destination directory");
+                                }
+                            } else {
                                 Files.createDirectories(targetDir);
                                 // Move file and verify integrity
                                 secureStorageService.secureMove(file, targetPath, false, null);

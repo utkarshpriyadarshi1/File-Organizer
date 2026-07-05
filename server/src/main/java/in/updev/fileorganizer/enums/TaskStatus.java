@@ -6,5 +6,6 @@ public enum TaskStatus {
     COMPLETED,
     COMPLETED_WITH_FAILURES,
     FAILED,
-    CANCELED
+    CANCELED,
+    PAUSED
 }

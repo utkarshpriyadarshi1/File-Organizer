@@ -75,6 +75,8 @@ public class BackgroundTaskManager {
         void appendResult(Object resultItem);
 
         boolean isCancelled();
+
+        void checkPauseState() throws InterruptedException;
     }
 
     public String submitTask(TaskType taskType, TaskAction action) {
@@ -131,10 +133,15 @@ public class BackgroundTaskManager {
             TaskProgressReporter reporter = new TaskProgressReporter() {
                 private long lastCheckpointTime = System.currentTimeMillis();
                 private int itemsSinceCheckpoint = 0;
+                private long lastProgressTime = 0;
 
                 @Override
                 public void reportProgress(double progress, String currentMessage) {
-                    broadcastStatus(finalTaskId, taskType, TaskStatus.RUNNING, progress, currentMessage);
+                    long now = System.currentTimeMillis();
+                    if (now - lastProgressTime > 200 || progress >= 100.0) {
+                        broadcastStatus(finalTaskId, taskType, TaskStatus.RUNNING, progress, currentMessage);
+                        lastProgressTime = now;
+                    }
                 }
 
                 @Override
@@ -151,6 +158,33 @@ public class BackgroundTaskManager {
                 @Override
                 public boolean isCancelled() {
                     return taskCancellationManager.isCancelled(finalTaskId);
+                }
+
+                @Override
+                public void checkPauseState() throws InterruptedException {
+                    boolean wasPaused = false;
+                    while (taskCancellationManager.isPaused(finalTaskId) && !taskCancellationManager.isCancelled(finalTaskId)) {
+                        if (!wasPaused) {
+                            wasPaused = true;
+                            broadcastStatus(finalTaskId, taskType, TaskStatus.PAUSED, -1.0, "Task paused. Waiting to resume...");
+                            sqliteWriteQueueService.submitWrite(() -> {
+                                backgroundTaskRepository.findById(finalTaskId).ifPresent(task -> {
+                                    task.setStatus(TaskStatus.PAUSED);
+                                    backgroundTaskRepository.save(task);
+                                });
+                            });
+                        }
+                        Thread.sleep(1000);
+                    }
+                    if (wasPaused && !taskCancellationManager.isCancelled(finalTaskId)) {
+                        broadcastStatus(finalTaskId, taskType, TaskStatus.RUNNING, -1.0, "Task resumed...");
+                        sqliteWriteQueueService.submitWrite(() -> {
+                            backgroundTaskRepository.findById(finalTaskId).ifPresent(task -> {
+                                task.setStatus(TaskStatus.RUNNING);
+                                backgroundTaskRepository.save(task);
+                            });
+                        });
+                    }
                 }
 
                 private synchronized void doCheckpoint() {
@@ -269,6 +303,16 @@ public class BackgroundTaskManager {
                 }
             });
         });
+    }
+
+    public void pauseTask(String taskId) {
+        if (!activeFutures.containsKey(taskId)) return;
+        taskCancellationManager.setPauseFlag(taskId);
+    }
+
+    public void resumeTask(String taskId) {
+        if (!activeFutures.containsKey(taskId)) return;
+        taskCancellationManager.clearPauseFlag(taskId);
     }
 
     public String executeReversalAction(String originalTaskId, String actionType, List<String> targetPaths) {

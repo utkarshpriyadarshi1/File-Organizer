@@ -17,9 +17,7 @@ public class TaskRestartService {
 
     private final BackgroundTaskRepository backgroundTaskRepository;
     private final OrganizerService organizerService;
-    private final BackupService backupService;
     private final DuplicateService duplicateService;
-    private final SyncService syncService;
     private final BackgroundTaskManager backgroundTaskManager;
 
     public String restartTask(String taskId) throws Exception {
@@ -41,12 +39,10 @@ public class TaskRestartService {
                 boolean dryRun = details != null && details.contains("Dry run");
                 return organizerService.organizeFiles(source, destination, dryRun);
             case BACKUP:
-                return backupService.createBackup(source, destination, details != null ? details : "Restarted Backup");
+            case SYNC:
+                throw new UnsupportedOperationException("Restart not supported for task type: " + type);
             case DUPLICATE_SCAN:
                 return duplicateService.findDuplicates(source);
-            case SYNC:
-                boolean twoWay = details != null && details.contains("TWO_WAY");
-                return syncService.createSyncJob(source, destination, twoWay ? "TWO_WAY" : "ONE_WAY").getId().toString();
             case REVERSAL:
                 if (details != null && details.contains("Undo operations for task: ")) {
                     String originalId = details.replace("Undo operations for task: ", "").trim();

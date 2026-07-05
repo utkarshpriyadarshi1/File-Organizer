@@ -220,6 +220,54 @@ const GenericResultViewer = ({ task, onClose }) => {
         }
     };
 
+    const handleDownloadCsv = () => {
+        if (!payload || payload.length === 0) {
+            addToast("No data to export.", "warning");
+            return;
+        }
+
+        let csvContent = "";
+        
+        if (task.taskType === "DUPLICATE_SCAN") {
+            csvContent += "Hash,File Path,Size,Modified At\n";
+            payload.forEach(group => {
+                group.files.forEach(file => {
+                    const filePath = typeof file === "string" ? file : file.path;
+                    const size = typeof file === "string" ? "" : (file.size || "");
+                    const modified = typeof file === "string" ? "" : (file.modifiedAt || "");
+                    csvContent += `"${group.hash}","${filePath}","${size}","${modified}"\n`;
+                });
+            });
+        } else if (task.taskType === "ORGANIZE") {
+            csvContent += "Original Path,Organized Path\n";
+            payload.forEach(item => {
+                const orig = item.originalPath || item.oldPath || "";
+                const org = item.organizedPath || item.newPath || "";
+                csvContent += `"${orig}","${org}"\n`;
+            });
+        } else if (task.taskType === "BACKUP" || task.taskType === "SYNC" || task.taskType === "RESTORE") {
+            csvContent += "Source Path,Destination Path,Status\n";
+            payload.forEach(item => {
+                const src = item.sourcePath || item.path || "";
+                const dest = item.backupPath || item.targetPath || "";
+                const status = item.failed ? "Failed" : "Success";
+                csvContent += `"${src}","${dest}","${status}"\n`;
+            });
+        } else {
+            csvContent += "Raw Data\n";
+            csvContent += `"${JSON.stringify(payload).replace(/"/g, '""')}"\n`;
+        }
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `task_results_${task.id}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     if (loading) {
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
@@ -718,6 +766,15 @@ const GenericResultViewer = ({ task, onClose }) => {
                             <p className="text-xs text-gray-500 font-semibold mt-0.5">Task Type: {task.taskType}</p>
                         )}
                     </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    <button 
+                        onClick={handleDownloadCsv}
+                        className="bg-white hover:bg-blue-50 text-blue-600 border border-blue-200 text-xs font-bold px-4 py-2 rounded-xl transition-all flex items-center gap-2 shadow-sm cursor-pointer active:scale-95"
+                    >
+                        <i className="fa-solid fa-file-csv"></i>
+                        Export CSV
+                    </button>
                 </div>
             </div>
 

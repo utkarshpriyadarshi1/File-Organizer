@@ -35,7 +35,8 @@ import {
     StopOutlined,
     InfoCircleOutlined,
     FolderFilled,
-    PlayCircleOutlined
+    PlayCircleOutlined,
+    DeleteOutlined
 } from "@ant-design/icons";
 
 const { Text } = Typography;
@@ -48,6 +49,7 @@ const Tasks = () => {
     const [activeSort, setActiveSort] = useState("timeDesc");
 
     // History tasks states
+    const [selectedHistoryTasks, setSelectedHistoryTasks] = useState([]);
     const [history, setHistory] = useState([]);
     const [historyFilterType, setHistoryFilterType] = useState("ALL");
     const [historyFilterStatus, setHistoryFilterStatus] = useState("ALL");
@@ -109,10 +111,27 @@ const Tasks = () => {
         console.log("[Tasks] Bulk cancelling selected tasks:", selectedTasks);
         await cancelTasksBulk(selectedTasks);
         setSelectedTasks([]);
-        setTimeout(() => {
-            syncActiveTasks();
-            fetchHistory();
-        }, 1000);
+        // We rely on optimistic deletion and WebSockets, so we do not forcibly sync active tasks here.
+    };
+
+    const handleBulkDeleteHistory = async () => {
+        if (selectedHistoryTasks.length === 0) {
+            alert("No historical tasks selected.");
+            return;
+        }
+        
+        const confirmDelete = window.confirm(`Are you sure you want to permanently delete ${selectedHistoryTasks.length} historical tasks?`);
+        if (!confirmDelete) return;
+
+        console.log("[Tasks] Bulk deleting historical tasks:", selectedHistoryTasks);
+        try {
+            await axios.post("http://localhost:8080/api/tasks/delete", { taskIds: selectedHistoryTasks });
+            setHistory(prev => prev.filter(t => !selectedHistoryTasks.includes(t.id)));
+            setSelectedHistoryTasks([]);
+        } catch (e) {
+            console.error("[Tasks] Failed to delete historical tasks:", e);
+            alert("Failed to delete tasks.");
+        }
     };
 
     const handleRestart = (taskId, e) => {
@@ -298,11 +317,11 @@ const Tasks = () => {
                         size="small" 
                         type="primary" 
                         ghost
-                        icon={<ReloadOutlined />} 
+                        icon={<PlayCircleOutlined />} 
                         onClick={(e) => handleRestart(record.id, e)}
                         loading={restartingTaskId === record.id}
                         className="text-[10px] font-bold"
-                        title="Restart Task"
+                        title="Re-run Task"
                     />
                     <Button 
                         size="small"
@@ -487,6 +506,20 @@ const Tasks = () => {
             <PanelCard
                 title="Task History"
                 subtitle="Review historical completed task logs and their results"
+                extra={
+                    <Space size={8}>
+                        {selectedHistoryTasks.length > 0 && (
+                            <Button
+                                danger
+                                type="primary"
+                                onClick={handleBulkDeleteHistory}
+                                icon={<DeleteOutlined />}
+                            >
+                                Delete Selected ({selectedHistoryTasks.length})
+                            </Button>
+                        )}
+                    </Space>
+                }
             >
                 <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                     {/* Filters, Sorting, and Searching for History */}
@@ -568,6 +601,10 @@ const Tasks = () => {
                         pagination={false}
                         size="small"
                         loading={historyLoading}
+                        rowSelection={{
+                            selectedRowKeys: selectedHistoryTasks,
+                            onChange: (selectedRowKeys) => setSelectedHistoryTasks(selectedRowKeys)
+                        }}
                         onRow={(record) => ({
                             className: "hover:bg-slate-50 dark:hover:bg-slate-805/50 transition-colors"
                         })}

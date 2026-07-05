@@ -9,8 +9,10 @@ import org.springframework.cache.annotation.Caching;
 import java.util.Optional;
 import java.util.List;
 
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+
 @Repository
-public interface DbFileRepository extends JpaRepository<DbFile, Long> {
+public interface DbFileRepository extends JpaRepository<DbFile, Long>, JpaSpecificationExecutor<DbFile> {
     @Cacheable(value = "files-by-path", key = "#path", unless = "#result == null")
     Optional<DbFile> findByPath(String path);
 

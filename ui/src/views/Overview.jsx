@@ -255,82 +255,64 @@ const Overview = ({ setActiveTab }) => {
     }
 
     return (
-        <div className="space-y-6 max-w-6xl mx-auto">
+        <div className="space-y-8 max-w-7xl mx-auto">
+
+            {/* Hero Welcome Banner */}
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-fuchsia-600 shadow-2xl shadow-indigo-500/20 p-8 sm:p-10 border border-white/10">
+                <div className="absolute top-0 right-0 -mt-20 -mr-20 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-64 h-64 bg-black/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div>
+                        <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-2 drop-shadow-md">Welcome back!</h1>
+                        <p className="text-indigo-50 font-semibold text-sm sm:text-base max-w-lg opacity-90">
+                            Your workspace is {isOnline ? "online and connected" : "offline"}. Ready to organize, analyze, and optimize your files today?
+                        </p>
+                    </div>
+                    <div className="shrink-0 flex items-center gap-3 bg-white/10 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/20 shadow-inner hover:bg-white/20 transition-colors cursor-default">
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.8)]"></div>
+                        <span className="text-white font-bold text-sm tracking-wider uppercase">System Healthy</span>
+                    </div>
+                </div>
+            </div>
 
             {/* Ant Design KPI Cards Grid */}
-            <Row gutter={[16, 16]}>
-                <Col xs={24} sm={12} lg={6}>
+            <Row gutter={[24, 24]}>
+                <Col xs={24} sm={12}>
                     <Card
                         hoverable
                         onClick={() => setActiveTab("tasks")}
-                        className="rounded-xl border border-slate-100/80 dark:border-slate-800 shadow-sm cursor-pointer hover:border-blue-200"
-                        bodyStyle={{ padding: '20px' }}
+                        className="rounded-3xl border border-white/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-none cursor-pointer bg-white/70 dark:bg-slate-900/60 backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-500/10 group overflow-hidden relative"
+                        bodyStyle={{ padding: '28px' }}
                     >
-                        <div className="flex justify-between items-center">
+                        <div className="absolute -right-8 -top-8 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all duration-500 pointer-events-none"></div>
+                        <div className="flex justify-between items-center relative z-10">
                             <div>
-                                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Active Operations</span>
-                                <Statistic value={stats.activeCount} className="mt-1" valueStyle={{ fontSize: '24px', fontWeight: '900', color: 'inherit' }} />
-                                <span className="text-[10px] text-slate-500 font-semibold mt-1 block">Running tasks</span>
+                                <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block drop-shadow-sm">Active Operations</span>
+                                <Statistic value={stats.activeCount} className="mt-2" valueStyle={{ fontSize: '36px', fontWeight: '900', color: 'inherit', letterSpacing: '-0.03em' }} />
+                                <span className="text-xs text-slate-500 font-bold mt-1 block">Currently running tasks</span>
                             </div>
-                            <div className={`w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center text-base shrink-0 ${stats.activeCount > 0 ? "animate-spin" : ""}`}>
+                            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/60 dark:to-indigo-900/60 text-blue-600 dark:text-blue-400 flex items-center justify-center text-2xl shrink-0 shadow-inner group-hover:scale-110 transition-transform duration-300 ${stats.activeCount > 0 ? "animate-spin" : ""}`}>
                                 <SyncOutlined />
                             </div>
                         </div>
                     </Card>
                 </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card
-                        hoverable
-                        onClick={() => setActiveTab("sync")}
-                        className="rounded-xl border border-slate-100/80 dark:border-slate-800 shadow-sm cursor-pointer hover:border-emerald-200"
-                        bodyStyle={{ padding: '20px' }}
-                    >
-                        <div className="flex justify-between items-center">
-                            <div>
-                                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Sync Profiles</span>
-                                <Statistic value={stats.syncCount} className="mt-1" valueStyle={{ fontSize: '24px', fontWeight: '900', color: 'inherit' }} />
-                                <span className="text-[10px] text-slate-500 font-semibold mt-1 block">Mirror folders</span>
-                            </div>
-                            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-base shrink-0">
-                                <SyncOutlined rotate={90} />
-                            </div>
-                        </div>
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={6}>
+                <Col xs={24} sm={12}>
                     <Card
                         hoverable
                         onClick={() => setActiveTab("tasks")}
-                        className="rounded-xl border border-slate-100/80 dark:border-slate-800 shadow-sm cursor-pointer hover:border-indigo-200"
-                        bodyStyle={{ padding: '20px' }}
+                        className="rounded-3xl border border-white/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-none cursor-pointer bg-white/70 dark:bg-slate-900/60 backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-500/10 group overflow-hidden relative"
+                        bodyStyle={{ padding: '28px' }}
                     >
-                        <div className="flex justify-between items-center">
+                        <div className="absolute -right-8 -top-8 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl group-hover:bg-indigo-500/20 transition-all duration-500 pointer-events-none"></div>
+                        <div className="flex justify-between items-center relative z-10">
                             <div>
-                                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Processed Runs</span>
-                                <Statistic value={stats.historyCount} className="mt-1" valueStyle={{ fontSize: '24px', fontWeight: '900', color: 'inherit' }} />
-                                <span className="text-[10px] text-slate-500 font-semibold mt-1 block">Completed operations</span>
+                                <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block drop-shadow-sm">Processed Runs</span>
+                                <Statistic value={stats.historyCount} className="mt-2" valueStyle={{ fontSize: '36px', fontWeight: '900', color: 'inherit', letterSpacing: '-0.03em' }} />
+                                <span className="text-xs text-slate-500 font-bold mt-1 block">Completed operations</span>
                             </div>
-                            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-base shrink-0">
+                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/60 dark:to-purple-900/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-2xl shrink-0 shadow-inner group-hover:scale-110 transition-transform duration-300">
                                 <UnorderedListOutlined />
-                            </div>
-                        </div>
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card
-                        hoverable
-                        onClick={() => setActiveTab("settings")}
-                        className="rounded-xl border border-slate-100/80 dark:border-slate-800 shadow-sm cursor-pointer hover:border-rose-200"
-                        bodyStyle={{ padding: '20px' }}
-                    >
-                        <div className="flex justify-between items-center">
-                            <div>
-                                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Cache Files</span>
-                                <Statistic value={stats.reportsCache.count + stats.tempCache.count + stats.logsCache.count} className="mt-1" valueStyle={{ fontSize: '24px', fontWeight: '900', color: 'inherit' }} />
-                                <span className="text-[10px] text-slate-500 font-semibold mt-1 block">Diagnostic cache size</span>
-                            </div>
-                            <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center text-base shrink-0">
-                                <FireOutlined />
                             </div>
                         </div>
                     </Card>
@@ -339,13 +321,15 @@ const Overview = ({ setActiveTab }) => {
 
             {/* Redesigned Disk Space & File Type Analyzer */}
             <Card
-                className="bg-white dark:bg-slate-900 border border-slate-100/80 dark:border-slate-800 shadow-md rounded-2xl"
+                className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-white/50 dark:border-slate-800/80 shadow-2xl shadow-indigo-500/5 rounded-3xl overflow-hidden"
                 title={
-                    <div className="flex items-center gap-2 py-1">
-                        <PieChartOutlined className="text-indigo-600 text-lg" />
+                    <div className="flex items-center gap-4 py-2">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-100 to-sky-100 dark:from-indigo-900/60 dark:to-sky-900/60 text-indigo-500 flex items-center justify-center text-xl shadow-inner">
+                            <PieChartOutlined />
+                        </div>
                         <div>
-                            <span className="text-sm font-black text-slate-800 dark:text-slate-100 block leading-tight">Disk Space & File Type Analyzer</span>
-                            <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">Crawl and classify files in any local directory to visualize space utilization</span>
+                            <span className="text-base font-black text-slate-800 dark:text-slate-100 block leading-tight tracking-tight">Disk Space & File Type Analyzer</span>
+                            <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold block mt-1">Crawl and classify files in any local directory to visualize space utilization</span>
                         </div>
                     </div>
                 }
@@ -476,16 +460,16 @@ const Overview = ({ setActiveTab }) => {
             </Card>
 
             {/* Lower Grid: Completed Runs on Left, Quick Shortcuts on Right */}
-            <Row gutter={[16, 16]}>
+            <Row gutter={[24, 24]}>
                 {/* Recent Completed Runs Table (2/3 width) */}
                 <Col xs={24} lg={16}>
                     <Card
-                        className="bg-white dark:bg-slate-900 border border-slate-100/80 dark:border-slate-800 shadow-md rounded-2xl h-full"
+                        className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-white/50 dark:border-slate-800/80 shadow-2xl shadow-indigo-500/5 rounded-3xl h-full"
                         title={
-                            <div className="flex items-center justify-between w-full py-1">
+                            <div className="flex items-center justify-between w-full py-2">
                                 <div>
-                                    <span className="text-sm font-black text-slate-800 dark:text-slate-100 block leading-tight">Recent Completed Runs</span>
-                                    <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">Click on any record to view its detailed changes report</span>
+                                    <span className="text-base font-black text-slate-800 dark:text-slate-100 block leading-tight tracking-tight">Recent Completed Runs</span>
+                                    <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold block mt-1">Click on any record to view its detailed changes report</span>
                                 </div>
                                 <Button
                                     size="small"
@@ -524,13 +508,15 @@ const Overview = ({ setActiveTab }) => {
                 {/* Quick Shortcuts Grid (1/3 width) */}
                 <Col xs={24} lg={8}>
                     <Card
-                        className="bg-white dark:bg-slate-900 border border-slate-100/80 dark:border-slate-800 shadow-md rounded-2xl h-full"
+                        className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-white/50 dark:border-slate-800/80 shadow-2xl shadow-amber-500/5 rounded-3xl h-full"
                         title={
-                            <div className="flex items-center gap-2 py-1">
-                                <ThunderboltOutlined className="text-amber-500 text-lg" />
+                            <div className="flex items-center gap-4 py-2">
+                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/60 dark:to-orange-900/60 text-amber-500 flex items-center justify-center text-xl shadow-inner">
+                                    <ThunderboltOutlined />
+                                </div>
                                 <div>
-                                    <span className="text-sm font-black text-slate-800 dark:text-slate-100 block leading-tight">Quick Shortcuts</span>
-                                    <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">Quick access to essential modules</span>
+                                    <span className="text-base font-black text-slate-800 dark:text-slate-100 block leading-tight tracking-tight">Quick Shortcuts</span>
+                                    <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold block mt-1">Quick access to essential modules</span>
                                 </div>
                             </div>
                         }
@@ -538,53 +524,53 @@ const Overview = ({ setActiveTab }) => {
                         <div className="grid grid-cols-1 gap-3">
                             <button
                                 onClick={() => setActiveTab("organizer")}
-                                className="p-3 bg-slate-50 hover:bg-blue-50 dark:bg-slate-800/40 dark:hover:bg-slate-800 border border-slate-100 dark:border-slate-800 rounded-xl text-left transition-all duration-200 active:scale-95 cursor-pointer group flex items-start gap-3 w-full"
+                                className="p-4 bg-white/50 hover:bg-blue-50 dark:bg-slate-800/30 dark:hover:bg-blue-900/20 border border-white/60 dark:border-slate-700/50 hover:border-blue-200 dark:hover:border-blue-800/50 rounded-2xl text-left transition-all duration-300 active:scale-95 cursor-pointer group flex items-center gap-4 w-full shadow-sm hover:shadow-md"
                             >
-                                <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center text-sm shrink-0 group-hover:scale-110 transition-transform">
+                                <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center text-base shrink-0 group-hover:scale-110 group-hover:bg-blue-500 group-hover:text-white transition-all duration-300 shadow-inner">
                                     <FolderOpenOutlined />
                                 </div>
                                 <div>
-                                    <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 block">File Organizer</span>
-                                    <span className="text-[9px] text-slate-400 block font-semibold mt-0.5">Reorganize directory tree structure</span>
+                                    <span className="text-xs font-black text-slate-800 dark:text-slate-200 block">File Organizer</span>
+                                    <span className="text-[10px] text-slate-500 block font-semibold mt-0.5">Reorganize directory tree structure</span>
                                 </div>
                             </button>
 
                             <button
                                 onClick={() => setActiveTab("backup")}
-                                className="p-3 bg-slate-50 hover:bg-amber-50 dark:bg-slate-800/40 dark:hover:bg-slate-800 border border-slate-100 dark:border-slate-800 rounded-xl text-left transition-all duration-200 active:scale-95 cursor-pointer group flex items-start gap-3 w-full"
+                                className="p-4 bg-white/50 hover:bg-amber-50 dark:bg-slate-800/30 dark:hover:bg-amber-900/20 border border-white/60 dark:border-slate-700/50 hover:border-amber-200 dark:hover:border-amber-800/50 rounded-2xl text-left transition-all duration-300 active:scale-95 cursor-pointer group flex items-center gap-4 w-full shadow-sm hover:shadow-md"
                             >
-                                <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 flex items-center justify-center text-sm shrink-0 group-hover:scale-110 transition-transform">
+                                <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 flex items-center justify-center text-base shrink-0 group-hover:scale-110 group-hover:bg-amber-500 group-hover:text-white transition-all duration-300 shadow-inner">
                                     <SafetyCertificateOutlined />
                                 </div>
                                 <div>
-                                    <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 block">Backup & Restore</span>
-                                    <span className="text-[9px] text-slate-450 block font-semibold mt-0.5">Safeguard directories offline</span>
+                                    <span className="text-xs font-black text-slate-800 dark:text-slate-200 block">Backup & Restore</span>
+                                    <span className="text-[10px] text-slate-500 block font-semibold mt-0.5">Safeguard directories offline</span>
                                 </div>
                             </button>
 
                             <button
                                 onClick={() => setActiveTab("duplicates")}
-                                className="p-3 bg-slate-50 hover:bg-rose-50 dark:bg-slate-800/40 dark:hover:bg-slate-800 border border-slate-100 dark:border-slate-800 rounded-xl text-left transition-all duration-200 active:scale-95 cursor-pointer group flex items-start gap-3 w-full"
+                                className="p-4 bg-white/50 hover:bg-rose-50 dark:bg-slate-800/30 dark:hover:bg-rose-900/20 border border-white/60 dark:border-slate-700/50 hover:border-rose-200 dark:hover:border-rose-800/50 rounded-2xl text-left transition-all duration-300 active:scale-95 cursor-pointer group flex items-center gap-4 w-full shadow-sm hover:shadow-md"
                             >
-                                <div className="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 flex items-center justify-center text-sm shrink-0 group-hover:scale-110 transition-transform">
+                                <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 flex items-center justify-center text-base shrink-0 group-hover:scale-110 group-hover:bg-rose-500 group-hover:text-white transition-all duration-300 shadow-inner">
                                     <CopyOutlined />
                                 </div>
                                 <div>
-                                    <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 block">Duplicate Cleaner</span>
-                                    <span className="text-[9px] text-slate-400 block font-semibold mt-0.5">Scan and resolve duplicate files</span>
+                                    <span className="text-xs font-black text-slate-800 dark:text-slate-200 block">Duplicate Cleaner</span>
+                                    <span className="text-[10px] text-slate-500 block font-semibold mt-0.5">Scan and resolve duplicate files</span>
                                 </div>
                             </button>
 
                             <button
                                 onClick={() => setActiveTab("sync")}
-                                className="p-3 bg-slate-50 hover:bg-emerald-50 dark:bg-slate-800/40 dark:hover:bg-slate-800 border border-slate-100 dark:border-slate-800 rounded-xl text-left transition-all duration-200 active:scale-95 cursor-pointer group flex items-start gap-3 w-full"
+                                className="p-4 bg-white/50 hover:bg-emerald-50 dark:bg-slate-800/30 dark:hover:bg-emerald-900/20 border border-white/60 dark:border-slate-700/50 hover:border-emerald-200 dark:hover:border-emerald-800/50 rounded-2xl text-left transition-all duration-300 active:scale-95 cursor-pointer group flex items-center gap-4 w-full shadow-sm hover:shadow-md"
                             >
-                                <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm shrink-0 group-hover:scale-110 transition-transform">
+                                <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-base shrink-0 group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300 shadow-inner">
                                     <SyncOutlined />
                                 </div>
                                 <div>
-                                    <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 block">Sync Directories</span>
-                                    <span className="text-[9px] text-slate-450 dark:text-slate-400 block font-semibold mt-0.5">Mirror two folder locations</span>
+                                    <span className="text-xs font-black text-slate-800 dark:text-slate-200 block">Sync Directories</span>
+                                    <span className="text-[10px] text-slate-500 block font-semibold mt-0.5">Mirror two folder locations</span>
                                 </div>
                             </button>
                         </div>

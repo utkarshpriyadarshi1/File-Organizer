@@ -249,6 +249,13 @@ export const TaskProvider = ({ children }) => {
         try {
             await axios.post(`http://localhost:8080/api/tasks/${taskId}/cancel`);
             addToast("Cancellation signaled for task " + taskId, "info");
+            
+            // Optimistically remove from active tasks immediately upon cancel
+            setActiveTasks(prev => {
+                const updated = { ...prev };
+                delete updated[taskId];
+                return updated;
+            });
         } catch (e) {
             console.error(`[TaskControl] Failed to cancel task: ${taskId}`, e);
             addToast("Failed to signal cancellation", "error");
@@ -260,6 +267,13 @@ export const TaskProvider = ({ children }) => {
         try {
             await axios.post("http://localhost:8080/api/tasks/cancel", { taskIds });
             addToast("Bulk cancellation signaled.", "info");
+
+            // Optimistically remove from active tasks immediately upon bulk cancel
+            setActiveTasks(prev => {
+                const updated = { ...prev };
+                taskIds.forEach(id => delete updated[id]);
+                return updated;
+            });
         } catch (e) {
             console.error("[TaskControl] Failed to cancel tasks in bulk:", taskIds, e);
             addToast("Failed to signal bulk cancellations", "error");
