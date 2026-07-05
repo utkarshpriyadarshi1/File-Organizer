@@ -1,9 +1,29 @@
 import React, { useState } from "react";
+import axios from "axios";
 import { useTasks } from "../services/TaskContext";
+import { TaskStatus } from "../enums/SystemTypes";
 
 const TaskDrawer = () => {
     const { activeTasks, cancelTask } = useTasks();
     const [isOpen, setIsOpen] = useState(false);
+
+    const handlePause = async (taskId, e) => {
+        if (e) e.stopPropagation();
+        try {
+            await axios.post(`http://localhost:8080/api/tasks/${taskId}/pause`);
+        } catch (err) {
+            console.error(`[TaskDrawer] Failed to pause task ${taskId}`, err);
+        }
+    };
+
+    const handleResume = async (taskId, e) => {
+        if (e) e.stopPropagation();
+        try {
+            await axios.post(`http://localhost:8080/api/tasks/${taskId}/resume`);
+        } catch (err) {
+            console.error(`[TaskDrawer] Failed to resume task ${taskId}`, err);
+        }
+    };
 
     const tasksList = Object.values(activeTasks);
     if (tasksList.length === 0) return null;
@@ -38,12 +58,30 @@ const TaskDrawer = () => {
                                         <h4 className="font-semibold text-gray-800 text-sm">{task.taskType}</h4>
                                         <p className="text-xs text-gray-500 font-mono truncate max-w-[240px]">{task.taskId}</p>
                                     </div>
-                                    <button 
-                                        onClick={() => cancelTask(task.taskId)}
-                                        className="text-xs font-medium text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 py-1 px-2 rounded-lg transition-colors duration-200"
-                                    >
-                                        Cancel
-                                    </button>
+                                    <div className="flex gap-2">
+                                        {task.status === TaskStatus.RUNNING && (
+                                            <button 
+                                                onClick={(e) => handlePause(task.taskId, e)}
+                                                className="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 bg-yellow-50 hover:bg-yellow-100 py-1 px-2 rounded-lg transition-colors duration-200"
+                                            >
+                                                Pause
+                                            </button>
+                                        )}
+                                        {task.status === TaskStatus.PAUSED && (
+                                            <button 
+                                                onClick={(e) => handleResume(task.taskId, e)}
+                                                className="text-[10px] font-bold text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100 py-1 px-2 rounded-lg transition-colors duration-200"
+                                            >
+                                                Resume
+                                            </button>
+                                        )}
+                                        <button 
+                                            onClick={() => cancelTask(task.taskId)}
+                                            className="text-[10px] font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 py-1 px-2 rounded-lg transition-colors duration-200"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="space-y-1">
                                     <div className="flex justify-between text-xs text-gray-600">
@@ -52,7 +90,7 @@ const TaskDrawer = () => {
                                     </div>
                                     <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
                                         <div 
-                                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                            className={`h-2 rounded-full transition-all duration-300 ${task.status === TaskStatus.PAUSED ? 'bg-yellow-400' : 'bg-blue-600'}`}
                                             style={{ width: `${task.progress}%` }}
                                         ></div>
                                     </div>

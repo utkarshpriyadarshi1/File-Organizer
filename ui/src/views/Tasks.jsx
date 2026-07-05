@@ -36,7 +36,8 @@ import {
     InfoCircleOutlined,
     FolderFilled,
     PlayCircleOutlined,
-    DeleteOutlined
+    DeleteOutlined,
+    PauseCircleOutlined
 } from "@ant-design/icons";
 
 const { Text } = Typography;
@@ -112,6 +113,26 @@ const Tasks = () => {
         await cancelTasksBulk(selectedTasks);
         setSelectedTasks([]);
         // We rely on optimistic deletion and WebSockets, so we do not forcibly sync active tasks here.
+    };
+
+    const handlePause = async (taskId, e) => {
+        if (e) e.stopPropagation();
+        try {
+            await axios.post(`http://localhost:8080/api/tasks/${taskId}/pause`);
+            console.log(`[Tasks] Paused task ${taskId}`);
+        } catch (err) {
+            console.error(`[Tasks] Failed to pause task ${taskId}`, err);
+        }
+    };
+
+    const handleResume = async (taskId, e) => {
+        if (e) e.stopPropagation();
+        try {
+            await axios.post(`http://localhost:8080/api/tasks/${taskId}/resume`);
+            console.log(`[Tasks] Resumed task ${taskId}`);
+        } catch (err) {
+            console.error(`[Tasks] Failed to resume task ${taskId}`, err);
+        }
     };
 
     const handleBulkDeleteHistory = async () => {
@@ -228,6 +249,8 @@ const Tasks = () => {
                 return "default";
             case TaskStatus.RUNNING:
                 return "processing";
+            case TaskStatus.PAUSED:
+                return "warning";
             case TaskStatus.QUEUED:
                 return "warning";
             default:
@@ -485,9 +508,48 @@ const Tasks = () => {
                                     </div>
                                 </div>
                                 <div className="flex flex-col items-end gap-2 shrink-0 ml-4">
-                                    <Tag color="cyan" className="font-bold border-0 text-[10px] px-3 py-0.8 rounded-full">
+                                    <Tag color="cyan" className="font-bold border-0 text-[10px] px-3 py-0.8 rounded-full mb-1">
                                         Started: {new Date(task.createdAt).toLocaleTimeString()}
                                     </Tag>
+                                    <div className="flex gap-1.5 mt-1">
+                                        {task.status === TaskStatus.RUNNING && (
+                                            <Button
+                                                size="small"
+                                                icon={<PauseCircleOutlined />}
+                                                onClick={(e) => handlePause(task.id, e)}
+                                                className="text-[10px] font-bold"
+                                                title="Pause Task"
+                                            >
+                                                Pause
+                                            </Button>
+                                        )}
+                                        {task.status === TaskStatus.PAUSED && (
+                                            <Button
+                                                size="small"
+                                                type="primary"
+                                                ghost
+                                                icon={<PlayCircleOutlined />}
+                                                onClick={(e) => handleResume(task.id, e)}
+                                                className="text-[10px] font-bold"
+                                                title="Resume Task"
+                                            >
+                                                Resume
+                                            </Button>
+                                        )}
+                                        <Button
+                                            danger
+                                            size="small"
+                                            icon={<StopOutlined />}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                cancelTasksBulk([task.id]);
+                                            }}
+                                            className="text-[10px] font-bold"
+                                            title="Terminate Task"
+                                        >
+                                            Terminate
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         ))}

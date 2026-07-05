@@ -14,7 +14,8 @@ export const TaskStatus = {
     COMPLETED: "COMPLETED",
     COMPLETED_WITH_FAILURES: "COMPLETED_WITH_FAILURES",
     FAILED: "FAILED",
-    CANCELED: "CANCELED"
+    CANCELED: "CANCELED",
+    PAUSED: "PAUSED"
 };
 
 export const SyncType = {

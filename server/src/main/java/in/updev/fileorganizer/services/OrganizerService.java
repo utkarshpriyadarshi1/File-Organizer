@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -38,6 +39,24 @@ public class OrganizerService {
     private final SecureStorageService secureStorageService;
     private final IgnoreRuleRepository ignoreRuleRepository;
     private final PreferencesService preferencesService;
+
+    private final Map<String, String> mimeTypeCache = new ConcurrentHashMap<>();
+
+    private String getMimeType(Path file, String ext) {
+        if (mimeTypeCache.containsKey(ext)) {
+            return mimeTypeCache.get(ext);
+        }
+        try {
+            String probed = Files.probeContentType(file);
+            if (probed != null) {
+                mimeTypeCache.put(ext, probed);
+                return probed;
+            }
+        } catch (IOException e) {
+            // ignore
+        }
+        return "unknown";
+    }
 
     public String organizeFiles(String sourceFolder, String destinationFolder, boolean dryRun) {
         String actionDetails = (dryRun ? "Dry run: Organize " : "Organize ") + "files";
@@ -81,10 +100,11 @@ public class OrganizerService {
                             Path targetDir = resolveTargetDirectory(file, layoutPattern, destPath);
                             Path targetPath = targetDir.resolve(file.getFileName());
 
-                            String probedType = Files.probeContentType(file);
-                            String fileType = probedType != null ? probedType : "unknown";
-                            String newPath = targetPath.toAbsolutePath().toString();
                             String fileName = targetPath.getFileName().toString();
+                            int lastDot = fileName.lastIndexOf('.');
+                            String ext = lastDot > 0 ? fileName.substring(lastDot + 1).toLowerCase() : "no_ext";
+                            String fileType = getMimeType(file, ext);
+                            String newPath = targetPath.toAbsolutePath().toString();
                             long fileSize = Files.size(file);
 
                             if (dryRun) {
@@ -155,25 +175,20 @@ public class OrganizerService {
         String fileName = file.getFileName().toString();
         int lastDot = fileName.lastIndexOf('.');
         String ext = lastDot > 0 ? fileName.substring(lastDot + 1).toLowerCase() : "no_ext";
+        String fileType = getMimeType(file, ext);
 
-        String probedType = null;
+        LocalDateTime lastModified;
         try {
-            probedType = Files.probeContentType(file);
-        } catch (IOException e) {
-            // ignore
+            java.nio.file.attribute.FileTime fileTime = Files.getLastModifiedTime(file);
+            lastModified = LocalDateTime.ofInstant(fileTime.toInstant(), java.time.ZoneId.systemDefault());
+        } catch (Exception e) {
+            lastModified = LocalDateTime.now();
         }
-        String fileType = probedType != null ? probedType : "unknown";
 
-        String lastModified = "";
-        try {
-            lastModified = Files.getLastModifiedTime(file).toString();
-        } catch (IOException e) {
-            lastModified = java.time.LocalDateTime.now().toString();
-        }
-        String yearMonth = lastModified.substring(0, Math.min(7, lastModified.length()));
-        String year = lastModified.substring(0, Math.min(4, lastModified.length()));
-        String month = lastModified.length() > 7 ? lastModified.substring(5, 7) : "01";
-        String day = lastModified.length() > 10 ? lastModified.substring(8, 10) : "01";
+        String year = String.format("%04d", lastModified.getYear());
+        String month = String.format("%02d", lastModified.getMonthValue());
+        String day = String.format("%02d", lastModified.getDayOfMonth());
+        String yearMonth = year + "-" + month;
 
         Path resolved = destPath;
         String[] segments = pattern.split("/");
