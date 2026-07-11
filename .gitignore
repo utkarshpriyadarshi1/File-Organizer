@@ -28,3 +28,4 @@ replay_pid*
 /frontend/dist
 /ui/dist
 /dist
+/server/target
