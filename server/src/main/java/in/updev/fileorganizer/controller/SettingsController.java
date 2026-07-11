@@ -175,7 +175,7 @@ public class SettingsController {
     }
 
     @DeleteMapping("/database")
-    public String clearSelectedDatabaseTables(@RequestParam String tables) {
+    public String clearSelectedDatabaseTables(@RequestParam String tables) throws Exception {
         logger.info("Request received to clear selected database tables: {}", tables);
         String[] tableList = tables.split(",");
 
