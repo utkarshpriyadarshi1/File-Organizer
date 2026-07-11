@@ -10,7 +10,7 @@
     </parent>
     <groupId>in.updev</groupId>
     <artifactId>file-organizer</artifactId>
-    <version>0.0.10-SNAPSHOT</version>
+    <version>0.0.12-SNAPSHOT</version>
     <name>file-organizer</name>
     <description>File Organizer Desktop App</description>
     <url/>
