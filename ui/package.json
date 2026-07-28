@@ -1,6 +1,6 @@
 {
   "name": "file-organizer-app",
-  "version": "0.0.12",
+  "version": "0.0.15",
   "private": true,
   "main": "src/electron/app_on.js",
   "dependencies": {

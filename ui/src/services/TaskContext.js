@@ -28,7 +28,7 @@ export const TaskProvider = ({ children }) => {
         }
     }, [notificationsHistory]);
 
-    const addNotification = (message, title = "System Update", type = "info", metadata = null) => {
+    const addNotification = useCallback((message, title = "System Update", type = "info", metadata = null) => {
         const id = Math.random().toString(36).substr(2, 9);
         const newNotification = {
             id,
@@ -40,7 +40,7 @@ export const TaskProvider = ({ children }) => {
             metadata
         };
         setNotificationsHistory(prev => [newNotification, ...prev]);
-    };
+    }, []);
 
     const markAllNotificationsAsRead = useCallback(() => {
         setNotificationsHistory(prev => prev.map(n => n.read ? n : { ...n, read: true }));
@@ -99,7 +99,12 @@ export const TaskProvider = ({ children }) => {
         });
     };
 
-    const addToast = (message, type = "info", metadata = null) => {
+    const dismissToast = useCallback((id) => {
+        console.log(`[Toast] Dismissed notification ID: ${id}`);
+        setToastQueue(prev => prev.filter(t => t.id !== id));
+    }, []);
+
+    const addToast = useCallback((message, type = "info", metadata = null) => {
         const id = Math.random().toString(36).substr(2, 9);
         console.log(`[Toast] Added notification (${type}): "${message}"`);
         setToastQueue(prev => [...prev, { id, message, type }]);
@@ -116,12 +121,7 @@ export const TaskProvider = ({ children }) => {
             title = "System Warning";
         }
         addNotification(message, title, type, metadata);
-    };
-
-    const dismissToast = (id) => {
-        console.log(`[Toast] Dismissed notification ID: ${id}`);
-        setToastQueue(prev => prev.filter(t => t.id !== id));
-    };
+    }, [dismissToast, addNotification]);
 
     const syncActiveTasks = () => {
         console.log("[Sync] Fetching active background tasks from server...");

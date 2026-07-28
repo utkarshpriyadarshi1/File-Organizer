@@ -42,8 +42,9 @@ const Duplicates = ({ targetPath }) => {
         }
 
         let toSelect = [];
-        duplicates.forEach(group => {
-            if (group.files.length <= 1) return;
+        if (Array.isArray(duplicates)) {
+            duplicates.forEach(group => {
+                if (!group || !Array.isArray(group.files) || group.files.length <= 1) return;
 
             const filterEligible = (file) => {
                 const pathLower = file.path.toLowerCase();
@@ -86,22 +87,27 @@ const Duplicates = ({ targetPath }) => {
                 }
             }
         });
+        }
         setSelectedFiles(toSelect);
     };
 
     const getFilteredDuplicates = () => {
+        if (!Array.isArray(duplicates)) return [];
         return duplicates.filter(group => {
+            if (!group || !Array.isArray(group.files)) return false;
             if (!dupSearch.trim()) return true;
-            return group.files.some(file => file.path.toLowerCase().includes(dupSearch.toLowerCase())) || 
-                   group.hash.toLowerCase().includes(dupSearch.toLowerCase());
+            return group.files.some(file => file?.path?.toLowerCase().includes(dupSearch.toLowerCase())) || 
+                   group.hash?.toLowerCase().includes(dupSearch.toLowerCase());
         });
     };
 
     const getSortedDuplicates = () => {
         return [...getFilteredDuplicates()].sort((a, b) => {
-            if (dupSort === "countDesc") return b.files.length - a.files.length;
-            if (dupSort === "countAsc") return a.files.length - b.files.length;
-            if (dupSort === "hash") return a.hash.localeCompare(b.hash);
+            const aLen = Array.isArray(a?.files) ? a.files.length : 0;
+            const bLen = Array.isArray(b?.files) ? b.files.length : 0;
+            if (dupSort === "countDesc") return bLen - aLen;
+            if (dupSort === "countAsc") return aLen - bLen;
+            if (dupSort === "hash") return (a.hash || "").localeCompare(b.hash || "");
             return 0;
         });
     };
@@ -356,9 +362,8 @@ const Duplicates = ({ targetPath }) => {
                                 </div>
                             </div>
                         </div>
-                        
                         <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-                            {React.useMemo(() => {
+                            {(() => {
                                 const sorted = getSortedDuplicates();
                                 if (sorted.length === 0) {
                                     return <p className="text-xs text-slate-400 text-center py-6">No duplicate sets match your search filter.</p>;
@@ -390,7 +395,7 @@ const Duplicates = ({ targetPath }) => {
                                         </div>
                                     </div>
                                 ));
-                            }, [duplicates, dupSearch, dupSort, selectedFiles])}
+                            })()}
                         </div>
                     </div>
                 </Card>
