@@ -1,8 +1,0 @@
-{
-  "main": "electron/main.ts",
-  "scripts": {
-    "dev": "concurrently \"cross-env BROWSER=none vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "build": "vite build",
-    "start": "electron ."
-  }
-}

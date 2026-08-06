@@ -1,2 +1,0 @@
--- data.sql
--- Static assets, demo data, and template data seed records for File Organizer
