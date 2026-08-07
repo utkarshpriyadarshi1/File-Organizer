@@ -26,9 +26,11 @@ public class OrganizeController {
         String sourceFolder = (String) request.get("sourceFolder");
         String destinationFolder = (String) request.get("destinationFolder");
         boolean dryRun = request.containsKey("dryRun") && Boolean.parseBoolean(String.valueOf(request.get("dryRun")));
-        logger.info("Request received to organize files. Source: {}, Destination: {}, Dry Run: {}", sourceFolder, destinationFolder, dryRun);
+        String patternGroup = (String) request.get("patternGroup");
+        String layoutPatternOverride = (String) request.get("layoutPatternOverride");
+        logger.info("Request received to organize files. Source: {}, Destination: {}, Dry Run: {}, PatternGroup: {}", sourceFolder, destinationFolder, dryRun, patternGroup);
         try {
-            String taskId = organizerService.organizeFiles(sourceFolder, destinationFolder, dryRun);
+            String taskId = organizerService.organizeFiles(sourceFolder, destinationFolder, dryRun, patternGroup, layoutPatternOverride);
             logger.info("Successfully triggered organizer task. ID: {}", taskId);
             return taskId;
         } catch (Exception e) {

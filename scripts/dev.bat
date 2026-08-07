@@ -23,7 +23,7 @@ if exist "app.config.json" (
 )
 
 :: Start Spring Boot Backend in a separate window
-start "File Organizer Backend" cmd /c "set PATH=%PATH% && cd server && mvn spring-boot:run"
+start "File Organizer Backend" cmd /c "cd server && mvn spring-boot:run"
 
 :: Prevent React dev server from opening standard browser window
 set BROWSER=none

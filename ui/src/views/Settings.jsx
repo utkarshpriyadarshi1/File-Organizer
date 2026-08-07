@@ -27,7 +27,12 @@ import {
     CopyOutlined,
     PieChartOutlined,
     EditOutlined,
-    DeleteOutlined
+    DeleteOutlined,
+    CrownOutlined,
+    CheckOutlined,
+    PictureOutlined,
+    VideoCameraOutlined,
+    FileTextOutlined
 } from "@ant-design/icons";
 import { Modal } from "antd";
 
@@ -70,9 +75,11 @@ const Settings = ({ defaultSubTab }) => {
     const [performanceConfig, setPerformanceConfig] = useState({ batchSize: 1000 });
 
     // Disk Analyzer Config state
-    const [diskAnalyzerConfig, setDiskAnalyzerConfig] = useState({ categories: [] });
+    const [diskAnalyzerConfig, setDiskAnalyzerConfig] = useState({ patternGroups: [] });
+    const [activeGroupIndex, setActiveGroupIndex] = useState(0);
     const [configLoading, setConfigLoading] = useState(false);
     const [newCategoryName, setNewCategoryName] = useState("");
+    const [newGroupName, setNewGroupName] = useState("");
     const [newPatternInput, setNewPatternInput] = useState("");
 
     // Telemetry reporting state
@@ -196,22 +203,56 @@ const Settings = ({ defaultSubTab }) => {
         }
     };
 
-    const handleAddCategory = () => {
-        if (!newCategoryName.trim()) return;
-        const exists = diskAnalyzerConfig.categories.some(c => c.name.toLowerCase() === newCategoryName.toLowerCase());
+    const handleAddGroup = () => {
+        if (!newGroupName.trim()) return;
+        const exists = diskAnalyzerConfig.patternGroups?.some(g => g.name.toLowerCase() === newGroupName.toLowerCase());
         if (exists) {
-            addToast("Category already exists", "warning");
+            addToast("Group already exists", "warning");
             return;
         }
         const updated = { ...diskAnalyzerConfig };
-        updated.categories.push({ name: newCategoryName.trim(), patterns: [] });
+        if (!updated.patternGroups) updated.patternGroups = [];
+        updated.patternGroups.push({ name: newGroupName.trim(), isDefault: false, categories: [] });
+        setDiskAnalyzerConfig(updated);
+        setNewGroupName("");
+        setActiveGroupIndex(updated.patternGroups.length - 1);
+    };
+
+    const handleRemoveGroup = (idx) => {
+        const group = diskAnalyzerConfig.patternGroups[idx];
+        if (group.isDefault) {
+            addToast("Cannot delete default group", "error");
+            return;
+        }
+        const updated = { ...diskAnalyzerConfig };
+        updated.patternGroups.splice(idx, 1);
+        setDiskAnalyzerConfig(updated);
+        setActiveGroupIndex(0);
+    };
+
+    const handleAddCategory = () => {
+        if (!newCategoryName.trim()) return;
+        const updated = { ...diskAnalyzerConfig };
+        const group = updated.patternGroups?.[activeGroupIndex];
+        if (!group) return;
+        
+        const exists = group.categories?.some(c => c.name.toLowerCase() === newCategoryName.toLowerCase());
+        if (exists) {
+            addToast("Category already exists in this group", "warning");
+            return;
+        }
+        if (!group.categories) group.categories = [];
+        group.categories.push({ name: newCategoryName.trim(), patterns: [] });
         setDiskAnalyzerConfig(updated);
         setNewCategoryName("");
     };
 
     const handleRemoveCategory = (catName) => {
         const updated = { ...diskAnalyzerConfig };
-        updated.categories = updated.categories.filter(c => c.name !== catName);
+        const group = updated.patternGroups?.[activeGroupIndex];
+        if (!group || !group.categories) return;
+        
+        group.categories = group.categories.filter(c => c.name !== catName);
         setDiskAnalyzerConfig(updated);
     };
 
@@ -219,7 +260,10 @@ const Settings = ({ defaultSubTab }) => {
         if (!patternString.trim()) return;
         const pattern = patternString.trim();
         const updated = { ...diskAnalyzerConfig };
-        const cat = updated.categories.find(c => c.name === catName);
+        const group = updated.patternGroups?.[activeGroupIndex];
+        if (!group || !group.categories) return;
+        
+        const cat = group.categories.find(c => c.name === catName);
         if (cat) {
             if (!cat.patterns) cat.patterns = [];
             if (!cat.patterns.includes(pattern)) {
@@ -231,7 +275,10 @@ const Settings = ({ defaultSubTab }) => {
 
     const handleRemovePattern = (catName, pattern) => {
         const updated = { ...diskAnalyzerConfig };
-        const cat = updated.categories.find(c => c.name === catName);
+        const group = updated.patternGroups?.[activeGroupIndex];
+        if (!group || !group.categories) return;
+        
+        const cat = group.categories.find(c => c.name === catName);
         if (cat && cat.patterns) {
             cat.patterns = cat.patterns.filter(e => e !== pattern);
         }
@@ -785,104 +832,242 @@ const Settings = ({ defaultSubTab }) => {
         </Card>
     );
 
-    const renderDiskAnalyzerConfig = () => (
-        <Card
-            className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-md rounded-2xl text-left"
-            bodyStyle={{ padding: '20px' }}
-            title={
-                <div className="flex items-center gap-2">
-                    <PieChartOutlined className="text-purple-600 text-base" />
-                    <div>
-                        <span className="text-xs font-black text-slate-800 dark:text-slate-100 block leading-tight">Analyse & Organize Categories</span>
-                        <span className="text-[10px] text-slate-450 dark:text-slate-450 font-semibold block mt-0.5">Customize categories and file patterns for Analyse and Organize features</span>
+    const renderDiskAnalyzerConfig = () => {
+        const activeGroup = diskAnalyzerConfig.patternGroups?.[activeGroupIndex];
+        return (
+            <div className="space-y-6">
+                {/* Top Header Card */}
+                <Card
+                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl text-left"
+                    bodyStyle={{ padding: '20px 24px' }}
+                >
+                    <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-600 flex items-center justify-center text-xl shrink-0">
+                                <PieChartOutlined />
+                            </div>
+                            <div>
+                                <span className="text-sm font-bold text-slate-800 dark:text-slate-100 block">Analyse & Organize Groups</span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400 block mt-0.5">Customize categories and file patterns for Analyse and Organize features.</span>
+                            </div>
+                        </div>
+                        <Button
+                            type="primary"
+                            onClick={handleSaveDiskAnalyzerConfig}
+                            icon={<SaveOutlined />}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2 rounded-xl border-0 h-10 shadow-sm shadow-emerald-500/20"
+                        >
+                            Save Configuration
+                        </Button>
+                    </div>
+                </Card>
+
+                <div className="flex flex-col lg:flex-row gap-6">
+                    {/* Left Column */}
+                    <div className="w-full lg:w-1/3 flex flex-col gap-4 text-left">
+                        {/* Groups Card */}
+                        <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm" bodyStyle={{ padding: '20px' }}>
+                            <div className="flex items-center gap-2 mb-4 text-slate-600 dark:text-slate-300">
+                                <FolderOutlined className="text-lg" />
+                                <span className="text-xs font-bold uppercase tracking-widest">Groups</span>
+                            </div>
+                            
+                            <div className="flex gap-2 mb-6">
+                                <Input
+                                    value={newGroupName}
+                                    onChange={(e) => setNewGroupName(e.target.value)}
+                                    placeholder="New Group Name"
+                                    className="bg-slate-50 dark:bg-slate-800 text-sm border border-slate-200 dark:border-slate-700 rounded-lg p-2 font-medium"
+                                />
+                                <Button
+                                    type="primary"
+                                    onClick={handleAddGroup}
+                                    icon={<PlusOutlined />}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg border-0 h-auto px-4"
+                                >
+                                    Add
+                                </Button>
+                            </div>
+                            
+                            <div className="flex flex-wrap gap-2">
+                                {diskAnalyzerConfig.patternGroups?.map((group, idx) => {
+                                    const isActive = idx === activeGroupIndex;
+                                    return (
+                                        <div 
+                                            key={idx}
+                                            onClick={() => setActiveGroupIndex(idx)}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-colors border ${isActive ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-transparent hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                                        >
+                                            <span className="text-sm font-bold">{group.name}</span>
+                                            {!group.isDefault && (
+                                                <Popconfirm
+                                                    title="Delete group?"
+                                                    onConfirm={(e) => { e.stopPropagation(); handleRemoveGroup(idx); }}
+                                                >
+                                                    <CloseOutlined className={`text-xs ${isActive ? 'text-white hover:text-red-200' : 'text-slate-400 hover:text-red-500'}`} onClick={(e) => e.stopPropagation()} />
+                                                </Popconfirm>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </Card>
+
+                        {/* Add New Category Card */}
+                        {activeGroup && (
+                            <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm" bodyStyle={{ padding: '20px' }}>
+                                <div className="flex items-center gap-2 mb-4 text-slate-600 dark:text-slate-300">
+                                    <AppstoreAddOutlined className="text-lg" />
+                                    <span className="text-xs font-bold uppercase tracking-widest">Add New Category</span>
+                                </div>
+                                
+                                <Input
+                                    value={newCategoryName}
+                                    onChange={(e) => setNewCategoryName(e.target.value)}
+                                    placeholder="New Category Name (e.g. Virtual Machines)"
+                                    className="bg-slate-50 dark:bg-slate-800 text-sm border border-slate-200 dark:border-slate-700 rounded-lg p-2 font-medium mb-3 w-full"
+                                />
+                                <Button
+                                    onClick={handleAddCategory}
+                                    icon={<PlusOutlined />}
+                                    className="w-full text-blue-600 border border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-sm font-bold rounded-lg h-10"
+                                >
+                                    Add Category to {activeGroup.name}
+                                </Button>
+                            </Card>
+                        )}
+                    </div>
+
+                    {/* Right Column */}
+                    <div className="w-full lg:w-2/3 flex flex-col gap-4 text-left">
+                        {activeGroup && (
+                            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-xl p-4 flex items-center gap-3 text-blue-700 dark:text-blue-300">
+                                <FolderOutlined className="text-xl" />
+                                <span className="font-medium text-sm">Showing categories for: <strong>{activeGroup.name}</strong></span>
+                            </div>
+                        )}
+
+                        {configLoading ? (
+                            <div className="py-12 flex justify-center"><Spin size="large" /></div>
+                        ) : (
+                            <div className="space-y-4">
+                                {activeGroup?.categories?.map((cat, idx) => {
+                                    let Icon = FolderOutlined;
+                                    if (cat.name.toLowerCase().includes('image') || cat.name.toLowerCase().includes('picture')) Icon = PictureOutlined;
+                                    else if (cat.name.toLowerCase().includes('video') || cat.name.toLowerCase().includes('media')) Icon = VideoCameraOutlined;
+                                    else if (cat.name.toLowerCase().includes('doc') || cat.name.toLowerCase().includes('text')) Icon = FileTextOutlined;
+
+                                    return (
+                                        <Card key={idx} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm rounded-2xl overflow-hidden" bodyStyle={{ padding: '0' }}>
+                                            <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                                                <div className="flex items-center gap-3 text-slate-800 dark:text-slate-100">
+                                                    <Icon className="text-xl text-slate-400 dark:text-slate-500" />
+                                                    <h3 className="text-lg font-bold m-0">{cat.name}</h3>
+                                                </div>
+                                                <Popconfirm
+                                                    title="Delete category?"
+                                                    onConfirm={() => handleRemoveCategory(cat.name)}
+                                                >
+                                                    <Button type="text" className="text-slate-400 hover:text-red-500 p-0 w-8 h-8 flex items-center justify-center">
+                                                        <DeleteOutlined className="text-lg" />
+                                                    </Button>
+                                                </Popconfirm>
+                                            </div>
+                                            
+                                            <div className="p-4 bg-slate-50/50 dark:bg-slate-800/20">
+                                                <div className="flex flex-wrap gap-2 mb-4">
+                                                    {cat.patterns && cat.patterns.map(pattern => (
+                                                        <Tag
+                                                            key={pattern}
+                                                            closable
+                                                            onClose={() => handleRemovePattern(cat.name, pattern)}
+                                                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs py-1.5 px-3 rounded-md m-0 flex items-center gap-1 shadow-sm"
+                                                            closeIcon={<CloseOutlined className="text-[10px] text-slate-400 hover:text-red-500" />}
+                                                        >
+                                                            <span className="font-mono">{pattern}</span>
+                                                        </Tag>
+                                                    ))}
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <Input
+                                                        id={`pattern-input-${activeGroup.name}-${cat.name}`}
+                                                        placeholder="Add pattern (e.g. *.iso)"
+                                                        className="text-sm rounded-lg max-w-[240px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+                                                        onPressEnter={(e) => {
+                                                            handleAddPattern(cat.name, e.target.value);
+                                                            e.target.value = '';
+                                                        }}
+                                                    />
+                                                    <Button 
+                                                        className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-lg h-[34px] px-4"
+                                                        onClick={() => {
+                                                            const input = document.getElementById(`pattern-input-${activeGroup.name}-${cat.name}`);
+                                                            handleAddPattern(cat.name, input.value);
+                                                            input.value = '';
+                                                        }}
+                                                    >
+                                                        Add
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </Card>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 </div>
-            }
-        >
-            <div className="space-y-4">
-                <div className="flex gap-2 mb-4">
-                    <Input
-                        value={newCategoryName}
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                        placeholder="New Category Name (e.g. Virtual Machines)"
-                        className="bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 flex-grow font-bold"
-                    />
-                    <Button
-                        type="primary"
-                        onClick={handleAddCategory}
-                        icon={<PlusOutlined />}
-                        className="bg-blue-600 hover:bg-blue-750 text-white text-xs font-extrabold px-5 py-2.5 rounded-xl border-0"
-                    >
-                        Add Category
-                    </Button>
-                    <Button
-                        type="primary"
-                        onClick={handleSaveDiskAnalyzerConfig}
-                        icon={<SaveOutlined />}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold px-5 py-2.5 rounded-xl border-0"
-                    >
-                        Save Configuration
-                    </Button>
+            </div>
+        );
+    };
+
+    const renderUpgradeConfig = () => {
+        return (
+            <div className="flex flex-col items-center justify-center py-10 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm mt-4">
+                <div className="text-center mb-10 px-4">
+                    <h2 className="text-4xl font-extrabold text-slate-800 dark:text-white mb-3 tracking-tight">Unlock the Full Potential</h2>
+                    <p className="text-slate-500 dark:text-slate-400 text-lg max-w-xl mx-auto">Organize files faster, smarter, and with complete flexibility.</p>
                 </div>
                 
-                {configLoading ? (
-                    <div className="py-8 flex justify-center"><Spin /></div>
-                ) : (
-                    <div className="space-y-3">
-                        {diskAnalyzerConfig.categories.map((cat, idx) => (
-                            <div key={idx} className="border border-slate-200 dark:border-slate-700 rounded-xl p-4 bg-slate-50 dark:bg-slate-800/50">
-                                <div className="flex justify-between items-center mb-3">
-                                    <h4 className="text-sm font-black m-0 text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                                        <FolderOutlined className="text-slate-400" />
-                                        {cat.name}
-                                    </h4>
-                                    <Popconfirm
-                                        title="Delete category?"
-                                        onConfirm={() => handleRemoveCategory(cat.name)}
-                                    >
-                                        <Button danger size="small" type="text" icon={<DeleteOutlined />} />
-                                    </Popconfirm>
-                                </div>
-                                <div className="flex flex-wrap gap-2 mb-3">
-                                    {cat.patterns && cat.patterns.map(pattern => (
-                                        <Tag
-                                            key={pattern}
-                                            closable
-                                            onClose={() => handleRemovePattern(cat.name, pattern)}
-                                            className="bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-xs py-1"
-                                        >
-                                            {pattern}
-                                        </Tag>
-                                    ))}
-                                </div>
-                                <div className="flex gap-2">
-                                    <Input
-                                        id={`pattern-input-${cat.name}`}
-                                        placeholder="Add pattern (e.g. *.iso)"
-                                        className="text-xs rounded-lg max-w-[200px]"
-                                        onPressEnter={(e) => {
-                                            handleAddPattern(cat.name, e.target.value);
-                                            e.target.value = '';
-                                        }}
-                                    />
-                                    <Button 
-                                        size="small" 
-                                        onClick={() => {
-                                            const input = document.getElementById(`pattern-input-${cat.name}`);
-                                            handleAddPattern(cat.name, input.value);
-                                            input.value = '';
-                                        }}
-                                    >
-                                        Add
-                                    </Button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
+                <div className="flex flex-col md:flex-row gap-8 w-full max-w-5xl justify-center px-6">
+                    {/* Basic Plan */}
+                    <Card className="flex-1 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm rounded-3xl relative transition-transform hover:-translate-y-1 hover:shadow-md" bodyStyle={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '40px 30px' }}>
+                        <div className="text-xl font-bold text-slate-700 dark:text-slate-300 mb-2">Basic Edition</div>
+                        <div className="text-5xl font-black text-slate-800 dark:text-white mb-3 tracking-tighter">$0<span className="text-lg font-medium text-slate-400 tracking-normal">/forever</span></div>
+                        <div className="text-slate-500 dark:text-slate-400 mb-8 text-sm leading-relaxed min-h-[40px]">Essential tools to keep your files neatly organized.</div>
+                        
+                        <div className="space-y-4 mb-10 flex-grow">
+                            <div className="flex items-center text-sm font-medium text-slate-700 dark:text-slate-300"><CheckOutlined className="text-emerald-500 text-lg mr-3" /> Basic File Sorting</div>
+                            <div className="flex items-center text-sm font-medium text-slate-700 dark:text-slate-300"><CheckOutlined className="text-emerald-500 text-lg mr-3" /> Up to 5 Custom Groups</div>
+                            <div className="flex items-center text-sm font-medium text-slate-700 dark:text-slate-300"><CheckOutlined className="text-emerald-500 text-lg mr-3" /> Standard Patterns</div>
+                            <div className="flex items-center text-sm font-medium text-slate-400 dark:text-slate-600"><CloseOutlined className="text-slate-300 dark:text-slate-700 text-lg mr-3" /> Advanced Deep Analysis</div>
+                            <div className="flex items-center text-sm font-medium text-slate-400 dark:text-slate-600"><CloseOutlined className="text-slate-300 dark:text-slate-700 text-lg mr-3" /> Automatic Background Sync</div>
+                        </div>
+                        
+                        <Button size="large" className="w-full rounded-2xl border-2 border-blue-600 text-blue-600 font-semibold h-12" disabled>Current Plan</Button>
+                    </Card>
+                    
+                    {/* Premium Plan */}
+                    <Card className="flex-1 bg-gradient-to-b from-blue-50 to-white dark:from-slate-800 dark:to-slate-900 border-2 border-blue-500 shadow-xl shadow-blue-500/10 rounded-3xl relative overflow-visible transition-transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-500/20" bodyStyle={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '40px 30px' }}>
+                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-md uppercase tracking-wider">MOST POPULAR</div>
+                        <div className="text-xl font-bold text-blue-700 dark:text-blue-400 mb-2">Pro Edition</div>
+                        <div className="text-5xl font-black text-slate-800 dark:text-white mb-3 tracking-tighter">$29<span className="text-lg font-medium text-slate-400 tracking-normal">/lifetime</span></div>
+                        <div className="text-slate-600 dark:text-slate-400 mb-8 text-sm leading-relaxed min-h-[40px]">Advanced features for power users with massive file collections.</div>
+                        
+                        <div className="space-y-4 mb-10 flex-grow">
+                            <div className="flex items-center text-sm font-medium text-slate-800 dark:text-slate-200"><CheckOutlined className="text-blue-600 dark:text-blue-400 text-lg mr-3" /> Unlimited Custom Groups</div>
+                            <div className="flex items-center text-sm font-medium text-slate-800 dark:text-slate-200"><CheckOutlined className="text-blue-600 dark:text-blue-400 text-lg mr-3" /> Regex & Advanced Patterns</div>
+                            <div className="flex items-center text-sm font-medium text-slate-800 dark:text-slate-200"><CheckOutlined className="text-blue-600 dark:text-blue-400 text-lg mr-3" /> Automatic Background Sync</div>
+                            <div className="flex items-center text-sm font-medium text-slate-800 dark:text-slate-200"><CheckOutlined className="text-blue-600 dark:text-blue-400 text-lg mr-3" /> Cloud Storage Integration</div>
+                            <div className="flex items-center text-sm font-medium text-slate-800 dark:text-slate-200"><CheckOutlined className="text-blue-600 dark:text-blue-400 text-lg mr-3" /> Priority Support</div>
+                        </div>
+                        
+                        <Button type="primary" size="large" className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-0 font-bold h-12 shadow-md shadow-blue-500/30">Upgrade to Pro</Button>
+                    </Card>
+                </div>
             </div>
-        </Card>
-    );
+        );
+    };
 
     const tabItems = [
         {
@@ -985,6 +1170,16 @@ const Settings = ({ defaultSubTab }) => {
                     </Modal>
                 </Card>
             )
+        },
+        {
+            key: 'upgrade',
+            label: (
+                <span className="text-blue-600 font-semibold flex items-center">
+                    <CrownOutlined className="text-lg mr-1" />
+                    {t("upgradeToPro") || "Upgrade"}
+                </span>
+            ),
+            children: renderUpgradeConfig()
         }
     ];
 

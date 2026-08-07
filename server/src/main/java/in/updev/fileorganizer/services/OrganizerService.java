@@ -24,6 +24,7 @@ import in.updev.fileorganizer.repositories.IgnoreRuleRepository;
 import in.updev.fileorganizer.repositories.AppSettingRepository;
 import in.updev.fileorganizer.utils.FileUtils;
 import in.updev.fileorganizer.dto.DiskAnalyzerConfigDto;
+import in.updev.fileorganizer.dto.PatternGroupDto;
 import in.updev.fileorganizer.dto.CategoryConfigDto;
 import in.updev.fileorganizer.entities.AppSetting;
 import org.springframework.util.AntPathMatcher;
@@ -70,7 +71,7 @@ public class OrganizerService {
         return "unknown";
     }
 
-    public String organizeFiles(String sourceFolder, String destinationFolder, boolean dryRun) {
+    public String organizeFiles(String sourceFolder, String destinationFolder, boolean dryRun, String patternGroupName, String layoutPatternOverride) {
         String actionDetails = (dryRun ? "Dry run: Organize " : "Organize ") + "files";
         return backgroundTaskManager.submitTask(TaskType.ORGANIZE, sourceFolder, destinationFolder, actionDetails,
                 (taskId, reporter) -> {
@@ -100,8 +101,17 @@ public class OrganizerService {
                         Optional<AppSetting> settingOpt = appSettingRepository.findByKey("disk_analyzer_config");
                         if (settingOpt.isPresent()) {
                             DiskAnalyzerConfigDto config = objectMapper.readValue(settingOpt.get().getValue(), DiskAnalyzerConfigDto.class);
-                            if (config != null && config.getCategories() != null) {
-                                categories = config.getCategories();
+                            if (config != null && config.getPatternGroups() != null && !config.getPatternGroups().isEmpty()) {
+                                PatternGroupDto activeGroup = null;
+                                if (patternGroupName != null) {
+                                    activeGroup = config.getPatternGroups().stream()
+                                            .filter(g -> patternGroupName.equals(g.getName()))
+                                            .findFirst().orElse(null);
+                                }
+                                if (activeGroup == null) activeGroup = config.getPatternGroups().get(0);
+                                if (activeGroup.getCategories() != null) {
+                                    categories = activeGroup.getCategories();
+                                }
                             }
                         }
                     } catch (Exception e) {
@@ -121,7 +131,9 @@ public class OrganizerService {
                         fileResult.put("dryRun", dryRun);
 
                         try {
-                            String layoutPattern = preferencesService.getPreferences().getFolderLayoutPattern();
+                            String layoutPattern = layoutPatternOverride != null && !layoutPatternOverride.trim().isEmpty() 
+                                    ? layoutPatternOverride 
+                                    : preferencesService.getPreferences().getFolderLayoutPattern();
                             Path targetDir = resolveTargetDirectory(file, layoutPattern, destPath, categories);
                             Path targetPath = targetDir.resolve(file.getFileName());
 

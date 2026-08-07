@@ -238,29 +238,24 @@ const Logs = () => {
             </Row>
 
             {/* Main Terminal Window */}
-            <div className="border border-slate-800 dark:border-slate-900 rounded-2xl bg-slate-950 shadow-2xl flex flex-col overflow-hidden h-[540px] relative select-none">
+            <div className="border border-slate-200 dark:border-slate-900 rounded-2xl bg-white dark:bg-slate-950 shadow-sm dark:shadow-2xl flex flex-col overflow-hidden h-[540px] relative select-none">
                 {/* Window Topbar */}
-                <div className="bg-slate-900 px-5 py-3 flex justify-between items-center border-b border-slate-950">
-                    <div className="flex items-center gap-2 text-slate-400 text-xs font-bold font-mono">
-                        <CodeOutlined className="text-emerald-400 animate-pulse" />
-                        <span className="tracking-wide text-slate-200">developer@file-organizer:~</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80"></span>
-                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80"></span>
-                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></span>
+                <div className="bg-slate-50 dark:bg-slate-900 px-5 py-3 flex justify-between items-center border-b border-slate-200 dark:border-slate-950">
+                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 text-xs font-bold font-mono">
+                        <CodeOutlined className="text-emerald-500 dark:text-emerald-400 animate-pulse" />
+                        <span className="tracking-wide text-slate-800 dark:text-slate-200">developer@file-organizer:~</span>
                     </div>
                 </div>
 
                 {/* Sub-header Controls */}
-                <div className="bg-slate-900/60 px-5 py-2 flex flex-wrap gap-3 items-center justify-between border-b border-slate-950 text-[10px] font-bold text-slate-400 font-mono">
+                <div className="bg-slate-50/60 dark:bg-slate-900/60 px-5 py-2 flex flex-wrap gap-3 items-center justify-between border-b border-slate-200 dark:border-slate-950 text-[10px] font-bold text-slate-500 dark:text-slate-400 font-mono">
                     <div className="flex flex-wrap gap-3 items-center">
                         <Input
                             prefix={<SearchOutlined style={{ fontSize: '9px', color: '#64748b' }} />}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search console..."
-                            className="bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-600 rounded-lg w-40 h-7 text-[10px]"
+                            className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 rounded-lg w-40 h-7 text-[10px]"
                             allowClear
                         />
 
@@ -269,7 +264,7 @@ const Logs = () => {
                             <Select
                                 onChange={(val) => setLevelFilter(val)}
                                 value={levelFilter}
-                                className="h-7 text-[9px] w-24 bg-transparent"
+                                className="h-7 text-[9px] w-24 bg-transparent text-slate-700 dark:text-slate-200"
                                 options={[
                                     { value: 'ALL', label: 'All Levels' },
                                     { value: 'INFO', label: 'INFO' },
@@ -283,7 +278,7 @@ const Logs = () => {
                             <Select
                                 onChange={(val) => setTypeFilter(val)}
                                 value={typeFilter}
-                                className="h-7 text-[9px] w-28 bg-transparent"
+                                className="h-7 text-[9px] w-28 bg-transparent text-slate-700 dark:text-slate-200"
                                 options={[
                                     { value: 'ALL', label: 'All Sources' },
                                     ...logTypes.map(t => ({ value: t, label: t }))
@@ -298,7 +293,7 @@ const Logs = () => {
                             <Select
                                 onChange={(val) => setSortOrder(val)}
                                 value={sortOrder}
-                                className="h-7 text-[9px] w-28 bg-transparent"
+                                className="h-7 text-[9px] w-28 bg-transparent text-slate-700 dark:text-slate-200"
                                 options={[
                                     { value: 'oldToNew', label: 'Oldest First' },
                                     { value: 'newToOld', label: 'Newest First' },
@@ -313,7 +308,7 @@ const Logs = () => {
                                 onClick={downloadLogs}
                                 disabled={filteredAndSortedLogs.length === 0}
                                 icon={<DownloadOutlined style={{ fontSize: '9px' }} />}
-                                className="bg-slate-950 border border-slate-800 text-[9px] h-7 rounded text-slate-350 hover:text-white"
+                                className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[9px] h-7 rounded text-slate-600 dark:text-slate-350 hover:text-slate-800 dark:hover:text-white"
                             >
                                 Export
                             </Button>
@@ -323,7 +318,7 @@ const Logs = () => {
                                 onClick={clearConsole}
                                 disabled={filteredAndSortedLogs.length === 0}
                                 icon={<DeleteOutlined style={{ fontSize: '9px' }} />}
-                                className="bg-slate-950 border border-slate-800 text-[9px] h-7 rounded text-slate-350"
+                                className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[9px] h-7 rounded text-slate-600 dark:text-slate-350"
                             >
                                 Clear
                             </Button>
@@ -335,12 +330,12 @@ const Logs = () => {
                 <div
                     ref={consoleContainerRef}
                     onScroll={handleScroll}
-                    className="flex-grow p-5 overflow-y-auto font-mono text-[11px] space-y-1.5 text-slate-100 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent text-left"
+                    className="flex-grow p-5 overflow-y-auto font-mono text-[11px] space-y-1.5 text-slate-800 dark:text-slate-100 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-800 scrollbar-track-transparent text-left bg-white dark:bg-slate-950"
                 >
                     {filteredAndSortedLogs.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-full text-slate-700 gap-2">
+                        <div className="flex flex-col items-center justify-center h-full text-slate-500 dark:text-slate-700 gap-2">
                             <ConsoleSqlOutlined style={{ fontSize: '24px' }} className="animate-bounce" />
-                            <span className="font-bold text-[9px] uppercase tracking-widest text-slate-600">No matching logs streamed</span>
+                            <span className="font-bold text-[9px] uppercase tracking-widest text-slate-400 dark:text-slate-600">No matching logs streamed</span>
                         </div>
                     ) : (
                         filteredAndSortedLogs.map((log, index) => {
@@ -351,47 +346,47 @@ const Logs = () => {
                                 <div
                                     key={index}
                                     onClick={() => setExpandedLogIndex(isExpanded ? null : index)}
-                                    className={`flex flex-col hover:bg-slate-900/50 p-2 rounded-xl transition-all duration-100 cursor-pointer border ${isExpanded ? "bg-slate-900/40 border-slate-800" : "border-transparent"}`}
+                                    className={`flex flex-col hover:bg-slate-50 dark:hover:bg-slate-900/50 p-2 rounded-xl transition-all duration-100 cursor-pointer border ${isExpanded ? "bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800" : "border-transparent"}`}
                                 >
                                     <div className="flex items-start gap-2.5">
                                         {/* Timestamp */}
                                         {log.timestamp && (
-                                            <span className="text-slate-600 select-none shrink-0 font-semibold">
+                                            <span className="text-slate-400 dark:text-slate-600 select-none shrink-0 font-semibold">
                                                 [{log.timestamp}]
                                             </span>
                                         )}
 
                                         {/* Severity Badge */}
-                                        <span className={`shrink-0 flex items-center gap-1 font-extrabold text-[10px] tracking-wide ${isError ? "text-rose-450" : "text-emerald-400"}`}>
+                                        <span className={`shrink-0 flex items-center gap-1 font-extrabold text-[10px] tracking-wide ${isError ? "text-rose-500 dark:text-rose-450" : "text-emerald-500 dark:text-emerald-400"}`}>
                                             {isError ? (
                                                 <ExclamationCircleFilled className="text-rose-500 text-[10px]" />
                                             ) : (
-                                                <InfoCircleFilled className="text-emerald-400 text-[10px]" />
+                                                <InfoCircleFilled className="text-emerald-500 dark:text-emerald-400 text-[10px]" />
                                             )}
                                             {log.level}
                                         </span>
 
                                         {/* Source Type Tag */}
-                                        <span className="text-sky-400 font-bold shrink-0">
+                                        <span className="text-sky-500 dark:text-sky-400 font-bold shrink-0">
                                             [{log.type}]
                                         </span>
 
                                         {/* Highlighted Log Message */}
-                                        <span className="text-slate-300 break-all select-text font-medium leading-relaxed flex-grow">
+                                        <span className="text-slate-700 dark:text-slate-300 break-all select-text font-medium leading-relaxed flex-grow">
                                             {highlightQuery(log.message, searchQuery)}
                                         </span>
 
                                         {/* Expand indicator icon */}
-                                        <span className="text-slate-600 hover:text-slate-400 p-0.5">
+                                        <span className="text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400 p-0.5">
                                             {isExpanded ? <UpOutlined style={{ fontSize: '9px' }} /> : <DownOutlined style={{ fontSize: '9px' }} />}
                                         </span>
                                     </div>
 
                                     {/* Expand details display */}
                                     {isExpanded && (
-                                        <div className="mt-2.5 ml-8 p-3.5 bg-slate-950/80 rounded-lg border border-slate-850 text-[10px] text-slate-450 select-text leading-relaxed font-mono">
-                                            <p className="font-bold text-slate-550 mb-1.5 border-b border-slate-900 pb-1 uppercase tracking-wider">Raw Log Event Data:</p>
-                                            <pre className="overflow-x-auto whitespace-pre-wrap text-slate-350 m-0">
+                                        <div className="mt-2.5 ml-8 p-3.5 bg-slate-100 dark:bg-slate-950/80 rounded-lg border border-slate-200 dark:border-slate-850 text-[10px] text-slate-600 dark:text-slate-450 select-text leading-relaxed font-mono">
+                                            <p className="font-bold text-slate-700 dark:text-slate-550 mb-1.5 border-b border-slate-200 dark:border-slate-900 pb-1 uppercase tracking-wider">Raw Log Event Data:</p>
+                                            <pre className="overflow-x-auto whitespace-pre-wrap text-slate-600 dark:text-slate-350 m-0">
                                                 {typeof log.raw === "object"
                                                     ? JSON.stringify(log.raw, null, 2)
                                                     : String(log.raw)
@@ -419,10 +414,10 @@ const Logs = () => {
                 )}
 
                 {/* Terminal Window Footer */}
-                <div className="bg-slate-900 px-5 py-2.5 border-t border-slate-950 text-[10px] text-slate-500 font-mono flex justify-between items-center select-none">
+                <div className="bg-slate-50 dark:bg-slate-900 px-5 py-2.5 border-t border-slate-200 dark:border-slate-950 text-[10px] text-slate-500 font-mono flex justify-between items-center select-none">
                     <span className="flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow shadow-emerald-400/30"></span>
-                        <span className="text-slate-400 font-bold">Live Streaming Output</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse shadow shadow-emerald-400/30"></span>
+                        <span className="text-slate-600 dark:text-slate-400 font-bold">Live Streaming Output</span>
                     </span>
                     <span className="font-semibold text-slate-500">Filtered logs count: {filteredAndSortedLogs.length}</span>
                 </div>

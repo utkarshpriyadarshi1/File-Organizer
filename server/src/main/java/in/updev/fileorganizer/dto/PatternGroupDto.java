@@ -9,6 +9,8 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class DiskAnalyzerConfigDto {
-    private List<PatternGroupDto> patternGroups;
+public class PatternGroupDto {
+    private String name;
+    private boolean isDefault;
+    private List<CategoryConfigDto> categories;
 }

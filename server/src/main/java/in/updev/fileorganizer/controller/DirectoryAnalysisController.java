@@ -7,6 +7,7 @@ import in.updev.fileorganizer.repositories.AnalysisFileRecordRepository;
 import in.updev.fileorganizer.repositories.AppSettingRepository;
 import in.updev.fileorganizer.services.BackgroundTaskManager;
 import in.updev.fileorganizer.dto.DiskAnalyzerConfigDto;
+import in.updev.fileorganizer.dto.PatternGroupDto;
 import in.updev.fileorganizer.dto.CategoryConfigDto;
 import org.springframework.util.AntPathMatcher;
 import in.updev.fileorganizer.dto.PerformanceConfigDto;
@@ -176,9 +177,11 @@ public class DirectoryAnalysisController {
         AnalysisResponse response = new AnalysisResponse();
         response.setFolderPath(rootPath.toAbsolutePath().toString());
 
+        String patternGroupName = payload.get("patternGroup");
         DiskAnalyzerConfigDto config = getDiskAnalyzerConfig();
+        PatternGroupDto activeGroup = getActiveGroup(config, patternGroupName);
         Map<String, CategoryStats> catMap = response.getCategories();
-        initCategoryStats(catMap, config);
+        initCategoryStats(catMap, activeGroup);
 
         Files.walkFileTree(rootPath, new SimpleFileVisitor<Path>() {
             @Override
@@ -187,7 +190,7 @@ public class DirectoryAnalysisController {
                     long size = attrs.size();
                     response.setTotalFiles(response.getTotalFiles() + 1);
                     response.setTotalSize(response.getTotalSize() + size);
-                    String matchedCat = getFileCategory(file.getFileName().toString().toLowerCase(), config);
+                    String matchedCat = getFileCategory(file.getFileName().toString().toLowerCase(), activeGroup);
                     CategoryStats stats = catMap.get(matchedCat);
                     stats.setFileCount(stats.getFileCount() + 1);
                     stats.setTotalSize(stats.getTotalSize() + size);
@@ -205,6 +208,7 @@ public class DirectoryAnalysisController {
     @PostMapping("/analyze")
     public String analyzeDirectoryAsync(@RequestBody Map<String, String> payload) {
         String folderPath = payload.get("folderPath");
+        String patternGroupName = payload.get("patternGroup");
         logger.info("Request received to analyze directory asynchronously: {}", folderPath);
         
         return backgroundTaskManager.submitTask(TaskType.DISK_ANALYSIS, folderPath, null, "Analyze Disk Space", (taskId, reporter) -> {
@@ -217,9 +221,10 @@ public class DirectoryAnalysisController {
             response.setFolderPath(rootPath.toAbsolutePath().toString());
             
             DiskAnalyzerConfigDto config = getDiskAnalyzerConfig();
+            PatternGroupDto activeGroup = getActiveGroup(config, patternGroupName);
             PerformanceConfigDto perfConfig = getPerformanceConfig();
             Map<String, CategoryStats> catMap = response.getCategories();
-            initCategoryStats(catMap, config);
+            initCategoryStats(catMap, activeGroup);
             
             List<AnalysisFileRecord> batch = new ArrayList<>();
             final int BATCH_SIZE = perfConfig.getBatchSize();
@@ -237,7 +242,7 @@ public class DirectoryAnalysisController {
                             response.setTotalFiles(response.getTotalFiles() + 1);
                             response.setTotalSize(response.getTotalSize() + size);
 
-                            String matchedCat = getFileCategory(file.getFileName().toString().toLowerCase(), config);
+                            String matchedCat = getFileCategory(file.getFileName().toString().toLowerCase(), activeGroup);
                             CategoryStats stats = catMap.get(matchedCat);
                             stats.setFileCount(stats.getFileCount() + 1);
                             stats.setTotalSize(stats.getTotalSize() + size);
@@ -315,8 +320,9 @@ public class DirectoryAnalysisController {
         cats.add(new CategoryConfigDto("Media", List.of("*.mp4", "*.mkv", "*.avi", "*.mov", "*.wmv", "*.flv", "*.mp3", "*.wav", "*.flac", "*.aac", "*.m4a")));
         cats.add(new CategoryConfigDto("Documents", List.of("*.pdf", "*.doc", "*.docx", "*.xls", "*.xlsx", "*.ppt", "*.pptx", "*.txt", "*.rtf", "*.odt", "*.csv")));
         cats.add(new CategoryConfigDto("Archives", List.of("*.zip", "*.rar", "*.7z", "*.tar", "*.gz", "*.bz2")));
-        cats.add(new CategoryConfigDto("Code/Text", List.of("*.java", "*.js", "*.jsx", "*.ts", "*.tsx", "*.html", "*.css", "*.json", "*.xml", "*.yml", "*.yaml", "*.py", "*.c", "*.cpp", "*.sh", "*.bat")));
-        defaultConfig.setCategories(cats);
+        cats.add(new CategoryConfigDto("Codes", List.of("*.java", "*.js", "*.jsx", "*.ts", "*.tsx", "*.html", "*.css", "*.json", "*.xml", "*.yml", "*.yaml", "*.py", "*.c", "*.cpp", "*.sh", "*.bat")));
+        PatternGroupDto defaultGroup = new PatternGroupDto("Default", true, cats);
+        defaultConfig.setPatternGroups(List.of(defaultGroup));
         return defaultConfig;
     }
 
@@ -332,18 +338,32 @@ public class DirectoryAnalysisController {
         return new PerformanceConfigDto(1000);
     }
 
-    private void initCategoryStats(Map<String, CategoryStats> catMap, DiskAnalyzerConfigDto config) {
-        if (config != null && config.getCategories() != null) {
-            for (CategoryConfigDto cat : config.getCategories()) {
+    private PatternGroupDto getActiveGroup(DiskAnalyzerConfigDto config, String groupName) {
+        if (config != null && config.getPatternGroups() != null && !config.getPatternGroups().isEmpty()) {
+            if (groupName != null) {
+                for (PatternGroupDto group : config.getPatternGroups()) {
+                    if (group.getName().equals(groupName)) {
+                        return group;
+                    }
+                }
+            }
+            return config.getPatternGroups().get(0);
+        }
+        return null;
+    }
+
+    private void initCategoryStats(Map<String, CategoryStats> catMap, PatternGroupDto activeGroup) {
+        if (activeGroup != null && activeGroup.getCategories() != null) {
+            for (CategoryConfigDto cat : activeGroup.getCategories()) {
                 catMap.put(cat.getName(), new CategoryStats(cat.getName(), 0, 0L));
             }
         }
         catMap.put("Others", new CategoryStats("Others", 0, 0L));
     }
 
-    private String getFileCategory(String filename, DiskAnalyzerConfigDto config) {
-        if (config != null && config.getCategories() != null) {
-            for (CategoryConfigDto cat : config.getCategories()) {
+    private String getFileCategory(String filename, PatternGroupDto activeGroup) {
+        if (activeGroup != null && activeGroup.getCategories() != null) {
+            for (CategoryConfigDto cat : activeGroup.getCategories()) {
                 if (matchesPattern(filename, cat.getPatterns())) {
                     return cat.getName();
                 }

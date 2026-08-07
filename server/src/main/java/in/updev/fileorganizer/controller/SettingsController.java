@@ -27,6 +27,7 @@ import in.updev.fileorganizer.entities.BackgroundTask;
 import in.updev.fileorganizer.entities.IgnoreRule;
 import in.updev.fileorganizer.entities.RegisteredVersion;
 import in.updev.fileorganizer.dto.DiskAnalyzerConfigDto;
+import in.updev.fileorganizer.dto.PatternGroupDto;
 import in.updev.fileorganizer.dto.CategoryConfigDto;
 import in.updev.fileorganizer.dto.PerformanceConfigDto;
 import in.updev.fileorganizer.repositories.ActivityLogRepository;
@@ -126,8 +127,9 @@ public class SettingsController {
         cats.add(new CategoryConfigDto("Media", List.of("*.mp4", "*.mkv", "*.avi", "*.mov", "*.wmv", "*.flv", "*.mp3", "*.wav", "*.flac", "*.aac", "*.m4a")));
         cats.add(new CategoryConfigDto("Documents", List.of("*.pdf", "*.doc", "*.docx", "*.xls", "*.xlsx", "*.ppt", "*.pptx", "*.txt", "*.rtf", "*.odt", "*.csv")));
         cats.add(new CategoryConfigDto("Archives", List.of("*.zip", "*.rar", "*.7z", "*.tar", "*.gz", "*.bz2")));
-        cats.add(new CategoryConfigDto("Code/Text", List.of("*.java", "*.js", "*.jsx", "*.ts", "*.tsx", "*.html", "*.css", "*.json", "*.xml", "*.yml", "*.yaml", "*.py", "*.c", "*.cpp", "*.sh", "*.bat")));
-        defaultConfig.setCategories(cats);
+        cats.add(new CategoryConfigDto("Codes", List.of("*.java", "*.js", "*.jsx", "*.ts", "*.tsx", "*.html", "*.css", "*.json", "*.xml", "*.yml", "*.yaml", "*.py", "*.c", "*.cpp", "*.sh", "*.bat")));
+        PatternGroupDto defaultGroup = new PatternGroupDto("Default", true, cats);
+        defaultConfig.setPatternGroups(List.of(defaultGroup));
         return defaultConfig;
     }
 

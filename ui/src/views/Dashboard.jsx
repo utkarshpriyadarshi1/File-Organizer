@@ -29,6 +29,7 @@ const Organizer = lazy(() => import("./Organizer"));
 const Tasks = lazy(() => import("./Tasks"));
 const Settings = lazy(() => import("./Settings"));
 const Notifications = lazy(() => import("./Notifications"));
+const Logs = lazy(() => import("./Logs"));
 const Help = lazy(() => import("./Help"));
 const WorkspaceExplorer = lazy(() => import("./WorkspaceExplorer"));
 
@@ -70,6 +71,8 @@ const Dashboard = ({ theme, toggleTheme }) => {
                 return <Notifications />;
             case "workspaceExplorer":
                 return <WorkspaceExplorer />;
+            case "logs":
+                return <Logs />;
             case "settings":
                 return <Settings defaultSubTab={settingsSubTab} />;
             default:
@@ -119,6 +122,11 @@ const Dashboard = ({ theme, toggleTheme }) => {
                             {unreadCount > 0 && <Badge count={unreadCount} size="small" style={{ backgroundColor: '#f43f5e' }} />}
                         </div>
                     ),
+                },
+                {
+                    key: 'logs',
+                    icon: <HistoryOutlined style={{ fontSize: '14px' }} />,
+                    label: <span className="font-bold text-xs">{t("systemLogs") || "System Logs"}</span>,
                 },
                 {
                     key: 'settings',

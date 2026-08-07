@@ -14,7 +14,7 @@ const PanelCard = ({ title, subtitle, icon, extra, children, bodyStyle = {}, ...
                 ...props.style
             }}
             bodyStyle={bodyStyle}
-            title={
+            title={ (title || subtitle || icon || extra) ? (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '4px 0' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         {icon && React.cloneElement(icon, { style: { fontSize: '18px', ...(icon.props?.style || {}) }})}
@@ -29,7 +29,7 @@ const PanelCard = ({ title, subtitle, icon, extra, children, bodyStyle = {}, ...
                         </Space>
                     )}
                 </div>
-            }
+            ) : null }
             {...props}
         >
             {children}
