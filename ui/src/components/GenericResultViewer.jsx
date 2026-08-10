@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useTasks } from "../services/TaskContext";
+import DiskAnalyzer from "./DiskAnalyzer";
 
 const GenericResultViewer = ({ task, onClose }) => {
     const { addToast, syncActiveTasks } = useTasks();
@@ -721,6 +722,12 @@ const GenericResultViewer = ({ task, onClose }) => {
                             </div>
                         )}
                     </div>
+                );
+            }
+
+            case "DISK_ANALYSIS": {
+                return (
+                    <DiskAnalyzer targetPath={task.sourcePath} externalAnalysisTaskId={task.id} />
                 );
             }
 

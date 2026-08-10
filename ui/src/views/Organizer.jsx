@@ -364,10 +364,6 @@ const Organizer = () => {
                     {showDuplicates && (
                         <Duplicates targetPath={sourceFolder} externalScanTaskId={duplicatesTask} />
                     )}
-
-                    {showAnalyzer && (
-                        <DiskAnalyzer targetPath={sourceFolder} externalAnalysisTaskId={analysisTask} />
-                    )}
                 </div>
             </div>
         </PageWrapper>
