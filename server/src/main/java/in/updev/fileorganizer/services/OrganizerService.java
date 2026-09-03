@@ -71,7 +71,7 @@ public class OrganizerService {
         return "unknown";
     }
 
-    public String organizeFiles(String sourceFolder, String destinationFolder, boolean dryRun, String patternGroupName, String layoutPatternOverride) {
+    public String organizeFiles(String sourceFolder, String destinationFolder, boolean dryRun, String patternGroupName, String layoutPatternOverride, boolean cleanEmptyFolders) {
         String actionDetails = (dryRun ? "Dry run: Organize " : "Organize ") + "files";
         return backgroundTaskManager.submitTask(TaskType.ORGANIZE, sourceFolder, destinationFolder, actionDetails,
                 (taskId, reporter) -> {
@@ -204,6 +204,44 @@ public class OrganizerService {
                         count++;
                         reporter.reportProgress(((double) count / total) * 100,
                                 (dryRun ? "Virtually organized: " : "Organized: ") + file.getFileName());
+                    }
+
+                    if (cleanEmptyFolders) {
+                        try {
+                            Files.walkFileTree(sourcePath, new java.nio.file.SimpleFileVisitor<Path>() {
+                                @Override
+                                public java.nio.file.FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                                    if (reporter.isCancelled()) return java.nio.file.FileVisitResult.TERMINATE;
+                                    
+                                    if (dir.equals(sourcePath) || dir.equals(destPath)) return java.nio.file.FileVisitResult.CONTINUE;
+
+                                    try (java.nio.file.DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
+                                        if (!stream.iterator().hasNext()) { 
+                                            Map<String, Object> cleanupResult = new HashMap<>();
+                                            cleanupResult.put("oldPath", dir.toAbsolutePath().toString());
+                                            cleanupResult.put("dryRun", dryRun);
+                                            cleanupResult.put("isFolder", true);
+                                            
+                                            if (!dryRun) {
+                                                Files.delete(dir);
+                                                cleanupResult.put("failed", false);
+                                                cleanupResult.put("newPath", "DELETED");
+                                            } else {
+                                                cleanupResult.put("failed", false);
+                                                cleanupResult.put("newPath", "WILL_DELETE");
+                                            }
+                                            reporter.appendResult(cleanupResult);
+                                            reporter.reportProgress(100.0, (dryRun ? "Virtually cleaned empty folder: " : "Cleaned empty folder: ") + dir.getFileName());
+                                        }
+                                    } catch (Exception e) {
+                                        logger.error("Failed to check or delete empty folder: {}", dir, e);
+                                    }
+                                    return java.nio.file.FileVisitResult.CONTINUE;
+                                }
+                            });
+                        } catch (IOException e) {
+                            logger.error("Error during empty folder cleanup", e);
+                        }
                     }
                 });
     }

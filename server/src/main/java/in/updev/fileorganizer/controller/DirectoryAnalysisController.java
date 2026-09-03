@@ -209,7 +209,8 @@ public class DirectoryAnalysisController {
     public String analyzeDirectoryAsync(@RequestBody Map<String, String> payload) {
         String folderPath = payload.get("folderPath");
         String patternGroupName = payload.get("patternGroup");
-        logger.info("Request received to analyze directory asynchronously: {}", folderPath);
+        String strategy = payload.get("strategy");
+        logger.info("Request received to analyze directory asynchronously: {}, strategy: {}", folderPath, strategy);
         
         return backgroundTaskManager.submitTask(TaskType.DISK_ANALYSIS, folderPath, null, "Analyze Disk Space", (taskId, reporter) -> {
             Path rootPath = Paths.get(folderPath);
@@ -224,7 +225,9 @@ public class DirectoryAnalysisController {
             PatternGroupDto activeGroup = getActiveGroup(config, patternGroupName);
             PerformanceConfigDto perfConfig = getPerformanceConfig();
             Map<String, CategoryStats> catMap = response.getCategories();
-            initCategoryStats(catMap, activeGroup);
+            if ("pattern".equals(strategy) || "fileType".equals(strategy) || strategy == null) {
+                initCategoryStats(catMap, activeGroup);
+            }
             
             List<AnalysisFileRecord> batch = new ArrayList<>();
             final int BATCH_SIZE = perfConfig.getBatchSize();
@@ -242,14 +245,33 @@ public class DirectoryAnalysisController {
                             response.setTotalFiles(response.getTotalFiles() + 1);
                             response.setTotalSize(response.getTotalSize() + size);
 
-                            String matchedCat = getFileCategory(file.getFileName().toString().toLowerCase(), activeGroup);
-                            CategoryStats stats = catMap.get(matchedCat);
-                            stats.setFileCount(stats.getFileCount() + 1);
-                            stats.setTotalSize(stats.getTotalSize() + size);
-
                             LocalDateTime modifiedTime = LocalDateTime.ofInstant(
                                 attrs.lastModifiedTime().toInstant(), ZoneId.systemDefault()
                             );
+
+                            String matchedCat;
+                            if ("diskSpace".equals(strategy)) {
+                                long mb = size / (1024 * 1024);
+                                if (mb < 1) matchedCat = "Tiny (<1MB)";
+                                else if (mb < 10) matchedCat = "Small (1-10MB)";
+                                else if (mb < 100) matchedCat = "Medium (10-100MB)";
+                                else if (mb < 1024) matchedCat = "Large (100MB-1GB)";
+                                else matchedCat = "Huge (>1GB)";
+                            } else if ("calendar".equals(strategy)) {
+                                matchedCat = modifiedTime.getYear() + "-" + String.format("%02d", modifiedTime.getMonthValue());
+                            } else {
+                                matchedCat = getFileCategory(file.getFileName().toString().toLowerCase(), activeGroup);
+                            }
+
+                            CategoryStats stats = catMap.computeIfAbsent(matchedCat, k -> {
+                                CategoryStats s = new CategoryStats();
+                                s.setCategoryName(k);
+                                s.setFileCount(0);
+                                s.setTotalSize(0L);
+                                return s;
+                            });
+                            stats.setFileCount(stats.getFileCount() + 1);
+                            stats.setTotalSize(stats.getTotalSize() + size);
                             
                             AnalysisFileRecord record = new AnalysisFileRecord();
                             record.setTaskId(taskId);

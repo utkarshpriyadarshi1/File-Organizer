@@ -187,7 +187,7 @@ const DiskAnalyzer = ({ targetPath, externalAnalysisTaskId }) => {
                                         : 0;
 
                                     let progressColor = "#3b82f6";
-                                    let iconClass = "fa-solid fa-file text-slate-500";
+                                    let iconClass = "fa-solid fa-folder text-slate-500";
                                     let bgIconColor = "bg-slate-100 dark:bg-slate-800/40";
 
                                     if (catName === "Images") {
@@ -210,6 +210,20 @@ const DiskAnalyzer = ({ targetPath, externalAnalysisTaskId }) => {
                                         progressColor = "#10b981";
                                         iconClass = "fa-solid fa-code text-emerald-500";
                                         bgIconColor = "bg-emerald-50 dark:bg-emerald-950/20";
+                                    } else {
+                                        const hash = catName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                                        const palettes = [
+                                            { color: "#3b82f6", icon: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-950/20" },
+                                            { color: "#8b5cf6", icon: "text-violet-500", bg: "bg-violet-50 dark:bg-violet-950/20" },
+                                            { color: "#ec4899", icon: "text-pink-500", bg: "bg-pink-50 dark:bg-pink-950/20" },
+                                            { color: "#14b8a6", icon: "text-teal-500", bg: "bg-teal-50 dark:bg-teal-950/20" },
+                                            { color: "#eab308", icon: "text-yellow-500", bg: "bg-yellow-50 dark:bg-yellow-950/20" },
+                                            { color: "#f97316", icon: "text-orange-500", bg: "bg-orange-50 dark:bg-orange-950/20" }
+                                        ];
+                                        const p = palettes[hash % palettes.length];
+                                        progressColor = p.color;
+                                        iconClass = `fa-solid fa-folder-open ${p.icon}`;
+                                        bgIconColor = p.bg;
                                     }
 
                                     return (

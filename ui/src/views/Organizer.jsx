@@ -104,7 +104,7 @@ const Organizer = () => {
 
         if (showAnalyzer) {
             try {
-                const res = await axios.post("http://localhost:8080/api/analysis/analyze", { folderPath: sourceFolder, patternGroup: selectedPatternGroup });
+                const res = await axios.post("http://localhost:8080/api/analysis/analyze", { folderPath: sourceFolder, patternGroup: selectedPatternGroup, strategy: analyseStrategy });
                 setAnalysisTask(res.data);
                 triggeredTasks.push("Disk Analysis");
             } catch(e) { console.error(e); }
@@ -122,7 +122,8 @@ const Organizer = () => {
                     destinationFolder: actualDest,
                     dryRun: isDryRun,
                     patternGroup: selectedPatternGroup,
-                    layoutPatternOverride: organizeCalendar ? localLayoutPattern : null
+                    layoutPatternOverride: organizeCalendar ? localLayoutPattern : null,
+                    cleanEmptyFolders
                 });
                 triggeredTasks.push(`Organization (${isDryRun ? 'Dry Run' : 'Action'})`);
             } catch(e) { console.error(e); }
@@ -327,36 +328,38 @@ const Organizer = () => {
                 </PanelCard>
 
                 {/* ACTION BAR */}
-                <div className="flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm mt-4">
-                    <div className="w-1/3">
-                        <EstimatedTimeWidget 
-                            folderPath={sourceFolder} 
-                            operationTypes={[
-                                cleanDuplicates && "DUPLICATES",
-                                showAnalyzer && "DISK_ANALYSIS",
-                                showOrganizer && "ORGANIZE"
-                            ].filter(Boolean)} 
-                        />
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <Button
-                            type="default"
-                            onClick={() => startSelectedOperations(true)}
-                            icon={<ExperimentOutlined />}
-                            style={{ height: '44px', fontWeight: 'bold', fontSize: '13px' }}
-                            className="bg-amber-50 hover:bg-amber-100 text-amber-600 border-amber-300 rounded-lg px-6 uppercase"
-                        >
-                            Dry Run (Preview)
-                        </Button>
-                        <Button
-                            type="primary"
-                            onClick={() => startSelectedOperations(false)}
-                            icon={<ThunderboltOutlined />}
-                            style={{ height: '44px', fontWeight: 'bold', fontSize: '13px' }}
-                            className="bg-blue-600 hover:bg-blue-500 border-none rounded-lg px-6 uppercase"
-                        >
-                            Start Action
-                        </Button>
+                <div className="relative mt-4">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-emerald-500/10 rounded-2xl blur-lg transition-all duration-500"></div>
+                    <div className="relative flex flex-col md:flex-row items-center justify-between bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/50 dark:border-slate-800 p-4 rounded-2xl shadow-lg gap-4">
+                        <div className="w-full md:w-1/3">
+                            <EstimatedTimeWidget 
+                                folderPath={sourceFolder} 
+                                operationTypes={[
+                                    cleanDuplicates && "DUPLICATES",
+                                    showAnalyzer && "DISK_ANALYSIS",
+                                    showOrganizer && "ORGANIZE"
+                                ].filter(Boolean)} 
+                            />
+                        </div>
+                        <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full md:w-auto">
+                            <button
+                                onClick={() => startSelectedOperations(true)}
+                                className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2.5 text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-xl overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-sm hover:shadow-amber-500/25 uppercase tracking-wider cursor-pointer"
+                            >
+                                <span className="absolute inset-0 bg-amber-100/50 dark:bg-amber-800/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></span>
+                                <ExperimentOutlined className="relative text-sm group-hover:rotate-12 transition-transform duration-300" />
+                                <span className="relative">Dry Run</span>
+                            </button>
+                            <button
+                                onClick={() => startSelectedOperations(false)}
+                                className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2.5 text-xs font-black text-white bg-gradient-to-r from-blue-600 to-indigo-600 border-0 rounded-xl overflow-hidden transition-all hover:scale-105 active:scale-95 shadow shadow-blue-500/30 hover:shadow-indigo-500/50 uppercase tracking-wider cursor-pointer"
+                            >
+                                <span className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></span>
+                                <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
+                                <ThunderboltOutlined className="relative text-sm group-hover:scale-125 transition-transform duration-300" />
+                                <span className="relative">Start Action</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
