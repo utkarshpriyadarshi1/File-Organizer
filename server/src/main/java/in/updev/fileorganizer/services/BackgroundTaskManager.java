@@ -109,134 +109,133 @@ public class BackgroundTaskManager {
         localTaskQueue.add(taskId);
         broadcastStatus(taskId, taskType, TaskStatus.QUEUED, 0.0, "Task queued...");
 
-        triggerNextTask(taskType, action);
+        Future<?> future = executorService.submit(() -> {
+            executeTask(taskId, taskType, action);
+        });
+        activeFutures.put(taskId, future);
 
         return taskId;
     }
 
-    private void triggerNextTask(TaskType taskType, TaskAction action) {
-        executorService.submit(() -> {
-            String taskId = localTaskQueue.poll();
-            if (taskId == null)
-                return;
+    private void executeTask(String taskId, TaskType taskType, TaskAction action) {
+        localTaskQueue.remove(taskId);
+        if (taskCancellationManager.isCancelled(taskId)) {
+            activeFutures.remove(taskId);
+            taskCancellationManager.cleanCancellationKey(taskId);
+            taskMetaCache.remove(taskId);
+            return;
+        }
 
-            final String finalTaskId = taskId;
-            long startTime = System.currentTimeMillis();
-            
-            TaskMeta meta = taskMetaCache.get(finalTaskId);
-            if (meta == null) {
-                meta = new TaskMeta(null, null, null, startTime);
-                taskMetaCache.put(finalTaskId, meta);
-            } else {
-                meta.setStartTime(startTime);
+        long startTime = System.currentTimeMillis();
+        TaskMeta meta = taskMetaCache.get(taskId);
+        if (meta == null) {
+            meta = new TaskMeta(null, null, null, startTime);
+            taskMetaCache.put(taskId, meta);
+        } else {
+            meta.setStartTime(startTime);
+        }
+
+        sqliteWriteQueueService.submitWrite(() -> {
+            backgroundTaskRepository.findById(taskId).ifPresent(task -> {
+                task.setStatus(TaskStatus.RUNNING);
+                task.setSummary("Task started...");
+                backgroundTaskRepository.save(task);
+            });
+        });
+        broadcastStatus(taskId, taskType, TaskStatus.RUNNING, 0.0, "Starting execution...");
+
+        List<Object> resultList = Collections.synchronizedList(new ArrayList<>());
+        TaskProgressReporter reporter = new TaskProgressReporter() {
+            private long lastCheckpointTime = System.currentTimeMillis();
+            private int itemsSinceCheckpoint = 0;
+            private long lastProgressTime = 0;
+
+            @Override
+            public void reportProgress(double progress, String currentMessage) {
+                long now = System.currentTimeMillis();
+                if (now - lastProgressTime > 200 || progress >= 100.0) {
+                    broadcastStatus(taskId, taskType, TaskStatus.RUNNING, progress, currentMessage);
+                    lastProgressTime = now;
+                }
             }
 
-            sqliteWriteQueueService.submitWrite(() -> {
-                backgroundTaskRepository.findById(finalTaskId).ifPresent(task -> {
-                    task.setStatus(TaskStatus.RUNNING);
-                    task.setSummary("Task started...");
-                    backgroundTaskRepository.save(task);
-                });
-            });
-            broadcastStatus(finalTaskId, taskType, TaskStatus.RUNNING, 0.0, "Starting execution...");
+            @Override
+            public void appendResult(Object resultItem) {
+                resultList.add(resultItem);
+                itemsSinceCheckpoint++;
+                long elapsed = System.currentTimeMillis() - lastCheckpointTime;
 
-            List<Object> resultList = Collections.synchronizedList(new ArrayList<>());
-            TaskProgressReporter reporter = new TaskProgressReporter() {
-                private long lastCheckpointTime = System.currentTimeMillis();
-                private int itemsSinceCheckpoint = 0;
-                private long lastProgressTime = 0;
-
-                @Override
-                public void reportProgress(double progress, String currentMessage) {
-                    long now = System.currentTimeMillis();
-                    if (now - lastProgressTime > 200 || progress >= 100.0) {
-                        broadcastStatus(finalTaskId, taskType, TaskStatus.RUNNING, progress, currentMessage);
-                        lastProgressTime = now;
-                    }
+                if (itemsSinceCheckpoint >= 500 || elapsed >= 30000) {
+                    doCheckpoint();
                 }
+            }
 
-                @Override
-                public void appendResult(Object resultItem) {
-                    resultList.add(resultItem);
-                    itemsSinceCheckpoint++;
-                    long elapsed = System.currentTimeMillis() - lastCheckpointTime;
+            @Override
+            public boolean isCancelled() {
+                return taskCancellationManager.isCancelled(taskId) || Thread.currentThread().isInterrupted();
+            }
 
-                    if (itemsSinceCheckpoint >= 500 || elapsed >= 30000) {
-                        doCheckpoint();
-                    }
-                }
-
-                @Override
-                public boolean isCancelled() {
-                    return taskCancellationManager.isCancelled(finalTaskId);
-                }
-
-                @Override
-                public void checkPauseState() throws InterruptedException {
-                    boolean wasPaused = false;
-                    while (taskCancellationManager.isPaused(finalTaskId) && !taskCancellationManager.isCancelled(finalTaskId)) {
-                        if (!wasPaused) {
-                            wasPaused = true;
-                            broadcastStatus(finalTaskId, taskType, TaskStatus.PAUSED, -1.0, "Task paused. Waiting to resume...");
-                            sqliteWriteQueueService.submitWrite(() -> {
-                                backgroundTaskRepository.findById(finalTaskId).ifPresent(task -> {
-                                    task.setStatus(TaskStatus.PAUSED);
-                                    backgroundTaskRepository.save(task);
-                                });
-                            });
-                        }
-                        Thread.sleep(1000);
-                    }
-                    if (wasPaused && !taskCancellationManager.isCancelled(finalTaskId)) {
-                        broadcastStatus(finalTaskId, taskType, TaskStatus.RUNNING, -1.0, "Task resumed...");
+            @Override
+            public void checkPauseState() throws InterruptedException {
+                boolean wasPaused = false;
+                while (taskCancellationManager.isPaused(taskId) && !isCancelled()) {
+                    if (!wasPaused) {
+                        wasPaused = true;
+                        broadcastStatus(taskId, taskType, TaskStatus.PAUSED, -1.0, "Task paused. Waiting to resume...");
                         sqliteWriteQueueService.submitWrite(() -> {
-                            backgroundTaskRepository.findById(finalTaskId).ifPresent(task -> {
-                                task.setStatus(TaskStatus.RUNNING);
+                            backgroundTaskRepository.findById(taskId).ifPresent(task -> {
+                                task.setStatus(TaskStatus.PAUSED);
                                 backgroundTaskRepository.save(task);
                             });
                         });
                     }
+                    Thread.sleep(1000);
                 }
-
-                private synchronized void doCheckpoint() {
-                    itemsSinceCheckpoint = 0;
-                    lastCheckpointTime = System.currentTimeMillis();
-                    final int count = resultList.size();
+                if (wasPaused && !isCancelled()) {
+                    broadcastStatus(taskId, taskType, TaskStatus.RUNNING, -1.0, "Task resumed...");
                     sqliteWriteQueueService.submitWrite(() -> {
-                        backgroundTaskRepository.findById(finalTaskId).ifPresent(task -> {
-                            task.setSummary("Processed " + count + " items so far...");
+                        backgroundTaskRepository.findById(taskId).ifPresent(task -> {
+                            task.setStatus(TaskStatus.RUNNING);
                             backgroundTaskRepository.save(task);
                         });
                     });
                 }
-            };
+            }
 
-            Future<?> future = CompletableFuture.runAsync(() -> {
-                try {
-                    action.execute(finalTaskId, reporter);
+            private synchronized void doCheckpoint() {
+                itemsSinceCheckpoint = 0;
+                lastCheckpointTime = System.currentTimeMillis();
+                final int count = resultList.size();
+                sqliteWriteQueueService.submitWrite(() -> {
+                    backgroundTaskRepository.findById(taskId).ifPresent(task -> {
+                        task.setSummary("Processed " + count + " items so far...");
+                        backgroundTaskRepository.save(task);
+                    });
+                });
+            }
+        };
 
-                    if (reporter.isCancelled()) {
-                        handleCancellation(finalTaskId, taskType, resultList);
-                    } else {
-                        handleCompletion(finalTaskId, taskType, resultList, null);
-                    }
-                } catch (Exception e) {
-                    if (reporter.isCancelled()) {
-                        logger.info("Task {} interrupted/canceled during execution", finalTaskId);
-                        handleCancellation(finalTaskId, taskType, resultList);
-                    } else {
-                        logger.error("Error executing task: {}", finalTaskId, e);
-                        handleCompletion(finalTaskId, taskType, resultList, e);
-                    }
-                } finally {
-                    activeFutures.remove(finalTaskId);
-                    taskCancellationManager.cleanCancellationKey(finalTaskId);
-                    taskMetaCache.remove(finalTaskId);
-                }
-            });
+        try {
+            action.execute(taskId, reporter);
 
-            activeFutures.put(finalTaskId, future);
-        });
+            if (reporter.isCancelled()) {
+                handleCancellation(taskId, taskType, resultList);
+            } else {
+                handleCompletion(taskId, taskType, resultList, null);
+            }
+        } catch (Exception e) {
+            if (reporter.isCancelled()) {
+                logger.info("Task {} interrupted/canceled during execution", taskId);
+                handleCancellation(taskId, taskType, resultList);
+            } else {
+                logger.error("Error executing task: {}", taskId, e);
+                handleCompletion(taskId, taskType, resultList, e);
+            }
+        } finally {
+            activeFutures.remove(taskId);
+            taskCancellationManager.cleanCancellationKey(taskId);
+            taskMetaCache.remove(taskId);
+        }
     }
 
     private void handleCancellation(String taskId, TaskType taskType, List<Object> results) {

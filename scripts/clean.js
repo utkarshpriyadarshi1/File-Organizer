@@ -3,12 +3,17 @@ const path = require('path');
 
 const rootDir = path.resolve(__dirname, '..');
 const dirsToClean = [
+    path.join(rootDir, 'backend'),
     path.join(rootDir, 'server', 'target'),
     path.join(rootDir, 'ui', 'build'),
     path.join(rootDir, 'dist')
 ];
 
 const filesToClean = [
+    path.join(rootDir, 'file-organizer.db-shm'),
+    path.join(rootDir, 'file-organizer.db-wal'),
+    path.join(rootDir, 'server', 'file-organizer.db-shm'),
+    path.join(rootDir, 'server', 'file-organizer.db-wal'),
     path.join(rootDir, 'fboss.db'),
     path.join(rootDir, 'e-abhilekh.db'),
     path.join(rootDir, 'server', 'fboss.db'),

@@ -71,6 +71,57 @@ public class OrganizerService {
         return "unknown";
     }
 
+    private static class OrganizeBatchRecord {
+        final String oldPath;
+        final String newPath;
+        final String fileName;
+        final long fileSize;
+        final String fileType;
+
+        OrganizeBatchRecord(String oldPath, String newPath, String fileName, long fileSize, String fileType) {
+            this.oldPath = oldPath;
+            this.newPath = newPath;
+            this.fileName = fileName;
+            this.fileSize = fileSize;
+            this.fileType = fileType;
+        }
+    }
+
+    private void flushOrganizeBatch(List<OrganizeBatchRecord> batch, String taskId) {
+        if (batch.isEmpty()) return;
+        List<OrganizeBatchRecord> copy = new ArrayList<>(batch);
+        batch.clear();
+        sqliteWriteQueueService.submitWrite(() -> {
+            for (OrganizeBatchRecord record : copy) {
+                DbFile dbFile = dbFileRepository.findByPath(record.oldPath)
+                        .orElse(new DbFile());
+
+                dbFile.setPath(record.newPath);
+                dbFile.setName(record.fileName);
+                dbFile.setSize(record.fileSize);
+                dbFile.setType(record.fileType);
+                dbFile.setIsActive(true);
+                dbFile.setModifiedAt(LocalDateTime.now());
+                if (dbFile.getCreatedAt() == null) {
+                    dbFile.setCreatedAt(LocalDateTime.now());
+                }
+
+                DbFile savedFile = dbFileRepository.save(dbFile);
+                redisCacheService.cacheFile(savedFile);
+                auditLogService.logAction("FILE_ORGANIZED", savedFile,
+                        "Moved from " + record.oldPath + " to " + record.newPath);
+
+                // Register reversal log for undo action
+                fileReversalRepository.save(FileReversal.builder()
+                        .taskId(taskId)
+                        .operationType("MOVE")
+                        .sourcePath(record.newPath)
+                        .originalPath(record.oldPath)
+                        .build());
+            }
+        });
+    }
+
     public String organizeFiles(String sourceFolder, String destinationFolder, boolean dryRun, String patternGroupName, String layoutPatternOverride, boolean cleanEmptyFolders) {
         String actionDetails = (dryRun ? "Dry run: Organize " : "Organize ") + "files";
         return backgroundTaskManager.submitTask(TaskType.ORGANIZE, sourceFolder, destinationFolder, actionDetails,
@@ -95,6 +146,7 @@ public class OrganizerService {
 
                     int total = allFiles.size();
                     int count = 0;
+                    List<OrganizeBatchRecord> pendingBatch = new ArrayList<>();
 
                     List<CategoryConfigDto> categories = new ArrayList<>();
                     try {
@@ -165,33 +217,10 @@ public class OrganizerService {
                             fileResult.put("failed", false);
 
                             if (!dryRun) {
-                                // Database index updates
-                                sqliteWriteQueueService.submitWrite(() -> {
-                                    DbFile dbFile = dbFileRepository.findByPath(oldPath)
-                                            .orElse(new DbFile());
-
-                                    dbFile.setPath(newPath);
-                                    dbFile.setName(fileName);
-                                    dbFile.setSize(fileSize);
-                                    dbFile.setType(fileType);
-                                    dbFile.setIsActive(true);
-                                    dbFile.setModifiedAt(LocalDateTime.now());
-                                    dbFile.setCreatedAt(dbFile.getCreatedAt() != null ? dbFile.getCreatedAt()
-                                            : LocalDateTime.now());
-
-                                    DbFile savedFile = dbFileRepository.save(dbFile);
-                                    redisCacheService.cacheFile(savedFile);
-                                    auditLogService.logAction("FILE_ORGANIZED", savedFile,
-                                            "Moved from " + oldPath + " to " + newPath);
-
-                                    // Register reversal log for undo action
-                                    fileReversalRepository.save(FileReversal.builder()
-                                            .taskId(taskId)
-                                            .operationType("MOVE")
-                                            .sourcePath(newPath)
-                                            .originalPath(oldPath)
-                                            .build());
-                                });
+                                pendingBatch.add(new OrganizeBatchRecord(oldPath, newPath, fileName, fileSize, fileType));
+                                if (pendingBatch.size() >= 50) {
+                                    flushOrganizeBatch(pendingBatch, taskId);
+                                }
                             }
 
                         } catch (Exception e) {
@@ -204,6 +233,10 @@ public class OrganizerService {
                         count++;
                         reporter.reportProgress(((double) count / total) * 100,
                                 (dryRun ? "Virtually organized: " : "Organized: ") + file.getFileName());
+                    }
+
+                    if (!dryRun && !pendingBatch.isEmpty()) {
+                        flushOrganizeBatch(pendingBatch, taskId);
                     }
 
                     if (cleanEmptyFolders) {

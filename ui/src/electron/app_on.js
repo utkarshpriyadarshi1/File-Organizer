@@ -1,11 +1,131 @@
 const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage } = require("electron");
 const path = require("path");
+const { spawn } = require("child_process");
+const fs = require("fs");
 
 let mainWindow = null;
 let tray = null;
 let statusInterval = null;
 let isOffline = false;
 let activeTaskIds = [];
+let backendProcess = null;
+
+function findBackendJar() {
+    const candidates = [
+        path.join(process.resourcesPath, "backend"),
+        path.join(__dirname, "../../../server/target"),
+        path.join(__dirname, "../../server/target")
+    ];
+
+    for (const dir of candidates) {
+        if (fs.existsSync(dir)) {
+            const files = fs.readdirSync(dir);
+            const jar = files.find(f => f.startsWith("file-organizer") && f.endsWith(".jar") && !f.includes("original") && !f.includes("sources"));
+            if (jar) {
+                return path.join(dir, jar);
+            }
+        }
+    }
+    return null;
+}
+
+function findJavaExecutable() {
+    const bundledJre = process.platform === "win32"
+        ? path.join(process.resourcesPath, "jre", "bin", "java.exe")
+        : path.join(process.resourcesPath, "jre", "bin", "java");
+    if (fs.existsSync(bundledJre)) {
+        return bundledJre;
+    }
+
+    if (process.env.JAVA_HOME) {
+        const javaHomeBin = process.platform === "win32"
+            ? path.join(process.env.JAVA_HOME, "bin", "java.exe")
+            : path.join(process.env.JAVA_HOME, "bin", "java");
+        if (fs.existsSync(javaHomeBin)) {
+            return javaHomeBin;
+        }
+    }
+
+    return "java";
+}
+
+async function isBackendAlive() {
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 1200);
+        const res = await fetch("http://localhost:8080/api/telemetry/heartbeat", { signal: controller.signal });
+        clearTimeout(timeoutId);
+        return res.ok;
+    } catch {
+        return false;
+    }
+}
+
+async function startBackendIfNeeded() {
+    const alive = await isBackendAlive();
+    if (alive) {
+        console.log("[Electron] Backend is already running on port 8080.");
+        return;
+    }
+
+    const jarPath = findBackendJar();
+    if (!jarPath) {
+        console.warn("[Electron] Backend JAR not found. Running against dev/external backend.");
+        return;
+    }
+
+    const javaCmd = findJavaExecutable();
+    const workingDir = app.isPackaged ? app.getPath("userData") : path.dirname(jarPath);
+    if (!fs.existsSync(workingDir)) {
+        fs.mkdirSync(workingDir, { recursive: true });
+    }
+
+    console.log(`[Electron] Launching backend: ${javaCmd} -jar "${jarPath}" in ${workingDir}`);
+
+    try {
+        backendProcess = spawn(javaCmd, ["-jar", jarPath], {
+            cwd: workingDir,
+            stdio: ["ignore", "pipe", "pipe"],
+            windowsHide: true
+        });
+
+        backendProcess.stdout.on("data", (chunk) => {
+            console.log(`[Backend] ${chunk.toString().trim()}`);
+        });
+
+        backendProcess.stderr.on("data", (chunk) => {
+            console.error(`[Backend ERR] ${chunk.toString().trim()}`);
+        });
+
+        backendProcess.on("exit", (code, signal) => {
+            console.log(`[Backend] Process exited (code=${code}, signal=${signal})`);
+            backendProcess = null;
+        });
+
+        backendProcess.on("error", (err) => {
+            console.error("[Backend] Failed to start backend process:", err);
+            backendProcess = null;
+        });
+    } catch (err) {
+        console.error("[Electron] Exception while spawning backend:", err);
+    }
+}
+
+function terminateBackend() {
+    if (backendProcess) {
+        console.log("[Electron] Terminating backend process...");
+        try {
+            if (process.platform === "win32") {
+                spawn("taskkill", ["/pid", backendProcess.pid, "/f", "/t"]);
+            } else {
+                backendProcess.kill("SIGTERM");
+            }
+        } catch (e) {
+            console.error("[Electron] Error terminating backend process:", e);
+        }
+        backendProcess = null;
+    }
+}
 
 const TRAY_ICONS = {
     idle: nativeImage.createFromDataURL("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNTEyIDUxMiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB3aWR0aD0iMzIiIGhlaWdodD0iMzIiPjxwYXRoIGZpbGw9IiMzYjgyZjYiIGQ9Ik02NCAzMkMyOC43IDMyIDAgNjAuNyAwIDk2djY0YzAgMzUuMyAyOC43IDY0IDY0IDY0SDQ0OGMzNS4zIDAgNjQtMjguNyA2NC02NFY5NmMwLTM1LjMtMjguNy02NC02NC02NEg2NHptMjgwIDcyYTI0IDI0IDAgMSAxIDAgNDggMjQgMjQgMCAxIDEgMC00OHptNDggMjRhMjQgMjQgMCAxIDEgNDggMCAyNCAyNCAwIDEgMS00OCAwek02NCAyODhjLTM1LjMgMC02NCAyOC43LTY0IDY0djY0YzAgMzUuMyAyOC43IDY0IDY0IDY0SDQ0OGMzNS4zIDAgNjQtMjguNyA2NC02NFYzNTJjMC0zNS4zLTI4LjctNjQtNjQtNjRINjR6bTI4MCA3MmEyNCAyNCAwIDEgMSAwIDQ4IDI0IDI0IDAgMSAxIDAtNDh6bTQ4IDI0YTI0IDI0IDAgMSAxIDQ4IDAgMjQgMjQgMCAxIDEtNDggMHoiLz48L3N2Zz4="),
@@ -25,7 +145,9 @@ if (!gotTheLock) {
         }
     });
 
-    app.whenReady().then(() => {
+    app.whenReady().then(async () => {
+        await startBackendIfNeeded();
+
         mainWindow = new BrowserWindow({
             width: 1200,
             height: 800,
@@ -386,6 +508,7 @@ async function shutdownAndExit() {
     } catch (err) {
         // Ignore
     }
+    terminateBackend();
     app.quit();
 }
 
@@ -432,5 +555,6 @@ async function shutdownAndExit() {
         if (statusInterval) {
             clearInterval(statusInterval);
         }
+        terminateBackend();
     });
 }

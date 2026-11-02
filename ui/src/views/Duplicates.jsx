@@ -5,7 +5,6 @@ import { Card, Input, Button, Select, Checkbox, Space, Badge, Alert, Spin, Typog
 import EstimatedTimeWidget from "../components/EstimatedTimeWidget";
 import { 
     FolderOpenOutlined, 
-    FolderMagnifyingGlassIcon,
     CopyOutlined,
     SearchOutlined,
     DeleteOutlined,

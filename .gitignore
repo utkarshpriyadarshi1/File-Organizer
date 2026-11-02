@@ -22,11 +22,12 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
-/backend/target
+/backend
+/server/target
+/dist
+/ui/build
 /.idea
 /.vscode
-/frontend/dist
-/ui/dist
-/dist
-/server/target
- *.db-*
+*.db
+*.db-*
+*.pfx

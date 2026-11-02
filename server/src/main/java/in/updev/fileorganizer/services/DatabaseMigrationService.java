@@ -24,19 +24,30 @@ public class DatabaseMigrationService implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         logger.info("Initializing dynamic database schema migration check...");
         try {
-            // Find schema.sql from local project structure (development or root execution)
-            File schemaFile = new File("../database/schema.sql");
-            if (!schemaFile.exists()) {
-                schemaFile = new File("database/schema.sql");
+            String sqlContent = null;
+            org.springframework.core.io.ClassPathResource classPathResource = new org.springframework.core.io.ClassPathResource("schema.sql");
+            if (classPathResource.exists()) {
+                logger.info("Found schema file in classpath resources.");
+                try (java.io.InputStream is = classPathResource.getInputStream()) {
+                    sqlContent = new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                }
+            } else {
+                // Find schema.sql from local project structure (development or root execution)
+                File schemaFile = new File("../database/schema.sql");
+                if (!schemaFile.exists()) {
+                    schemaFile = new File("database/schema.sql");
+                }
+
+                if (schemaFile.exists()) {
+                    logger.info("Found schema file at: {}", schemaFile.getAbsolutePath());
+                    sqlContent = Files.readString(schemaFile.toPath());
+                }
             }
 
-            if (!schemaFile.exists()) {
-                logger.warn("schema.sql not found at standard paths. Dynamic schema sync skipped.");
+            if (sqlContent == null || sqlContent.trim().isEmpty()) {
+                logger.warn("schema.sql not found at classpath or standard paths. Dynamic schema sync skipped.");
                 return;
             }
-
-            logger.info("Found schema file at: {}", schemaFile.getAbsolutePath());
-            String sqlContent = Files.readString(schemaFile.toPath());
 
             // Clean content: remove SQL comments and split by semi-colons
             String[] rawStatements = sqlContent.split(";");

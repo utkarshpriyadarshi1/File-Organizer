@@ -28,16 +28,26 @@ public class SqliteWriteQueueService {
         consumerThread = new Thread(() -> {
             while (running) {
                 try {
-                    Runnable task = writeQueue.take();
+                    Runnable firstTask = writeQueue.take();
+                    java.util.List<Runnable> batch = new java.util.ArrayList<>();
+                    batch.add(firstTask);
+                    writeQueue.drainTo(batch, 49); // Drain up to 49 more pending write tasks
+
                     transactionTemplate.execute(status -> {
-                        task.run();
+                        for (Runnable task : batch) {
+                            try {
+                                task.run();
+                            } catch (Exception e) {
+                                logger.error("Error executing batched SQLite write item", e);
+                            }
+                        }
                         return null;
                     });
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     break;
                 } catch (Exception e) {
-                    logger.error("Error executing SQLite database write task", e);
+                    logger.error("Error executing SQLite database write batch", e);
                 }
             }
         }, "sqlite-write-consumer");
@@ -53,10 +63,17 @@ public class SqliteWriteQueueService {
     }
 
     public void submitWrite(Runnable task) {
+        if (Thread.currentThread() == consumerThread) {
+            task.run();
+            return;
+        }
         writeQueue.add(task);
     }
 
     public <T> T executeWrite(java.util.concurrent.Callable<T> task) throws Exception {
+        if (Thread.currentThread() == consumerThread) {
+            return task.call();
+        }
         java.util.concurrent.CompletableFuture<T> future = new java.util.concurrent.CompletableFuture<>();
         submitWrite(() -> {
             try {

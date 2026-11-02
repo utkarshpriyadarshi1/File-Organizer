@@ -1,20 +1,28 @@
 package in.updev.fileorganizer.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArraySet;
 
+@Component
 public class WebSocketHandler extends TextWebSocketHandler {
+    private static final Logger logger = LoggerFactory.getLogger(WebSocketHandler.class);
 
-    private static final Set<WebSocketSession> sessions = Collections.synchronizedSet(new HashSet<>());
+    private static final Set<WebSocketSession> sessions = new CopyOnWriteArraySet<>();
     private static final List<String> messageQueue = Collections.synchronizedList(new ArrayList<>());
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
         sessions.add(session);
+        logger.debug("WebSocket connection established: {}", session.getId());
     }
 
     @Override
@@ -23,19 +31,27 @@ public class WebSocketHandler extends TextWebSocketHandler {
     }
 
     @Override
-    public void afterConnectionClosed(WebSocketSession session, org.springframework.web.socket.CloseStatus status) {
+    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         sessions.remove(session);
+        logger.debug("WebSocket connection closed: {}", session.getId());
     }
 
     public static void broadcastMessage(String message) {
-        synchronized (sessions) {
-            for (WebSocketSession session : sessions) {
-                try {
+        List<WebSocketSession> closedSessions = new ArrayList<>();
+        for (WebSocketSession session : sessions) {
+            try {
+                if (session.isOpen()) {
                     session.sendMessage(new TextMessage(message));
-                } catch (Exception e) {
-                    e.printStackTrace();
+                } else {
+                    closedSessions.add(session);
                 }
+            } catch (Exception e) {
+                logger.warn("Failed to send WebSocket message to session {}: {}", session.getId(), e.getMessage());
+                closedSessions.add(session);
             }
+        }
+        if (!closedSessions.isEmpty()) {
+            sessions.removeAll(closedSessions);
         }
     }
 
@@ -46,17 +62,15 @@ public class WebSocketHandler extends TextWebSocketHandler {
     @Scheduled(fixedRate = 2000) // Send updates every 2 seconds
     public void sendBatchedMessages() {
         if (!messageQueue.isEmpty()) {
-            String combinedMessage = String.join("\n", messageQueue);
-            synchronized (sessions) {
-                for (WebSocketSession session : sessions) {
-                    try {
-                        session.sendMessage(new TextMessage(combinedMessage));
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
+            List<String> copy;
+            synchronized (messageQueue) {
+                copy = new ArrayList<>(messageQueue);
+                messageQueue.clear();
             }
-            messageQueue.clear();
+            if (!copy.isEmpty()) {
+                String combinedMessage = String.join("\n", copy);
+                broadcastMessage(combinedMessage);
+            }
         }
     }
 }
