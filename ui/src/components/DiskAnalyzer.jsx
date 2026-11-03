@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import apiClient from "../services/apiClient";
 import { Modal } from "antd";
 import { useTasks } from "../services/TaskContext";
 import { Card, Button, Row, Col, Progress, Spin, Typography, Table } from "./common";
@@ -60,7 +60,7 @@ const DiskAnalyzer = ({ targetPath, externalAnalysisTaskId }) => {
 
     const fetchTaskResult = async (taskId) => {
         try {
-            const res = await axios.get(`http://localhost:8080/api/tasks/${taskId}/results`);
+            const res = await apiClient.get(`/tasks/${taskId}/results`);
             if (res.data && res.data.length > 0) {
                 setAnalysisResult(res.data[0]);
             }
@@ -77,7 +77,7 @@ const DiskAnalyzer = ({ targetPath, externalAnalysisTaskId }) => {
         if (!lastCompletedTaskId) return;
         setFilesLoading(true);
         try {
-            const res = await axios.get(`http://localhost:8080/api/analysis/${lastCompletedTaskId}/files?category=${encodeURIComponent(category)}&page=${page}&size=${size}`);
+            const res = await apiClient.get(`/analysis/${lastCompletedTaskId}/files?category=${encodeURIComponent(category)}&page=${page}&size=${size}`);
             setFilesData(res.data.content);
             setPagination({
                 current: page + 1,

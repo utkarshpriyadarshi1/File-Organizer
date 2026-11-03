@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTasks } from "../services/TaskContext";
-import axios from "axios";
+import apiClient from "../services/apiClient";
 import { Card, Input, Button, Badge, Spin, Alert, List, Space, Typography, Row, Col, Tag } from "../components/common";
 import { 
     BellOutlined,
@@ -124,7 +124,7 @@ const Notifications = () => {
         if (isExpanding && metadata?.taskId && !taskResults[metadata.taskId]) {
             setLoadingResults(prev => ({ ...prev, [metadata.taskId]: true }));
             try {
-                const res = await axios.get(`http://localhost:8080/api/tasks/${metadata.taskId}/results`);
+                const res = await apiClient.get(`/tasks/${metadata.taskId}/results`);
                 let data = res.data;
                 if (typeof data === "string") {
                     data = JSON.parse(data);

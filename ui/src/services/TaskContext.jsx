@@ -1,6 +1,6 @@
 import { TaskStatus } from "../enums/SystemTypes";
 import React, { createContext, useState, useEffect, useContext, useCallback } from "react";
-import axios from "axios";
+import apiClient, { WS_BASE_URL } from "./apiClient";
 import { App as AntdApp } from "antd";
 import FolderSelectorDialog from "../components/FolderSelectorDialog";
 
@@ -10,6 +10,7 @@ export const TaskProvider = ({ children }) => {
     const { modal, message: antdMessage } = AntdApp.useApp();
     const [activeTasks, setActiveTasks] = useState({});
     const [folderSelectorConfig, setFolderSelectorConfig] = useState(null);
+    const [wsConnected, setWsConnected] = useState(false);
     const [notificationsHistory, setNotificationsHistory] = useState(() => {
         try {
             const saved = localStorage.getItem("file_organizer_notifications_history");
@@ -38,7 +39,8 @@ export const TaskProvider = ({ children }) => {
             read: false,
             metadata
         };
-        setNotificationsHistory(prev => [newNotification, ...prev]);
+        // Cap notifications in memory and storage to the most recent 100 items to avoid UI/storage freezes
+        setNotificationsHistory(prev => [newNotification, ...prev].slice(0, 100));
     }, []);
 
     const markAllNotificationsAsRead = useCallback(() => {
@@ -73,7 +75,20 @@ export const TaskProvider = ({ children }) => {
         });
     };
 
-    const selectFolder = (initialPath = "") => {
+    const selectFolder = async (initialPath = "") => {
+        // Prioritize native Electron folder dialog for maximum performance and OS native features
+        if (typeof window !== "undefined" && window.electron && typeof window.electron.selectFolder === "function") {
+            try {
+                const nativePath = await window.electron.selectFolder();
+                if (nativePath) {
+                    return nativePath;
+                }
+                // Empty string indicates dialog was cancelled by user
+                return "";
+            } catch (err) {
+                console.warn("[TaskContext] Electron native folder picker error, falling back to modal:", err);
+            }
+        }
         return showFolderSelector(initialPath);
     };
 
@@ -126,7 +141,7 @@ export const TaskProvider = ({ children }) => {
 
     const syncActiveTasks = () => {
         console.log("[Sync] Fetching active background tasks from server...");
-        axios.get("http://localhost:8080/api/tasks/active")
+        apiClient.get("/tasks/active")
             .then(res => {
                 console.log(`[Sync] Active tasks synced. Total active: ${res.data.length}`);
                 const tasksObj = {};
@@ -173,11 +188,13 @@ export const TaskProvider = ({ children }) => {
         syncActiveTasks();
 
         let socket;
+        let reconnectTimeout;
         const connectWebSocket = () => {
-            socket = new WebSocket("ws://localhost:8080/ws/progress");
+            socket = new WebSocket(WS_BASE_URL);
 
             socket.onopen = () => {
                 console.log("[WebSocket] Connection established for progress tracking.");
+                setWsConnected(true);
             };
 
             socket.onmessage = (event) => {
@@ -227,15 +244,23 @@ export const TaskProvider = ({ children }) => {
                 }
             };
 
+            socket.onerror = () => {
+                setWsConnected(false);
+            };
+
             socket.onclose = () => {
+                setWsConnected(false);
                 console.warn("[WebSocket] Connection lost. Reconnecting in 5 seconds...");
-                setTimeout(connectWebSocket, 5000);
+                reconnectTimeout = setTimeout(connectWebSocket, 5000);
             };
         };
 
         connectWebSocket();
 
         return () => {
+            if (reconnectTimeout) {
+                clearTimeout(reconnectTimeout);
+            }
             if (socket) {
                 console.log("[WebSocket] Cleaning socket connection on unmount.");
                 socket.close();
@@ -248,7 +273,7 @@ export const TaskProvider = ({ children }) => {
     const cancelTask = async (taskId) => {
         console.log(`[TaskControl] Triggering cancellation request for task: ${taskId}`);
         try {
-            await axios.post(`http://localhost:8080/api/tasks/${taskId}/cancel`);
+            await apiClient.post(`/tasks/${taskId}/cancel`);
             addToast("Cancellation signaled for task " + taskId, "info");
             
             // Optimistically remove from active tasks immediately upon cancel
@@ -266,7 +291,7 @@ export const TaskProvider = ({ children }) => {
     const cancelTasksBulk = async (taskIds) => {
         console.log("[TaskControl] Triggering bulk cancellation request for tasks:", taskIds);
         try {
-            await axios.post("http://localhost:8080/api/tasks/cancel", { taskIds });
+            await apiClient.post("/tasks/cancel", { taskIds });
             addToast("Bulk cancellation signaled.", "info");
 
             // Optimistically remove from active tasks immediately upon bulk cancel
@@ -296,7 +321,8 @@ export const TaskProvider = ({ children }) => {
             markAllNotificationsAsRead,
             markSingleAsRead,
             clearAllNotifications,
-            removeSingleNotification
+            removeSingleNotification,
+            wsConnected
         }}>
             {children}
             <FolderSelectorDialog config={folderSelectorConfig} />

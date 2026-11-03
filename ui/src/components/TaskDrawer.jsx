@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import apiClient from "../services/apiClient";
 import { useTasks } from "../services/TaskContext";
 import { TaskStatus } from "../enums/SystemTypes";
 import { ArrowDownOutlined, ArrowUpOutlined } from "@ant-design/icons";
@@ -11,7 +11,7 @@ const TaskDrawer = () => {
     const handlePause = async (taskId, e) => {
         if (e) e.stopPropagation();
         try {
-            await axios.post(`http://localhost:8080/api/tasks/${taskId}/pause`);
+            await apiClient.post(`/tasks/${taskId}/pause`);
         } catch (err) {
             console.error(`[TaskDrawer] Failed to pause task ${taskId}`, err);
         }
@@ -20,7 +20,7 @@ const TaskDrawer = () => {
     const handleResume = async (taskId, e) => {
         if (e) e.stopPropagation();
         try {
-            await axios.post(`http://localhost:8080/api/tasks/${taskId}/resume`);
+            await apiClient.post(`/tasks/${taskId}/resume`);
         } catch (err) {
             console.error(`[TaskDrawer] Failed to resume task ${taskId}`, err);
         }

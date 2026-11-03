@@ -1,5 +1,5 @@
-import React, { useState, useEffect, Suspense, lazy } from "react";
-import axios from "axios";
+import React, { useState, useEffect, Suspense, lazy, useCallback } from "react";
+import apiClient from "../services/apiClient";
 import { Layout, Sider, Header, Content, Menu, Button, Badge } from "../components/common";
 import { Tooltip } from "antd";
 import {
@@ -15,14 +15,19 @@ import {
     HomeOutlined,
     HistoryOutlined,
     MenuFoldOutlined,
-    MenuUnfoldOutlined
+    MenuUnfoldOutlined,
+    DashboardOutlined,
+    WarningOutlined,
+    ReloadOutlined
 } from "@ant-design/icons";
 import TaskDrawer from "../components/TaskDrawer";
+import ErrorBoundary from "../components/ErrorBoundary";
 import { useTasks } from "../services/TaskContext";
 import { useI18n } from "../services/I18nContext";
 import appConfig from "../app.config.json";
 
-// Lazy-loaded heavy components for faster initial load
+// Lazy-loaded views
+const Overview = lazy(() => import("./Overview"));
 const Organizer = lazy(() => import("./Organizer"));
 const Duplicates = lazy(() => import("./Duplicates"));
 const Tasks = lazy(() => import("./Tasks"));
@@ -37,31 +42,34 @@ const Dashboard = ({ theme, toggleTheme }) => {
         document.title = `${appConfig.heading} - v${appConfig.version}`;
     }, []);
 
-    const [activeTab, setActiveTab] = useState("organizer");
+    const [activeTab, setActiveTab] = useState("overview");
     const [collapsed, setCollapsed] = useState(false);
     const [settingsSubTab, setSettingsSubTab] = useState("general");
     const [serverStatus, setServerStatus] = useState({ online: true, memoryUsedMb: 0, memoryTotalMb: 0, activeTasks: 0 });
-    const { unreadCount, activeTasks } = useTasks();
+    const { unreadCount, activeTasks, wsConnected } = useTasks();
     const { t } = useI18n();
     const activeTasksCount = Object.keys(activeTasks || {}).length;
 
-    // Heartbeat Poll
-    useEffect(() => {
-        const checkHeartbeat = async () => {
-            try {
-                const res = await axios.get("http://localhost:8080/api/telemetry/heartbeat", { timeout: 3000 });
-                setServerStatus({ online: true, ...res.data });
-            } catch (err) {
-                setServerStatus(prev => ({ ...prev, online: false }));
-            }
-        };
-        checkHeartbeat();
-        const interval = setInterval(checkHeartbeat, 10000); // 10 seconds
-        return () => clearInterval(interval);
+    // Heartbeat Poll to monitor backend process health
+    const checkHeartbeat = useCallback(async () => {
+        try {
+            const res = await apiClient.get("/telemetry/heartbeat", { timeout: 3000 });
+            setServerStatus({ online: true, ...res.data });
+        } catch (err) {
+            setServerStatus(prev => ({ ...prev, online: false }));
+        }
     }, []);
+
+    useEffect(() => {
+        checkHeartbeat();
+        const interval = setInterval(checkHeartbeat, 10000); // Poll every 10s
+        return () => clearInterval(interval);
+    }, [checkHeartbeat]);
 
     const renderComponent = () => {
         switch (activeTab) {
+            case "overview":
+                return <Overview setActiveTab={setActiveTab} />;
             case "organizer":
                 return <Organizer />;
             case "duplicates":
@@ -79,12 +87,13 @@ const Dashboard = ({ theme, toggleTheme }) => {
             case "help":
                 return <Help />;
             default:
-                return <Organizer />;
+                return <Overview setActiveTab={setActiveTab} />;
         }
     };
 
     const getTabTitle = (tab) => {
         switch (tab) {
+            case "overview": return t("overview") || "System Overview";
             case "organizer": return t("fileOrganizer") || "Organizer";
             case "duplicates": return t("duplicates") || "Duplicate Finder";
             case "workspaceExplorer": return t("workspaceExplorer") || "Disk Analyzer";
@@ -98,6 +107,11 @@ const Dashboard = ({ theme, toggleTheme }) => {
     };
 
     const menuItems = [
+        {
+            key: 'overview',
+            icon: <DashboardOutlined style={{ fontSize: '15px' }} />,
+            label: <span className="font-semibold text-xs">{t("overview") || "Overview"}</span>,
+        },
         {
             key: 'operations-grp',
             type: 'group',
@@ -165,10 +179,11 @@ const Dashboard = ({ theme, toggleTheme }) => {
     ];
 
     const isDark = theme === "dark";
+    const isDisconnected = !serverStatus.online || !wsConnected;
 
     return (
         <Layout style={{ minHeight: '100vh', overflow: 'hidden' }} className="select-none font-sans">
-            {/* Restored Navigation Sidebar */}
+            {/* Navigation Sidebar */}
             <Sider
                 collapsible
                 collapsed={collapsed}
@@ -184,7 +199,8 @@ const Dashboard = ({ theme, toggleTheme }) => {
                 {/* Brand / Logo Top Bar */}
                 <div 
                     className="h-16 flex items-center gap-3 px-4 cursor-pointer border-b border-slate-100 dark:border-slate-800/80 transition-opacity hover:opacity-90 overflow-hidden"
-                    onClick={() => setActiveTab("organizer")}
+                    onClick={() => setActiveTab("overview")}
+                    title="Go to Overview"
                 >
                     <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white text-base shadow-md shrink-0">
                         <i className="fa-solid fa-folder-tree"></i>
@@ -216,11 +232,14 @@ const Dashboard = ({ theme, toggleTheme }) => {
                 {/* Sider Footer / Telemetry Pill & Collapse Toggle */}
                 <div className="p-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                     <Tooltip title={serverStatus.online ? `Server Online\nTasks: ${serverStatus.activeTasks}\nMemory: ${serverStatus.memoryUsedMb}MB / ${serverStatus.memoryTotalMb}MB` : "Server Offline - Connection Lost"}>
-                        <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 cursor-pointer">
-                            <span className={`w-2.5 h-2.5 rounded-full ${serverStatus.online ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+                        <div 
+                            className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 cursor-pointer"
+                            onClick={checkHeartbeat}
+                        >
+                            <span className={`w-2.5 h-2.5 rounded-full ${serverStatus.online ? (wsConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500') : 'bg-rose-500'}`} />
                             {!collapsed && (
                                 <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
-                                    {serverStatus.online ? "Online" : "Offline"}
+                                    {serverStatus.online ? (wsConnected ? "Online" : "WS Syncing") : "Offline"}
                                 </span>
                             )}
                         </div>
@@ -259,8 +278,8 @@ const Dashboard = ({ theme, toggleTheme }) => {
                         <Button
                             className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-gray-200 dark:border-gray-700 shadow-sm active:scale-95 rounded-xl flex items-center justify-center h-9 px-3"
                             icon={<HomeOutlined style={{ fontSize: '14px', color: '#10b981' }} />}
-                            onClick={() => setActiveTab("organizer")}
-                            title="Home"
+                            onClick={() => setActiveTab("overview")}
+                            title="Go to Overview"
                         >
                             <span className="text-xs font-bold ml-1 hidden sm:inline">Home</span>
                         </Button>
@@ -291,16 +310,41 @@ const Dashboard = ({ theme, toggleTheme }) => {
                     </div>
                 </Header>
 
-                {/* Content View with Suspense */}
+                {/* Content View with Suspense & View-Level Error Boundary */}
                 <Content className="overflow-y-auto flex-1 bg-slate-50 dark:bg-[#0b0f19]">
                     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full min-h-[500px]">
-                        <Suspense fallback={
-                            <div className="flex items-center justify-center w-full h-full py-20">
-                                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        {/* Unobtrusive Network / Connection Warning Banner */}
+                        {isDisconnected && (
+                            <div className="mb-4 bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-400 px-4 py-2.5 rounded-xl text-xs flex items-center justify-between shadow-sm">
+                                <div className="flex items-center gap-2.5">
+                                    <WarningOutlined className="text-amber-600 text-sm" />
+                                    <span>
+                                        {!serverStatus.online
+                                            ? "Backend connection interrupted. Some actions may be temporarily unavailable."
+                                            : "Real-time task synchronization is reconnecting..."}
+                                    </span>
+                                </div>
+                                <Button
+                                    size="small"
+                                    type="text"
+                                    icon={<ReloadOutlined />}
+                                    className="text-amber-800 dark:text-amber-300 font-bold hover:bg-amber-500/20 rounded-lg text-xs"
+                                    onClick={checkHeartbeat}
+                                >
+                                    Reconnect
+                                </Button>
                             </div>
-                        }>
-                            {renderComponent()}
-                        </Suspense>
+                        )}
+
+                        <ErrorBoundary onReset={() => setActiveTab("overview")}>
+                            <Suspense fallback={
+                                <div className="flex items-center justify-center w-full h-full py-20">
+                                    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                </div>
+                            }>
+                                {renderComponent()}
+                            </Suspense>
+                        </ErrorBoundary>
                     </div>
                 </Content>
             </Layout>

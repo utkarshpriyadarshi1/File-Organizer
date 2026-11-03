@@ -1,6 +1,6 @@
 import { TaskType, TaskStatus } from "../enums/SystemTypes";
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import apiClient from "../services/apiClient";
 import { useTasks } from "../services/TaskContext";
 import GenericResultViewer from "../components/GenericResultViewer";
 import {
@@ -71,7 +71,7 @@ const Overview = ({ setActiveTab }) => {
         console.log(`[Overview] Starting analysis on folder: "${analyzerPath}"`);
         setAnalysisLoading(true);
         try {
-            const res = await axios.get(`http://localhost:8080/api/analysis/directory?folderPath=${encodeURIComponent(analyzerPath)}`);
+            const res = await apiClient.get(`/analysis/directory?folderPath=${encodeURIComponent(analyzerPath)}`);
             console.info("[Overview] Successfully completed analysis.", res.data);
             setAnalysisResult(res.data);
         } catch (err) {
@@ -96,10 +96,10 @@ const Overview = ({ setActiveTab }) => {
         }
         try {
             const [activeRes, historyRes, syncRes, cacheRes] = await Promise.all([
-                axios.get("http://localhost:8080/api/tasks/active"),
-                axios.get("http://localhost:8080/api/tasks/history"),
-                axios.get("http://localhost:8080/api/sync/jobs"),
-                axios.get("http://localhost:8080/api/settings/cache")
+                apiClient.get("/tasks/active"),
+                apiClient.get("/tasks/history"),
+                apiClient.get("/sync/jobs"),
+                apiClient.get("/settings/cache")
             ]);
 
             // Sort and grab top 5 recent tasks
@@ -147,7 +147,7 @@ const Overview = ({ setActiveTab }) => {
     useEffect(() => {
         loadDashboardData();
 
-        axios.get("http://localhost:8080/api/settings/default-path")
+        apiClient.get("/settings/default-path")
             .then(res => {
                 if (res.data.defaultPath) {
                     setAnalyzerPath(res.data.defaultPath);

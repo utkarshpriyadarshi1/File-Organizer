@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import apiClient from "../services/apiClient";
 
 const FolderSelectorDialog = ({ config }) => {
     const [currentPath, setCurrentPath] = useState("");
@@ -21,8 +21,8 @@ const FolderSelectorDialog = ({ config }) => {
             setLoading(true);
             setError("");
             try {
-                const url = `http://localhost:8080/api/analysis/browse${path ? `?path=${encodeURIComponent(path)}` : ""}`;
-                const res = await axios.get(url);
+                const url = `/analysis/browse${path ? `?path=${encodeURIComponent(path)}` : ""}`;
+                const res = await apiClient.get(url);
                 setCurrentPath(res.data.currentPath);
                 setManualPath(res.data.currentPath);
                 setFolders(res.data.folders || []);
@@ -51,8 +51,8 @@ const FolderSelectorDialog = ({ config }) => {
         setFilterQuery("");
         setIsEditingPath(false);
         try {
-            const url = `http://localhost:8080/api/analysis/browse?path=${encodeURIComponent(path)}`;
-            const res = await axios.get(url);
+            const url = `/analysis/browse?path=${encodeURIComponent(path)}`;
+            const res = await apiClient.get(url);
             setCurrentPath(res.data.currentPath);
             setManualPath(res.data.currentPath);
             setFolders(res.data.folders || []);

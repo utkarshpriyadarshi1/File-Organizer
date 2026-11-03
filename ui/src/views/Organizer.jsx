@@ -1,4 +1,4 @@
-import axios from "axios";
+import apiClient from "../services/apiClient";
 import React, { useState, useEffect } from "react";
 import { useTasks } from "../services/TaskContext";
 import { Input, Button, Checkbox, Space, Typography, Select } from "../components/common";
@@ -57,7 +57,7 @@ const Organizer = () => {
 
     // Fetch default directory on load
     useEffect(() => {
-        axios.get("http://localhost:8080/api/settings/default-path")
+        apiClient.get("/settings/default-path")
             .then(res => {
                 if (res.data.defaultPath) {
                     setSourceFolder(res.data.defaultPath);
@@ -65,7 +65,7 @@ const Organizer = () => {
             })
             .catch(err => console.error("[Organizer] Failed to fetch default path:", err));
 
-        axios.get("http://localhost:8080/api/settings/disk-analyzer-config")
+        apiClient.get("/settings/disk-analyzer-config")
             .then(res => {
                 if (res.data.patternGroups) {
                     setPatternGroups(res.data.patternGroups);
@@ -96,7 +96,7 @@ const Organizer = () => {
 
         if (cleanDuplicates) {
             try {
-                const res = await axios.post("http://localhost:8080/api/duplicates/find", { folderPath: sourceFolder });
+                const res = await apiClient.post("/duplicates/find", { folderPath: sourceFolder });
                 setDuplicatesTask(res.data);
                 triggeredTasks.push("Duplicate Scan");
             } catch(e) { console.error(e); }
@@ -104,7 +104,7 @@ const Organizer = () => {
 
         if (showAnalyzer) {
             try {
-                const res = await axios.post("http://localhost:8080/api/analysis/analyze", { folderPath: sourceFolder, patternGroup: selectedPatternGroup, strategy: analyseStrategy });
+                const res = await apiClient.post("/analysis/analyze", { folderPath: sourceFolder, patternGroup: selectedPatternGroup, strategy: analyseStrategy });
                 setAnalysisTask(res.data);
                 triggeredTasks.push("Disk Analysis");
             } catch(e) { console.error(e); }
@@ -117,7 +117,7 @@ const Organizer = () => {
                 return;
             }
             try {
-                const res = await axios.post("http://localhost:8080/api/organize", {
+                const res = await apiClient.post("/organize", {
                     sourceFolder,
                     destinationFolder: actualDest,
                     dryRun: isDryRun,

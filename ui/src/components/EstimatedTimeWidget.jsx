@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import apiClient from "../services/apiClient";
 import { Button, Spin } from "./common";
 import { CalculatorOutlined } from "@ant-design/icons";
 import { useTasks } from "../services/TaskContext";
@@ -51,7 +51,7 @@ const EstimatedTimeWidget = ({ folderPath, operationTypes = ["ORGANIZE"] }) => {
         setLoading(true);
 
         try {
-            const res = await axios.get(`http://localhost:8080/api/analysis/directory?folderPath=${encodeURIComponent(folderPath)}`);
+            const res = await apiClient.get(`/analysis/directory?folderPath=${encodeURIComponent(folderPath)}`);
             const { totalFiles, totalSize } = res.data;
             const timeStr = calculateEstimation(totalFiles, totalSize);
             addToast(`Estimated processing time: ${timeStr}`, "info");

@@ -1,9 +1,8 @@
 import React from 'react';
-import axios from 'axios';
+import apiClient from '../services/apiClient';
 import { Button, Typography, Space, Card } from './common';
-import { BugOutlined, CopyOutlined, GithubOutlined, ReloadOutlined } from '@ant-design/icons';
+import { BugOutlined, CopyOutlined, GithubOutlined, ReloadOutlined, UndoOutlined } from '@ant-design/icons';
 import { PageWrapper } from './wrappers';
-
 import { message } from 'antd';
 
 const { Title, Text, Paragraph } = Typography;
@@ -25,9 +24,9 @@ class ErrorBoundary extends React.Component {
         });
         console.error("Uncaught error:", error, errorInfo);
 
-        // Report crash to backend
+        // Report crash to backend telemetry
         try {
-            axios.post('http://localhost:8080/api/telemetry/crash', {
+            apiClient.post('/telemetry/crash', {
                 error: error.toString(),
                 stackTrace: errorInfo.componentStack
             }).catch(e => console.error("Failed to report crash:", e));
@@ -51,6 +50,13 @@ class ErrorBoundary extends React.Component {
         window.open(repoUrl, "_blank");
     }
 
+    handleResetView = () => {
+        this.setState({ hasError: false, error: null, errorInfo: null, copied: false });
+        if (typeof this.props.onReset === "function") {
+            this.props.onReset();
+        }
+    }
+
     render() {
         if (this.state.hasError) {
             return (
@@ -60,7 +66,7 @@ class ErrorBoundary extends React.Component {
                             <BugOutlined style={{ fontSize: '64px', color: '#ef4444' }} />
                             <div>
                                 <Title level={3} style={{ color: '#b91c1c', margin: 0 }}>Oops! Something went wrong.</Title>
-                                <Text style={{ color: '#991b1b' }}>The application encountered an unexpected error and crashed.</Text>
+                                <Text style={{ color: '#991b1b' }}>The application encountered an unexpected error in this view.</Text>
                             </div>
 
                             <div className="bg-white p-4 rounded-lg border border-red-200 w-full text-left overflow-auto max-h-64 shadow-inner">
@@ -74,10 +80,19 @@ class ErrorBoundary extends React.Component {
                             </div>
 
                             <Paragraph style={{ color: '#7f1d1d', margin: 0 }}>
-                                You can help us improve by reporting this issue. Click below to copy the crash report, then paste it into a new GitHub Issue!
+                                You can try refreshing this view or reporting the issue on GitHub.
                             </Paragraph>
 
                             <Space size="middle" wrap justify="center">
+                                <Button 
+                                    type="primary" 
+                                    icon={<UndoOutlined />} 
+                                    onClick={this.handleResetView}
+                                    size="large"
+                                    className="bg-blue-600 hover:bg-blue-700"
+                                >
+                                    Try Again
+                                </Button>
                                 <Button 
                                     type="primary" 
                                     danger 
@@ -101,7 +116,7 @@ class ErrorBoundary extends React.Component {
                                     onClick={() => window.location.reload()}
                                     size="large"
                                 >
-                                    Reload Application
+                                    Reload App
                                 </Button>
                             </Space>
                         </div>

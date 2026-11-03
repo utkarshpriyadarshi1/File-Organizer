@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import apiClient from "../services/apiClient";
 import { useTasks } from "../services/TaskContext";
 import { useI18n } from "../services/I18nContext";
 import { Card, Input, Button, Tabs, Spin, Space, Typography } from "../components/common";
@@ -158,7 +158,7 @@ const WorkspaceExplorer = () => {
 
     // Fetch default directory on load
     useEffect(() => {
-        axios.get("http://localhost:8080/api/settings/default-path")
+        apiClient.get("/settings/default-path")
             .then(res => {
                 if (res.data.defaultPath) {
                     setExplorerPath(res.data.defaultPath);
@@ -184,7 +184,7 @@ const WorkspaceExplorer = () => {
         setLoading(true);
         console.log(`[WorkspaceExplorer] Fetching tree structure. Path: "${explorerPath}", Virtual: ${isVirtual}`);
         
-        axios.get(`http://localhost:8080/api/workspace/explorer`, {
+        apiClient.get(`/workspace/explorer`, {
             params: {
                 folderPath: explorerPath,
                 virtual: isVirtual
@@ -204,7 +204,7 @@ const WorkspaceExplorer = () => {
 
     const handleExtractMetadata = (filePath) => {
         addToast("Extracting metadata...", "info");
-        axios.post(`http://localhost:8080/api/metadata/extract-by-path`, null, { params: { path: filePath } })
+        apiClient.post(`/metadata/extract-by-path`, null, { params: { path: filePath } })
             .then(res => {
                 addToast("Metadata extracted successfully!", "success");
             })
@@ -215,7 +215,7 @@ const WorkspaceExplorer = () => {
 
     const executeSearch = () => {
         setSearchLoading(true);
-        axios.post(`http://localhost:8080/api/search`, searchParams)
+        apiClient.post(`/search`, searchParams)
             .then(res => {
                 setSearchResults(res.data.content || []);
                 setSearchLoading(false);

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import axios from "axios";
+import apiClient from "../services/apiClient";
 import { FrontendLogger } from "../services/FrontendLogger";
 import { Card, Row, Col, Statistic, Input, Select, Button, Tag, Badge, Space, Typography } from "../components/common";
 import { 
@@ -52,7 +52,7 @@ const Logs = () => {
 
     // Fetch initial diagnostic logs from database and listen to frontend logs
     useEffect(() => {
-        axios.get("http://localhost:8080/api/logs")
+        apiClient.get("/logs")
             .then(response => {
                 setDbLogs(response.data || []);
             })

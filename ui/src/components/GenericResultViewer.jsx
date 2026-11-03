@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import apiClient from "../services/apiClient";
+import { Pagination } from "antd";
 import { useTasks } from "../services/TaskContext";
 import DiskAnalyzer from "./DiskAnalyzer";
 
@@ -13,6 +14,8 @@ const GenericResultViewer = ({ task, onClose }) => {
     const [resStatusFilter, setResStatusFilter] = useState("ALL");
     const [skipFolder, setSkipFolder] = useState("");
     const [targetFolder, setTargetFolder] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 50;
 
     const autoSelectDuplicates = (strategy) => {
         if (strategy === "selectAll") {
@@ -181,7 +184,7 @@ const GenericResultViewer = ({ task, onClose }) => {
 
     useEffect(() => {
         setLoading(true);
-        axios.get(`http://localhost:8080/api/tasks/${task.id}/results`)
+        apiClient.get(`/tasks/${task.id}/results`)
             .then(res => {
                 let data = res.data;
                 if (typeof data === "string") {
@@ -209,7 +212,7 @@ const GenericResultViewer = ({ task, onClose }) => {
 
     const handleReversalAction = async (actionType) => {
         try {
-            const res = await axios.post(`http://localhost:8080/api/tasks/${task.id}/action`, {
+            const res = await apiClient.post(`/tasks/${task.id}/action`, {
                 actionType,
                 targetPaths: selectedFiles
             });
@@ -388,7 +391,7 @@ const GenericResultViewer = ({ task, onClose }) => {
                         <div className="space-y-4 max-h-96 overflow-y-auto overflow-x-auto">
                             {sortedDups.length === 0 ? (
                                 <p className="text-center text-xs text-gray-500 py-6">No duplicate groups match filters.</p>
-                            ) : sortedDups.map((group, idx) => (
+                            ) : sortedDups.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((group, idx) => (
                                 <div key={idx} className="bg-gray-50 border border-gray-100 rounded-xl p-3 overflow-x-auto">
                                     <p className="text-xs text-gray-500 font-mono mb-2 flex items-center gap-1.5">
                                         <i className="fa-solid fa-hashtag text-gray-400"></i>
@@ -424,12 +427,25 @@ const GenericResultViewer = ({ task, onClose }) => {
                                 </div>
                             ))}
                         </div>
+                        {sortedDups.length > pageSize && (
+                            <div className="flex justify-end pt-2">
+                                <Pagination 
+                                    current={currentPage}
+                                    pageSize={pageSize}
+                                    total={sortedDups.length}
+                                    onChange={setCurrentPage}
+                                    size="small"
+                                    showSizeChanger={false}
+                                />
+                            </div>
+                        )}
                     </div>
                 );
             }
 
             case "ORGANIZE": {
-                const sortedOrg = getSortedOrganize().slice(0, 1000);
+                const sortedOrg = getSortedOrganize();
+                const pagedOrg = sortedOrg.slice((currentPage - 1) * pageSize, currentPage * pageSize);
                 return (
                     <div className="space-y-4">
                         {payload.length > 1000 && (
@@ -536,7 +552,7 @@ const GenericResultViewer = ({ task, onClose }) => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200 text-xs">
-                                        {sortedOrg.map((item, idx) => (
+                                        {pagedOrg.map((item, idx) => (
                                             <tr key={idx}>
                                                 <td className="px-3 py-2">
                                                     <input 
@@ -563,12 +579,25 @@ const GenericResultViewer = ({ task, onClose }) => {
                                 </table>
                             </div>
                         )}
+                        {sortedOrg.length > pageSize && (
+                            <div className="flex justify-end pt-2">
+                                <Pagination 
+                                    current={currentPage}
+                                    pageSize={pageSize}
+                                    total={sortedOrg.length}
+                                    onChange={setCurrentPage}
+                                    size="small"
+                                    showSizeChanger={false}
+                                />
+                            </div>
+                        )}
                     </div>
                 );
             }
 
             case "BACKUP": {
-                const sortedBkp = getSortedBackup().slice(0, 1000);
+                const sortedBkp = getSortedBackup();
+                const pagedBkp = sortedBkp.slice((currentPage - 1) * pageSize, currentPage * pageSize);
                 return (
                     <div className="space-y-4">
                         {payload.length > 1000 && (
@@ -688,7 +717,7 @@ const GenericResultViewer = ({ task, onClose }) => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200 text-xs">
-                                        {sortedBkp.map((item, idx) => (
+                                        {pagedBkp.map((item, idx) => (
                                             <tr key={idx}>
                                                 <td className="px-3 py-2">
                                                     <input 
@@ -719,6 +748,18 @@ const GenericResultViewer = ({ task, onClose }) => {
                                         ))}
                                     </tbody>
                                 </table>
+                            </div>
+                        )}
+                        {sortedBkp.length > pageSize && (
+                            <div className="flex justify-end pt-2">
+                                <Pagination 
+                                    current={currentPage}
+                                    pageSize={pageSize}
+                                    total={sortedBkp.length}
+                                    onChange={setCurrentPage}
+                                    size="small"
+                                    showSizeChanger={false}
+                                />
                             </div>
                         )}
                     </div>

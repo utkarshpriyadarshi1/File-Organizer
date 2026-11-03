@@ -1,6 +1,6 @@
 import { TaskType, TaskStatus } from "../enums/SystemTypes";
 import React, { useEffect, useState, useMemo } from "react";
-import axios from "axios";
+import apiClient from "../services/apiClient";
 import { useTasks } from "../services/TaskContext";
 import GenericResultViewer from "../components/GenericResultViewer";
 import { PageWrapper, PanelCard } from "../components/wrappers";
@@ -66,7 +66,7 @@ const Tasks = () => {
     const fetchHistory = () => {
         console.log("[Tasks] Fetching historical background task logs...");
         setHistoryLoading(true);
-        axios.get("http://localhost:8080/api/tasks/history")
+        apiClient.get("/tasks/history")
             .then(res => {
                 console.info(`[Tasks] Successfully fetched ${res.data.length} historical records.`);
                 setHistory(res.data);
@@ -119,7 +119,7 @@ const Tasks = () => {
     const handlePause = async (taskId, e) => {
         if (e) e.stopPropagation();
         try {
-            await axios.post(`http://localhost:8080/api/tasks/${taskId}/pause`);
+            await apiClient.post(`/tasks/${taskId}/pause`);
             console.log(`[Tasks] Paused task ${taskId}`);
         } catch (err) {
             console.error(`[Tasks] Failed to pause task ${taskId}`, err);
@@ -129,7 +129,7 @@ const Tasks = () => {
     const handleResume = async (taskId, e) => {
         if (e) e.stopPropagation();
         try {
-            await axios.post(`http://localhost:8080/api/tasks/${taskId}/resume`);
+            await apiClient.post(`/tasks/${taskId}/resume`);
             console.log(`[Tasks] Resumed task ${taskId}`);
         } catch (err) {
             console.error(`[Tasks] Failed to resume task ${taskId}`, err);
@@ -147,7 +147,7 @@ const Tasks = () => {
 
         console.log("[Tasks] Bulk deleting historical tasks:", selectedHistoryTasks);
         try {
-            await axios.post("http://localhost:8080/api/tasks/delete", { taskIds: selectedHistoryTasks });
+            await apiClient.post("/tasks/delete", { taskIds: selectedHistoryTasks });
             setHistory(prev => prev.filter(t => !selectedHistoryTasks.includes(t.id)));
             setSelectedHistoryTasks([]);
             addToast("Historical tasks deleted successfully.", "success");
@@ -160,7 +160,7 @@ const Tasks = () => {
     const handleRestart = (taskId, e) => {
         e.stopPropagation();
         setRestartingTaskId(taskId);
-        axios.post(`http://localhost:8080/api/tasks/${taskId}/restart`)
+        apiClient.post(`/tasks/${taskId}/restart`)
             .then(res => {
                 console.log("[Tasks] Successfully restarted task. New ID:", res.data);
                 syncActiveTasks();

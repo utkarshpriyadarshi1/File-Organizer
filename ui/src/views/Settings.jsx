@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import apiClient from "../services/apiClient";
 import { useTasks } from "../services/TaskContext";
 import { useI18n } from "../services/I18nContext";
 import Logs from "./Logs";
@@ -90,7 +90,7 @@ const Settings = ({ defaultSubTab }) => {
     const handleGenerateReport = async () => {
         setReportLoading(true);
         try {
-            const res = await axios.get("http://localhost:8080/api/telemetry/report");
+            const res = await apiClient.get("/telemetry/report");
             setReportData(res.data);
             setIsReportModalVisible(true);
         } catch (err) {
@@ -117,7 +117,7 @@ const Settings = ({ defaultSubTab }) => {
     const fetchCacheStats = () => {
         console.log("[Settings] Fetching cache folder statistics...");
         setCacheLoading(true);
-        axios.get("http://localhost:8080/api/settings/cache")
+        apiClient.get("/settings/cache")
             .then(res => {
                 console.info("[Settings] Successfully loaded cache stats.", res.data);
                 setCaches(res.data);
@@ -132,7 +132,7 @@ const Settings = ({ defaultSubTab }) => {
     const fetchIgnoreRules = () => {
         console.log("[Settings] Fetching ignore rules...");
         setIgnoreLoading(true);
-        axios.get("http://localhost:8080/api/settings/ignore-rules")
+        apiClient.get("/settings/ignore-rules")
             .then(res => {
                 console.info("[Settings] Successfully loaded ignore rules.", res.data);
                 setIgnoreRules(res.data);
@@ -146,7 +146,7 @@ const Settings = ({ defaultSubTab }) => {
 
     const fetchDefaultPath = () => {
         console.log("[Settings] Fetching default scan path...");
-        axios.get("http://localhost:8080/api/settings/default-path")
+        apiClient.get("/settings/default-path")
             .then(res => {
                 setDefaultPath(res.data.defaultPath || "");
             })
@@ -158,7 +158,7 @@ const Settings = ({ defaultSubTab }) => {
 
 
     const fetchPerformanceConfig = () => {
-        axios.get("http://localhost:8080/api/settings/performance-config")
+        apiClient.get("/settings/performance-config")
             .then(res => {
                 setPerformanceConfig(res.data);
             })
@@ -170,7 +170,7 @@ const Settings = ({ defaultSubTab }) => {
     const fetchPreferences = () => {
         console.log("[Settings] Fetching app preferences...");
         setPreferencesLoading(true);
-        axios.get("http://localhost:8080/api/preferences")
+        apiClient.get("/preferences")
             .then(res => {
                 setLayoutPattern(res.data.folderLayoutPattern || "{fileType}/{yearMonth}");
                 setPreferencesLoading(false);
@@ -183,7 +183,7 @@ const Settings = ({ defaultSubTab }) => {
 
     const fetchDiskAnalyzerConfig = () => {
         setConfigLoading(true);
-        axios.get("http://localhost:8080/api/settings/disk-analyzer-config")
+        apiClient.get("/settings/disk-analyzer-config")
             .then(res => {
                 setDiskAnalyzerConfig(res.data);
                 setConfigLoading(false);
@@ -196,7 +196,7 @@ const Settings = ({ defaultSubTab }) => {
 
     const handleSaveDiskAnalyzerConfig = async () => {
         try {
-            await axios.post("http://localhost:8080/api/settings/disk-analyzer-config", diskAnalyzerConfig);
+            await apiClient.post("/settings/disk-analyzer-config", diskAnalyzerConfig);
             addToast("Disk analyzer configuration saved.", "success");
         } catch (e) {
             addToast("Failed to save disk analyzer configuration.", "error");
@@ -289,7 +289,7 @@ const Settings = ({ defaultSubTab }) => {
         const targetPattern = pattern || layoutPattern;
         console.log("[Settings] Requesting to save layout preferences:", targetPattern);
         try {
-            await axios.post("http://localhost:8080/api/preferences", { folderLayoutPattern: targetPattern });
+            await apiClient.post("/preferences", { folderLayoutPattern: targetPattern });
             addToast("Layout preferences saved successfully.", "success");
             setLayoutPattern(targetPattern);
         } catch (err) {
@@ -337,7 +337,7 @@ const Settings = ({ defaultSubTab }) => {
 
     const handleSaveDefaultPath = async () => {
         try {
-            await axios.post("http://localhost:8080/api/settings/default-path", { path: defaultPath });
+            await apiClient.post("/settings/default-path", { path: defaultPath });
             addToast("Default path saved successfully.", "success");
         } catch (err) {
             console.error("[Settings] Failed to save default path:", err);
@@ -347,7 +347,7 @@ const Settings = ({ defaultSubTab }) => {
 
     const handleSavePerformanceConfig = async () => {
         try {
-            await axios.post("http://localhost:8080/api/settings/performance-config", performanceConfig);
+            await apiClient.post("/settings/performance-config", performanceConfig);
             addToast("Performance configuration saved.", "success");
         } catch (e) {
             addToast("Failed to save performance configuration.", "error");
@@ -357,7 +357,7 @@ const Settings = ({ defaultSubTab }) => {
     const handleCleanCache = async (folderName) => {
         console.log(`[Settings] Requesting folder prune for: "${folderName}"`);
         try {
-            const res = await axios.delete(`http://localhost:8080/api/settings/cache?folderName=${folderName}`);
+            const res = await apiClient.delete(`/settings/cache?folderName=${folderName}`);
             console.info(`[Settings] Folder prune response: "${res.data}"`);
             addToast(res.data, "success");
             fetchCacheStats();
@@ -374,7 +374,7 @@ const Settings = ({ defaultSubTab }) => {
         }
         console.log(`[Settings] Requesting clear for tables: ${selectedTables}`);
         try {
-            await axios.delete(`http://localhost:8080/api/settings/database?tables=${selectedTables.join(",")}`);
+            await apiClient.delete(`/settings/database?tables=${selectedTables.join(",")}`);
             addToast("Selected database tables cleared.", "success");
             setSelectedTables([]);
         } catch (e) {
@@ -390,7 +390,7 @@ const Settings = ({ defaultSubTab }) => {
 
         console.log(`[Settings] Requesting to add ignore rule pattern: "${trimmed}"`);
         try {
-            const res = await axios.post("http://localhost:8080/api/settings/ignore-rules", { pattern: trimmed });
+            const res = await apiClient.post("/settings/ignore-rules", { pattern: trimmed });
             console.info("[Settings] Add ignore rule response:", res.data);
             addToast(`Added ignore rule pattern: "${trimmed}"`, "success");
             setNewPattern("");
@@ -404,7 +404,7 @@ const Settings = ({ defaultSubTab }) => {
     const handleDeleteIgnoreRule = async (id, pattern) => {
         console.log(`[Settings] Requesting deletion of ignore rule ID ${id} (pattern: "${pattern}")`);
         try {
-            await axios.delete(`http://localhost:8080/api/settings/ignore-rules/${id}`);
+            await apiClient.delete(`/settings/ignore-rules/${id}`);
             console.info(`[Settings] Successfully deleted ignore rule ID ${id}`);
             addToast(`Removed ignore rule pattern.`, "success");
             fetchIgnoreRules();

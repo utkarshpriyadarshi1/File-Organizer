@@ -1,24 +1,25 @@
-import axios from "axios";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import apiClient from "../services/apiClient";
 import { useTasks } from "../services/TaskContext";
 import { Card, Input, Button, Select, Checkbox, Space, Badge, Alert, Spin, Typography } from "../components/common";
-import EstimatedTimeWidget from "../components/EstimatedTimeWidget";
+import { Pagination } from "antd";
 import { 
     FolderOpenOutlined, 
     CopyOutlined,
     SearchOutlined,
     DeleteOutlined,
     CheckSquareOutlined,
-    FilterOutlined,
     FileTextOutlined,
     HistoryOutlined,
-    ClockCircleOutlined
+    ClockCircleOutlined,
+    FolderViewOutlined
 } from "@ant-design/icons";
 
 const { Text } = Typography;
 
 const Duplicates = ({ targetPath, externalScanTaskId }) => {
-    const { activeTasks, addToast, syncActiveTasks } = useTasks();
+    const { activeTasks, addToast, syncActiveTasks, selectFolder } = useTasks();
+    const [folderToScan, setFolderToScan] = useState(targetPath || "");
     const [scanTaskId, setScanTaskId] = useState(null);
     const [duplicates, setDuplicates] = useState([]);
     const [selectedFiles, setSelectedFiles] = useState([]);
@@ -27,6 +28,21 @@ const Duplicates = ({ targetPath, externalScanTaskId }) => {
     const [dupSort, setDupSort] = useState("countDesc");
     const [skipFolder, setSkipFolder] = useState("");
     const [targetFolder, setTargetFolder] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 20;
+
+    // Load default directory on mount if no initial path provided
+    useEffect(() => {
+        if (!targetPath && !folderToScan) {
+            apiClient.get("/settings/default-path")
+                .then(res => {
+                    if (res.data?.defaultPath) {
+                        setFolderToScan(res.data.defaultPath);
+                    }
+                })
+                .catch(err => console.warn("[Duplicates] Default path not set:", err));
+        }
+    }, [targetPath, folderToScan]);
 
     useEffect(() => {
         if (externalScanTaskId) {
@@ -35,7 +51,35 @@ const Duplicates = ({ targetPath, externalScanTaskId }) => {
         }
     }, [externalScanTaskId]);
 
+    const handleBrowseFolder = async () => {
+        const folder = await selectFolder(folderToScan);
+        if (folder) {
+            setFolderToScan(folder);
+        }
+    };
 
+    const handleStartScan = async () => {
+        if (!folderToScan) {
+            addToast("Please select a target folder to scan for duplicates.", "warning");
+            return;
+        }
+
+        setStatus("Initializing duplicate scanner...");
+        try {
+            const res = await apiClient.post("/duplicates/find", { folderPath: folderToScan });
+            const taskId = res.data;
+            setScanTaskId(taskId);
+            setDuplicates([]);
+            setSelectedFiles([]);
+            setCurrentPage(1);
+            addToast("Duplicate scan started! Task ID: " + taskId, "info");
+            syncActiveTasks();
+        } catch (err) {
+            console.error("[Duplicates] Failed to start duplicate scan:", err);
+            addToast("Failed to initiate duplicate scan.", "error");
+            setStatus("");
+        }
+    };
 
     const autoSelectDuplicates = (strategy) => {
         if (strategy === "selectAll") {
@@ -48,52 +92,52 @@ const Duplicates = ({ targetPath, externalScanTaskId }) => {
             duplicates.forEach(group => {
                 if (!group || !Array.isArray(group.files) || group.files.length <= 1) return;
 
-            const filterEligible = (file) => {
-                const pathLower = file.path.toLowerCase();
-                if (skipFolder.trim() && pathLower.includes(skipFolder.trim().toLowerCase())) {
-                    return false;
-                }
-                if (targetFolder.trim() && !pathLower.includes(targetFolder.trim().toLowerCase())) {
-                    return false;
-                }
-                return true;
-            };
-
-            if (strategy === "selectAll") {
-                group.files.forEach(f => {
-                    if (filterEligible(f)) {
-                        toSelect.push(f.path);
+                const filterEligible = (file) => {
+                    const pathLower = file.path.toLowerCase();
+                    if (skipFolder.trim() && pathLower.includes(skipFolder.trim().toLowerCase())) {
+                        return false;
                     }
-                });
-            } else if (strategy === "clearAll") {
-                // Will clear everything since toSelect remains empty
-            } else {
-                const sorted = [...group.files].sort((a, b) => {
-                    const timeA = a.modifiedAt ? new Date(a.modifiedAt).getTime() : 0;
-                    const timeB = b.modifiedAt ? new Date(b.modifiedAt).getTime() : 0;
-                    return timeA - timeB;
-                });
+                    if (targetFolder.trim() && !pathLower.includes(targetFolder.trim().toLowerCase())) {
+                        return false;
+                    }
+                    return true;
+                };
 
-                if (strategy === "keepOldest") {
-                    for (let i = 1; i < sorted.length; i++) {
-                        if (filterEligible(sorted[i])) {
-                            toSelect.push(sorted[i].path);
+                if (strategy === "selectAll") {
+                    group.files.forEach(f => {
+                        if (filterEligible(f)) {
+                            toSelect.push(f.path);
+                        }
+                    });
+                } else if (strategy === "clearAll") {
+                    // Will clear everything since toSelect remains empty
+                } else {
+                    const sorted = [...group.files].sort((a, b) => {
+                        const timeA = a.modifiedAt ? new Date(a.modifiedAt).getTime() : 0;
+                        const timeB = b.modifiedAt ? new Date(b.modifiedAt).getTime() : 0;
+                        return timeA - timeB;
+                    });
+
+                    if (strategy === "keepOldest") {
+                        for (let i = 1; i < sorted.length; i++) {
+                            if (filterEligible(sorted[i])) {
+                                toSelect.push(sorted[i].path);
+                            }
+                        }
+                    } else if (strategy === "keepLatest") {
+                        for (let i = 0; i < sorted.length - 1; i++) {
+                            if (filterEligible(sorted[i])) {
+                                toSelect.push(sorted[i].path);
+                            }
                         }
                     }
-                } else if (strategy === "keepLatest") {
-                    for (let i = 0; i < sorted.length - 1; i++) {
-                        if (filterEligible(sorted[i])) {
-                            toSelect.push(sorted[i].path);
-                        }
-                    }
                 }
-            }
-        });
+            });
         }
         setSelectedFiles(toSelect);
     };
 
-    const getFilteredDuplicates = () => {
+    const filteredDuplicates = useMemo(() => {
         if (!Array.isArray(duplicates)) return [];
         return duplicates.filter(group => {
             if (!group || !Array.isArray(group.files)) return false;
@@ -101,10 +145,10 @@ const Duplicates = ({ targetPath, externalScanTaskId }) => {
             return group.files.some(file => file?.path?.toLowerCase().includes(dupSearch.toLowerCase())) || 
                    group.hash?.toLowerCase().includes(dupSearch.toLowerCase());
         });
-    };
+    }, [duplicates, dupSearch]);
 
-    const getSortedDuplicates = () => {
-        return [...getFilteredDuplicates()].sort((a, b) => {
+    const sortedDuplicates = useMemo(() => {
+        return [...filteredDuplicates].sort((a, b) => {
             const aLen = Array.isArray(a?.files) ? a.files.length : 0;
             const bLen = Array.isArray(b?.files) ? b.files.length : 0;
             if (dupSort === "countDesc") return bLen - aLen;
@@ -112,9 +156,13 @@ const Duplicates = ({ targetPath, externalScanTaskId }) => {
             if (dupSort === "hash") return (a.hash || "").localeCompare(b.hash || "");
             return 0;
         });
-    };
+    }, [filteredDuplicates, dupSort]);
 
-
+    // Paginated duplicate groups for fast DOM rendering
+    const paginatedDuplicates = useMemo(() => {
+        const start = (currentPage - 1) * pageSize;
+        return sortedDuplicates.slice(start, start + pageSize);
+    }, [sortedDuplicates, currentPage, pageSize]);
 
     // Monitor scanning progress if scanTaskId is active
     useEffect(() => {
@@ -125,15 +173,15 @@ const Duplicates = ({ targetPath, externalScanTaskId }) => {
             console.log(`[Duplicates] Scanning progress update for task ${scanTaskId}: ${activeTask.progress.toFixed(0)}%`);
             setStatus(`Scanning for duplicates... ${activeTask.progress.toFixed(0)}%`);
         } else {
-            // Task has completed and was removed from activeTasks. Check results
             console.log(`[Duplicates] Duplicate scan task ${scanTaskId} completed. Fetching results...`);
             setStatus("Scan completed! Fetching results...");
-            axios.get(`http://localhost:8080/api/tasks/${scanTaskId}/results`)
+            apiClient.get(`/tasks/${scanTaskId}/results`)
                 .then(res => {
                     console.info(`[Duplicates] Successfully fetched ${res.data.length} duplicate groups for scan task ${scanTaskId}`);
                     setDuplicates(res.data);
                     setStatus("");
                     setScanTaskId(null);
+                    setCurrentPage(1);
                 })
                 .catch(err => {
                     console.error(`[Duplicates] Failed to fetch scan results for task ID ${scanTaskId}`, err);
@@ -143,30 +191,22 @@ const Duplicates = ({ targetPath, externalScanTaskId }) => {
         }
     }, [activeTasks, scanTaskId]);
 
-    // Scan is now triggered from Organizer.jsx
-
     const toggleSelection = (filePath) => {
-        console.log(`[Duplicates] Toggling file selection: "${filePath}"`);
         setSelectedFiles(prev => {
             const isSelected = prev.includes(filePath);
-            const nextSelection = isSelected ? prev.filter(f => f !== filePath) : [...prev, filePath];
-            console.log(`[Duplicates] Active selection count: ${nextSelection.length}`);
-            return nextSelection;
+            return isSelected ? prev.filter(f => f !== filePath) : [...prev, filePath];
         });
     };
 
     const removeSelected = async () => {
-        console.log(`[Duplicates] Preparing duplicate deletion task for files:`, selectedFiles);
         if (selectedFiles.length === 0) {
-            console.warn("[Duplicates] Deletion request rejected because no files are selected.");
             addToast("No files selected for deletion.", "warning");
             return;
         }
 
         setStatus("Removing duplicates...");
         try {
-            const response = await axios.post("http://localhost:8080/api/duplicates/remove", { filesToDelete: selectedFiles, dryRun: false });
-            console.info(`[Duplicates] Duplicate removal task triggered successfully. Server Task ID: ${response.data}`);
+            const response = await apiClient.post("/duplicates/remove", { filesToDelete: selectedFiles, dryRun: false });
             addToast("Duplicate removal task triggered! Task ID: " + response.data, "info");
             syncActiveTasks();
             
@@ -181,8 +221,11 @@ const Duplicates = ({ targetPath, externalScanTaskId }) => {
         }
     };
 
+    const isScanning = Boolean(scanTaskId && activeTasks[scanTaskId]);
+
     return (
         <div className="space-y-4 max-w-5xl mx-auto">
+            {/* Header & Folder Scanner Control Card */}
             <Card 
                 className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-md rounded-2xl"
                 title={
@@ -190,13 +233,46 @@ const Duplicates = ({ targetPath, externalScanTaskId }) => {
                         <CopyOutlined className="text-blue-600 text-lg" />
                         <div>
                             <span className="text-sm font-black text-slate-800 dark:text-slate-100 block leading-tight">Duplicate Cleaner</span>
-                            <span className="text-[10px] text-slate-450 dark:text-slate-400 font-semibold block mt-0.5">Locate byte-identical duplicate files using MD5 hashes and safely remove them</span>
+                            <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">Locate byte-identical duplicate files using MD5 hashes and safely remove them</span>
                         </div>
                     </div>
                 }
             >
                 <div className="space-y-4">
-                    <p className="text-xs text-slate-500 font-medium">Use the "Dry Run" or "Start Action" buttons above to scan for duplicates. Once scanned, you can select which files to safely remove here.</p>
+                    <p className="text-xs text-slate-500 font-medium">
+                        Select a folder on your system to scan for identical files. The scanner uses fast size filtering and byte-level cryptographic hashing to detect duplicates safely.
+                    </p>
+
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/60 dark:border-slate-700/50">
+                        <div className="flex-1 flex items-center gap-2">
+                            <FolderViewOutlined className="text-blue-500 text-base ml-1" />
+                            <Input 
+                                value={folderToScan}
+                                onChange={(e) => setFolderToScan(e.target.value)}
+                                placeholder="Choose or type a folder path to scan (e.g., C:\Users\Downloads)..."
+                                className="h-9 text-xs rounded-lg"
+                                disabled={isScanning}
+                            />
+                            <Button 
+                                icon={<FolderOpenOutlined />}
+                                onClick={handleBrowseFolder}
+                                disabled={isScanning}
+                                className="h-9 px-3 rounded-lg text-xs font-semibold"
+                            >
+                                Browse
+                            </Button>
+                        </div>
+                        <Button 
+                            type="primary"
+                            icon={<SearchOutlined />}
+                            loading={isScanning}
+                            onClick={handleStartScan}
+                            disabled={!folderToScan || isScanning}
+                            className="h-9 px-5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 shrink-0"
+                        >
+                            {isScanning ? "Scanning..." : "Scan For Duplicates"}
+                        </Button>
+                    </div>
                 </div>
             </Card>
 
@@ -220,19 +296,25 @@ const Duplicates = ({ targetPath, externalScanTaskId }) => {
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-1">
                             <div className="flex items-center gap-1.5">
                                 <span className="text-sm font-black text-slate-800 dark:text-slate-100 block">Duplicate Sets Found</span>
-                                <Badge count={duplicates.length} style={{ backgroundColor: '#64748b' }} size="small" />
+                                <Badge count={sortedDuplicates.length} style={{ backgroundColor: '#64748b' }} size="small" />
                             </div>
                             
                             <div className="flex flex-wrap gap-2 text-[10px] font-semibold items-center">
                                 <Input 
                                     prefix={<SearchOutlined />}
                                     value={dupSearch}
-                                    onChange={(e) => setDupSearch(e.target.value)}
+                                    onChange={(e) => {
+                                        setDupSearch(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
                                     placeholder="Search path/hash..."
                                     className="rounded-lg p-1 text-[10px] w-40 h-7"
                                 />
                                 <Select 
-                                    onChange={(val) => setDupSort(val)}
+                                    onChange={(val) => {
+                                        setDupSort(val);
+                                        setCurrentPage(1);
+                                    }}
                                     value={dupSort}
                                     className="h-7 w-36 text-[10px]"
                                     options={[
@@ -247,10 +329,10 @@ const Duplicates = ({ targetPath, externalScanTaskId }) => {
                 >
                     <div className="space-y-4">
                         {/* Auto-Select and Folder Pattern Controls */}
-                        <div className="p-4 bg-slate-50/50 dark:bg-slate-850/30 rounded-xl border border-slate-150 dark:border-slate-800/80 space-y-3">
+                        <div className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/60 dark:border-slate-800 space-y-3">
                             <div className="flex flex-col md:flex-row md:items-center gap-3">
                                 <div className="flex-grow flex items-center gap-2">
-                                    <span className="text-[10px] font-black text-slate-450 dark:text-slate-500 uppercase tracking-wider block shrink-0 w-24">Skip Folder:</span>
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block shrink-0 w-24">Skip Folder:</span>
                                     <Input 
                                         value={skipFolder}
                                         onChange={(e) => setSkipFolder(e.target.value)}
@@ -259,7 +341,7 @@ const Duplicates = ({ targetPath, externalScanTaskId }) => {
                                     />
                                 </div>
                                 <div className="flex-grow flex items-center gap-2">
-                                    <span className="text-[10px] font-black text-slate-450 dark:text-slate-505 uppercase tracking-wider block shrink-0 w-24">Target Only:</span>
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block shrink-0 w-24">Target Only:</span>
                                     <Input 
                                         value={targetFolder}
                                         onChange={(e) => setTargetFolder(e.target.value)}
@@ -271,7 +353,7 @@ const Duplicates = ({ targetPath, externalScanTaskId }) => {
                             
                             <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-dashed border-slate-200 dark:border-slate-800">
                                 <Space size={8} className="flex-wrap">
-                                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mr-1 block">Selection Helper:</span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mr-1 block">Selection Helper:</span>
                                     <Button 
                                         size="small"
                                         onClick={() => autoSelectDuplicates("keepOldest")}
@@ -322,15 +404,15 @@ const Duplicates = ({ targetPath, externalScanTaskId }) => {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Paginated Duplicate Sets */}
                         <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-                            {(() => {
-                                const sorted = getSortedDuplicates();
-                                if (sorted.length === 0) {
-                                    return <p className="text-xs text-slate-400 text-center py-6">No duplicate sets match your search filter.</p>;
-                                }
-                                return sorted.map((dup, index) => (
+                            {paginatedDuplicates.length === 0 ? (
+                                <p className="text-xs text-slate-400 text-center py-6">No duplicate sets match your search filter.</p>
+                            ) : (
+                                paginatedDuplicates.map((dup, index) => (
                                     <div key={index} className="border border-slate-200 dark:border-slate-800 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-900/40">
-                                        <p className="text-[11px] font-mono text-slate-500 dark:text-slate-450 mb-2 truncate flex items-center gap-1.5">
+                                        <p className="text-[11px] font-mono text-slate-500 mb-2 truncate flex items-center gap-1.5">
                                             <Text code className="text-[9px] uppercase px-1 rounded bg-slate-200 dark:bg-slate-800 border-0 text-slate-600 dark:text-slate-400 font-black">MD5</Text>
                                             {dup.hash}
                                         </p>
@@ -354,9 +436,23 @@ const Duplicates = ({ targetPath, externalScanTaskId }) => {
                                             ))}
                                         </div>
                                     </div>
-                                ));
-                            })()}
+                                ))
+                            )}
                         </div>
+
+                        {/* Pagination Bar */}
+                        {sortedDuplicates.length > pageSize && (
+                            <div className="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+                                <Pagination 
+                                    current={currentPage}
+                                    pageSize={pageSize}
+                                    total={sortedDuplicates.length}
+                                    onChange={setCurrentPage}
+                                    showSizeChanger={false}
+                                    size="small"
+                                />
+                            </div>
+                        )}
                     </div>
                 </Card>
             )}
