@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.handler.ConcurrentWebSocketSessionDecorator;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.util.*;
@@ -18,11 +19,15 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private static final Set<WebSocketSession> sessions = new CopyOnWriteArraySet<>();
     private static final List<String> messageQueue = Collections.synchronizedList(new ArrayList<>());
+    private static final int SEND_TIME_LIMIT_MS = 10000;
+    private static final int SEND_BUFFER_SIZE_LIMIT = 512 * 1024; // 512 KB
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
-        sessions.add(session);
-        logger.debug("WebSocket connection established: {}", session.getId());
+        WebSocketSession concurrentSession = new ConcurrentWebSocketSessionDecorator(
+                session, SEND_TIME_LIMIT_MS, SEND_BUFFER_SIZE_LIMIT);
+        sessions.add(concurrentSession);
+        logger.debug("WebSocket connection established (decorated for concurrency): {}", session.getId());
     }
 
     @Override
@@ -32,16 +37,21 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-        sessions.remove(session);
+        sessions.removeIf(s -> s.getId().equals(session.getId()));
         logger.debug("WebSocket connection closed: {}", session.getId());
     }
 
     public static void broadcastMessage(String message) {
+        if (message == null || sessions.isEmpty()) return;
         List<WebSocketSession> closedSessions = new ArrayList<>();
+        TextMessage textMessage = new TextMessage(message);
+
         for (WebSocketSession session : sessions) {
             try {
                 if (session.isOpen()) {
-                    session.sendMessage(new TextMessage(message));
+                    synchronized (session) {
+                        session.sendMessage(textMessage);
+                    }
                 } else {
                     closedSessions.add(session);
                 }

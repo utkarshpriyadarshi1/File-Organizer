@@ -31,23 +31,34 @@ public class SqliteWriteQueueService {
                     Runnable firstTask = writeQueue.take();
                     java.util.List<Runnable> batch = new java.util.ArrayList<>();
                     batch.add(firstTask);
-                    writeQueue.drainTo(batch, 49); // Drain up to 49 more pending write tasks
+                    writeQueue.drainTo(batch, 99); // Drain up to 99 more pending write tasks (up to 100 total)
 
-                    transactionTemplate.execute(status -> {
+                    try {
+                        transactionTemplate.execute(status -> {
+                            for (Runnable task : batch) {
+                                task.run();
+                            }
+                            return null;
+                        });
+                    } catch (Exception batchEx) {
+                        logger.warn("Batched SQLite transaction failed. Retrying items individually: {}", batchEx.getMessage());
+                        // Fallback: run each task in its own isolated transaction so valid tasks still succeed
                         for (Runnable task : batch) {
                             try {
-                                task.run();
-                            } catch (Exception e) {
-                                logger.error("Error executing batched SQLite write item", e);
+                                transactionTemplate.execute(status -> {
+                                    task.run();
+                                    return null;
+                                });
+                            } catch (Exception itemEx) {
+                                logger.error("Individual fallback SQLite write failed", itemEx);
                             }
                         }
-                        return null;
-                    });
+                    }
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     break;
                 } catch (Exception e) {
-                    logger.error("Error executing SQLite database write batch", e);
+                    logger.error("Error executing SQLite database write loop", e);
                 }
             }
         }, "sqlite-write-consumer");
@@ -83,5 +94,9 @@ public class SqliteWriteQueueService {
             }
         });
         return future.get();
+    }
+
+    public int getQueueSize() {
+        return writeQueue.size();
     }
 }

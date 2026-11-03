@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -22,6 +23,7 @@ public class MaintenanceService {
 
     private final BackgroundTaskRepository backgroundTaskRepository;
     private final FilePurgeService filePurgeService;
+    private final SqliteWriteQueueService sqliteWriteQueueService;
 
     private static final String TEMP_DIR = System.getProperty("user.home") + "/AppData/Local/file-organizer/temp";
 
@@ -31,9 +33,8 @@ public class MaintenanceService {
 
         LocalDateTime threshold = LocalDateTime.now().minusDays(30);
 
-        List<BackgroundTask> oldTasks = backgroundTaskRepository.findAll().stream()
-                .filter(t -> t.getCompletedAt() != null && t.getCompletedAt().isBefore(threshold))
-                .toList();
+        List<BackgroundTask> oldTasks = backgroundTaskRepository.findByCompletedAtBefore(threshold);
+        List<BackgroundTask> tasksToUpdate = new ArrayList<>();
 
         for (BackgroundTask task : oldTasks) {
             if (task.getReportFilePath() != null) {
@@ -47,8 +48,14 @@ public class MaintenanceService {
                 }
                 
                 task.setReportFilePath(null);
-                backgroundTaskRepository.save(task);
+                tasksToUpdate.add(task);
             }
+        }
+
+        if (!tasksToUpdate.isEmpty()) {
+            sqliteWriteQueueService.submitWrite(() -> {
+                backgroundTaskRepository.saveAll(tasksToUpdate);
+            });
         }
 
         filePurgeService.purgeFolder(Paths.get(TEMP_DIR), null);

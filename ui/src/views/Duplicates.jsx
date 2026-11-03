@@ -159,7 +159,7 @@ const Duplicates = ({ targetPath, externalScanTaskId }) => {
         console.log(`[Duplicates] Preparing duplicate deletion task for files:`, selectedFiles);
         if (selectedFiles.length === 0) {
             console.warn("[Duplicates] Deletion request rejected because no files are selected.");
-            alert("No files selected for deletion.");
+            addToast("No files selected for deletion.", "warning");
             return;
         }
 

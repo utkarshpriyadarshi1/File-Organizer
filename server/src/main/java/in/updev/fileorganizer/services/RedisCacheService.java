@@ -12,8 +12,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class RedisCacheService {
     private static final Logger logger = LoggerFactory.getLogger(RedisCacheService.class);
+    private static final int MAX_FILE_CACHE_ENTRIES = 50000;
     
-    // In-memory cache storage replacing Redis
+    // In-memory cache storage replacing Redis with bounded size protection
     private final Map<Long, Map<String, String>> fileCache = new ConcurrentHashMap<>();
     private final Map<String, Set<String>> hashCache = new ConcurrentHashMap<>();
     private final Map<String, Set<String>> tagCache = new ConcurrentHashMap<>();
@@ -21,6 +22,18 @@ public class RedisCacheService {
     public void cacheFile(DbFile file) {
         if (file == null || file.getId() == null) return;
         try {
+            // Memory guard: prevent unbounded heap inflation
+            if (fileCache.size() >= MAX_FILE_CACHE_ENTRIES) {
+                logger.info("Cache entry limit reached ({}), clearing half of the in-memory cache", MAX_FILE_CACHE_ENTRIES);
+                int removed = 0;
+                var iterator = fileCache.keySet().iterator();
+                while (iterator.hasNext() && removed < MAX_FILE_CACHE_ENTRIES / 2) {
+                    iterator.next();
+                    iterator.remove();
+                    removed++;
+                }
+            }
+
             Map<String, String> fileData = new ConcurrentHashMap<>();
             fileData.put("id", String.valueOf(file.getId()));
             fileData.put("path", file.getPath() != null ? file.getPath() : "");
@@ -31,10 +44,14 @@ public class RedisCacheService {
             fileCache.put(file.getId(), fileData);
             logger.debug("Cached file ID locally: {}", file.getId());
             
-            if (file.getTags() != null) {
-                for (var tag : file.getTags()) {
-                    cacheFileTag(tag.getName(), file.getId());
+            try {
+                if (file.getTags() != null) {
+                    for (var tag : file.getTags()) {
+                        cacheFileTag(tag.getName(), file.getId());
+                    }
                 }
+            } catch (Exception ex) {
+                // Ignore lazy initialization if outside transactional persistence session
             }
         } catch (Exception e) {
             logger.warn("In-memory operation failed. Caching skipped for file ID: {}. Error: {}", file.getId(), e.getMessage());

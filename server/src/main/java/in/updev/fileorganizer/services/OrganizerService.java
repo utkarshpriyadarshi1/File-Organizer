@@ -4,10 +4,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -23,6 +26,7 @@ import in.updev.fileorganizer.repositories.FileReversalRepository;
 import in.updev.fileorganizer.repositories.IgnoreRuleRepository;
 import in.updev.fileorganizer.repositories.AppSettingRepository;
 import in.updev.fileorganizer.utils.FileUtils;
+import in.updev.fileorganizer.utils.FileUtils.FileEntry;
 import in.updev.fileorganizer.dto.DiskAnalyzerConfigDto;
 import in.updev.fileorganizer.dto.PatternGroupDto;
 import in.updev.fileorganizer.dto.CategoryConfigDto;
@@ -92,6 +96,9 @@ public class OrganizerService {
         List<OrganizeBatchRecord> copy = new ArrayList<>(batch);
         batch.clear();
         sqliteWriteQueueService.submitWrite(() -> {
+            List<DbFile> filesToSave = new ArrayList<>();
+            List<FileReversal> reversalsToSave = new ArrayList<>();
+
             for (OrganizeBatchRecord record : copy) {
                 DbFile dbFile = dbFileRepository.findByPath(record.oldPath)
                         .orElse(new DbFile());
@@ -106,20 +113,30 @@ public class OrganizerService {
                     dbFile.setCreatedAt(LocalDateTime.now());
                 }
 
-                DbFile savedFile = dbFileRepository.save(dbFile);
-                redisCacheService.cacheFile(savedFile);
-                auditLogService.logAction("FILE_ORGANIZED", savedFile,
-                        "Moved from " + record.oldPath + " to " + record.newPath);
-
-                // Register reversal log for undo action
-                fileReversalRepository.save(FileReversal.builder()
+                filesToSave.add(dbFile);
+                reversalsToSave.add(FileReversal.builder()
                         .taskId(taskId)
                         .operationType("MOVE")
                         .sourcePath(record.newPath)
                         .originalPath(record.oldPath)
                         .build());
             }
+
+            List<DbFile> savedFiles = dbFileRepository.saveAll(filesToSave);
+            fileReversalRepository.saveAll(reversalsToSave);
+
+            for (int i = 0; i < savedFiles.size(); i++) {
+                DbFile savedFile = savedFiles.get(i);
+                OrganizeBatchRecord record = copy.get(i);
+                redisCacheService.cacheFile(savedFile);
+                auditLogService.logAction("FILE_ORGANIZED", savedFile,
+                        "Moved from " + record.oldPath + " to " + record.newPath);
+            }
         });
+    }
+
+    public String organizeFiles(String sourceFolder, String destinationFolder, boolean dryRun) {
+        return organizeFiles(sourceFolder, destinationFolder, dryRun, null, null, false);
     }
 
     public String organizeFiles(String sourceFolder, String destinationFolder, boolean dryRun, String patternGroupName, String layoutPatternOverride, boolean cleanEmptyFolders) {
@@ -136,17 +153,19 @@ public class OrganizerService {
                             .map(rule -> rule.getPattern().toLowerCase())
                             .collect(Collectors.toList());
 
-                    List<Path> allFiles = FileUtils.getAllRegularFiles(sourcePath, ignoredPatterns, (file, exc) -> {
+                    // Gather file entries with metadata in a single filesystem pass
+                    List<FileEntry> allFiles = FileUtils.getAllRegularFileEntries(sourcePath, ignoredPatterns, (file, exc) -> {
                         Map<String, Object> errorItem = new HashMap<>();
                         errorItem.put("oldPath", file.toAbsolutePath().toString());
                         errorItem.put("failed", true);
                         errorItem.put("error", "Access Denied: " + exc.getMessage());
                         reporter.appendResult(errorItem);
-                    });
+                    }, reporter::isCancelled);
 
                     int total = allFiles.size();
                     int count = 0;
                     List<OrganizeBatchRecord> pendingBatch = new ArrayList<>();
+                    Set<Path> createdDirs = ConcurrentHashMap.newKeySet();
 
                     List<CategoryConfigDto> categories = new ArrayList<>();
                     try {
@@ -170,23 +189,29 @@ public class OrganizerService {
                         logger.error("Failed to parse disk analyzer config in organizer", e);
                     }
 
-                    for (Path file : allFiles) {
+                    // Pre-resolve layout pattern once outside loop
+                    String layoutPattern = (layoutPatternOverride != null && !layoutPatternOverride.trim().isEmpty())
+                            ? layoutPatternOverride
+                            : preferencesService.getPreferences().getFolderLayoutPattern();
+
+                    for (FileEntry entry : allFiles) {
                         if (reporter.isCancelled()) {
                             logger.info("Organize files task {} canceled at file loop.", taskId);
                             break;
                         }
                         reporter.checkPauseState();
 
+                        Path file = entry.getPath();
                         Map<String, Object> fileResult = new HashMap<>();
                         String oldPath = file.toAbsolutePath().toString();
                         fileResult.put("oldPath", oldPath);
                         fileResult.put("dryRun", dryRun);
 
                         try {
-                            String layoutPattern = layoutPatternOverride != null && !layoutPatternOverride.trim().isEmpty() 
-                                    ? layoutPatternOverride 
-                                    : preferencesService.getPreferences().getFolderLayoutPattern();
-                            Path targetDir = resolveTargetDirectory(file, layoutPattern, destPath, categories);
+                            long fileSize = entry.getSize();
+                            long lastModMillis = entry.getLastModifiedMillis();
+
+                            Path targetDir = resolveTargetDirectory(file, fileSize, lastModMillis, layoutPattern, destPath, categories);
                             Path targetPath = targetDir.resolve(file.getFileName());
 
                             String fileName = targetPath.getFileName().toString();
@@ -194,7 +219,6 @@ public class OrganizerService {
                             String ext = lastDot > 0 ? fileName.substring(lastDot + 1).toLowerCase() : "no_ext";
                             String fileType = getMimeType(file, ext);
                             String newPath = targetPath.toAbsolutePath().toString();
-                            long fileSize = Files.size(file);
 
                             if (dryRun) {
                                 if (!Files.isReadable(file) || !Files.isWritable(file)) {
@@ -208,8 +232,10 @@ public class OrganizerService {
                                     throw new java.nio.file.AccessDeniedException(checkDir.toString(), null, "Insufficient permissions to write to destination directory");
                                 }
                             } else {
-                                Files.createDirectories(targetDir);
-                                // Move file and verify integrity
+                                if (createdDirs.add(targetDir)) {
+                                    Files.createDirectories(targetDir);
+                                }
+                                // Fast secure move
                                 secureStorageService.secureMove(file, targetPath, false, null);
                             }
 
@@ -280,6 +306,18 @@ public class OrganizerService {
     }
 
     public Path resolveTargetDirectory(Path file, String pattern, Path destPath, List<CategoryConfigDto> categories) {
+        long size = 0L;
+        long lastMod = System.currentTimeMillis();
+        try {
+            size = Files.size(file);
+            lastMod = Files.getLastModifiedTime(file).toMillis();
+        } catch (Exception e) {
+            // ignore
+        }
+        return resolveTargetDirectory(file, size, lastMod, pattern, destPath, categories);
+    }
+
+    public Path resolveTargetDirectory(Path file, long fileSize, long lastModifiedMillis, String pattern, Path destPath, List<CategoryConfigDto> categories) {
         String fileName = file.getFileName().toString();
         int lastDot = fileName.lastIndexOf('.');
         String ext = lastDot > 0 ? fileName.substring(lastDot + 1).toLowerCase() : "no_ext";
@@ -287,8 +325,7 @@ public class OrganizerService {
 
         LocalDateTime lastModified;
         try {
-            java.nio.file.attribute.FileTime fileTime = Files.getLastModifiedTime(file);
-            lastModified = LocalDateTime.ofInstant(fileTime.toInstant(), java.time.ZoneId.systemDefault());
+            lastModified = LocalDateTime.ofInstant(Instant.ofEpochMilli(lastModifiedMillis), ZoneId.systemDefault());
         } catch (Exception e) {
             lastModified = LocalDateTime.now();
         }
@@ -306,17 +343,12 @@ public class OrganizerService {
             if (first >= 'A' && first <= 'Z') alpha = String.valueOf(first);
         }
 
-        String sizeCategory = "Unknown";
-        try {
-            long bytes = Files.size(file);
-            if (bytes < 1024 * 1024) sizeCategory = "01_Tiny";
-            else if (bytes < 10 * 1024 * 1024) sizeCategory = "02_Small";
-            else if (bytes < 100 * 1024 * 1024) sizeCategory = "03_Medium";
-            else if (bytes < 1024 * 1024 * 1024) sizeCategory = "04_Large";
-            else sizeCategory = "05_Huge";
-        } catch (Exception e) {
-            // ignore
-        }
+        String sizeCategory;
+        if (fileSize < 1024 * 1024) sizeCategory = "01_Tiny";
+        else if (fileSize < 10 * 1024 * 1024) sizeCategory = "02_Small";
+        else if (fileSize < 100 * 1024 * 1024) sizeCategory = "03_Medium";
+        else if (fileSize < 1024 * 1024 * 1024) sizeCategory = "04_Large";
+        else sizeCategory = "05_Huge";
 
         String category = "Others";
         for (CategoryConfigDto cat : categories) {

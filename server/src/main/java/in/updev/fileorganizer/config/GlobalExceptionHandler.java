@@ -2,6 +2,7 @@ package in.updev.fileorganizer.config;
 
 import in.updev.fileorganizer.entities.ErrorLog;
 import in.updev.fileorganizer.repositories.ErrorLogRepository;
+import in.updev.fileorganizer.services.SqliteWriteQueueService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,7 @@ public class GlobalExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
     private final ErrorLogRepository errorLogRepository;
+    private final SqliteWriteQueueService sqliteWriteQueueService;
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleAllExceptions(Exception ex) {
@@ -29,7 +31,13 @@ public class GlobalExceptionHandler {
         ex.printStackTrace(pw);
         
         ErrorLog errorLog = new ErrorLog("BACKEND_API", ex.getMessage() + "\n" + sw.toString());
-        errorLogRepository.save(errorLog);
+        sqliteWriteQueueService.submitWrite(() -> {
+            try {
+                errorLogRepository.save(errorLog);
+            } catch (Exception e) {
+                logger.error("Failed to persist unhandled API exception log: {}", e.getMessage());
+            }
+        });
         
         return new ResponseEntity<>("An internal error occurred. It has been logged.", HttpStatus.INTERNAL_SERVER_ERROR);
     }

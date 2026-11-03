@@ -65,7 +65,7 @@ const Overview = ({ setActiveTab }) => {
 
     const runDirectoryAnalysis = async () => {
         if (!analyzerPath) {
-            alert("Please select a directory first.");
+            addToast("Please select a directory first.", "warning");
             return;
         }
         console.log(`[Overview] Starting analysis on folder: "${analyzerPath}"`);

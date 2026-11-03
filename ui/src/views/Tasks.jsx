@@ -44,7 +44,7 @@ import {
 const { Text } = Typography;
 
 const Tasks = () => {
-    const { cancelTasksBulk, activeTasks, syncActiveTasks } = useTasks();
+    const { cancelTasksBulk, activeTasks, syncActiveTasks, addToast } = useTasks();
     const activeList = Object.values(activeTasks || {});
     const [selectedTasks, setSelectedTasks] = useState([]);
     const [activeFilter, setActiveFilter] = useState("ALL");
@@ -107,7 +107,7 @@ const Tasks = () => {
 
     const handleBulkCancel = async () => {
         if (selectedTasks.length === 0) {
-            alert("No tasks selected.");
+            addToast("No tasks selected.", "warning");
             return;
         }
         console.log("[Tasks] Bulk cancelling selected tasks:", selectedTasks);
@@ -138,7 +138,7 @@ const Tasks = () => {
 
     const handleBulkDeleteHistory = async () => {
         if (selectedHistoryTasks.length === 0) {
-            alert("No historical tasks selected.");
+            addToast("No historical tasks selected.", "warning");
             return;
         }
         
@@ -150,9 +150,10 @@ const Tasks = () => {
             await axios.post("http://localhost:8080/api/tasks/delete", { taskIds: selectedHistoryTasks });
             setHistory(prev => prev.filter(t => !selectedHistoryTasks.includes(t.id)));
             setSelectedHistoryTasks([]);
+            addToast("Historical tasks deleted successfully.", "success");
         } catch (e) {
             console.error("[Tasks] Failed to delete historical tasks:", e);
-            alert("Failed to delete tasks.");
+            addToast("Failed to delete tasks.", "error");
         }
     };
 
@@ -164,10 +165,11 @@ const Tasks = () => {
                 console.log("[Tasks] Successfully restarted task. New ID:", res.data);
                 syncActiveTasks();
                 setRestartingTaskId(null);
+                addToast("Task restarted successfully!", "success");
             })
             .catch(err => {
                 console.error("[Tasks] Failed to restart task:", err);
-                alert("Failed to restart task.");
+                addToast("Failed to restart task.", "error");
                 setRestartingTaskId(null);
             });
     };

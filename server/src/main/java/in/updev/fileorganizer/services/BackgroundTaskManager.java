@@ -16,7 +16,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -38,7 +40,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class BackgroundTaskManager {
     private static final Logger logger = LoggerFactory.getLogger(BackgroundTaskManager.class);
-    private static final int MAX_CONCURRENT_TASKS = 2;
+    private static final int MAX_CONCURRENT_TASKS = Math.max(2, Math.min(4, Runtime.getRuntime().availableProcessors()));
 
     private final BackgroundTaskRepository backgroundTaskRepository;
     private final FileReversalRepository fileReversalRepository;
@@ -78,6 +80,20 @@ public class BackgroundTaskManager {
         boolean isCancelled();
 
         void checkPauseState() throws InterruptedException;
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        logger.info("Shutting down BackgroundTaskManager executor service...");
+        executorService.shutdown();
+        try {
+            if (!executorService.awaitTermination(3, TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 
     public String submitTask(TaskType taskType, TaskAction action) {

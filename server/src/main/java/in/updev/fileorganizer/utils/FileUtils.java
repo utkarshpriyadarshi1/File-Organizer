@@ -13,6 +13,30 @@ import java.util.function.BiConsumer;
 public class FileUtils {
     private static final Logger logger = LoggerFactory.getLogger(FileUtils.class);
 
+    public static class FileEntry {
+        private final Path path;
+        private final long size;
+        private final long lastModifiedMillis;
+
+        public FileEntry(Path path, long size, long lastModifiedMillis) {
+            this.path = path;
+            this.size = size;
+            this.lastModifiedMillis = lastModifiedMillis;
+        }
+
+        public Path getPath() {
+            return path;
+        }
+
+        public long getSize() {
+            return size;
+        }
+
+        public long getLastModifiedMillis() {
+            return lastModifiedMillis;
+        }
+    }
+
     public static List<Path> getAllRegularFiles(Path sourceDir, BiConsumer<Path, IOException> errorHandler) throws IOException {
         return getAllRegularFiles(sourceDir, new ArrayList<>(), errorHandler, () -> false);
     }
@@ -26,7 +50,16 @@ public class FileUtils {
     }
 
     public static List<Path> getAllRegularFiles(Path sourceDir, List<String> extraIgnoredDirs, BiConsumer<Path, IOException> errorHandler, java.util.function.Supplier<Boolean> cancelChecker) throws IOException {
-        List<Path> allFiles = new ArrayList<>();
+        List<Path> paths = new ArrayList<>();
+        List<FileEntry> entries = getAllRegularFileEntries(sourceDir, extraIgnoredDirs, errorHandler, cancelChecker);
+        for (FileEntry entry : entries) {
+            paths.add(entry.getPath());
+        }
+        return paths;
+    }
+
+    public static List<FileEntry> getAllRegularFileEntries(Path sourceDir, List<String> extraIgnoredDirs, BiConsumer<Path, IOException> errorHandler, java.util.function.Supplier<Boolean> cancelChecker) throws IOException {
+        List<FileEntry> allFiles = new ArrayList<>();
         if (!Files.exists(sourceDir)) {
             return allFiles;
         }
@@ -66,7 +99,7 @@ public class FileUtils {
                     return FileVisitResult.TERMINATE;
                 }
                 if (attrs.isRegularFile()) {
-                    allFiles.add(file);
+                    allFiles.add(new FileEntry(file, attrs.size(), attrs.lastModifiedTime().toMillis()));
                 }
                 return FileVisitResult.CONTINUE;
             }

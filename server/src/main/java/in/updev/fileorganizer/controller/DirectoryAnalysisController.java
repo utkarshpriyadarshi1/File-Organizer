@@ -6,6 +6,7 @@ import in.updev.fileorganizer.enums.TaskType;
 import in.updev.fileorganizer.repositories.AnalysisFileRecordRepository;
 import in.updev.fileorganizer.repositories.AppSettingRepository;
 import in.updev.fileorganizer.services.BackgroundTaskManager;
+import in.updev.fileorganizer.services.SqliteWriteQueueService;
 import in.updev.fileorganizer.dto.DiskAnalyzerConfigDto;
 import in.updev.fileorganizer.dto.PatternGroupDto;
 import in.updev.fileorganizer.dto.CategoryConfigDto;
@@ -43,6 +44,7 @@ public class DirectoryAnalysisController {
     private final BackgroundTaskManager backgroundTaskManager;
     private final AnalysisFileRecordRepository fileRecordRepository;
     private final AppSettingRepository appSettingRepository;
+    private final SqliteWriteQueueService sqliteWriteQueueService;
     private final ObjectMapper objectMapper;
 
     private static final AntPathMatcher pathMatcher = new AntPathMatcher();
@@ -166,7 +168,7 @@ public class DirectoryAnalysisController {
 
     // Keep the old synchronous endpoint just in case, though the UI will use /analyze now
     @GetMapping("/directory")
-    public AnalysisResponse analyzeDirectory(@RequestParam String folderPath) throws IOException {
+    public AnalysisResponse analyzeDirectory(@RequestParam String folderPath, @RequestParam(required = false) String patternGroup) throws IOException {
         logger.info("Request received to analyze directory sizes synchronously: {}", folderPath);
         Path rootPath = Paths.get(folderPath);
         if (!Files.exists(rootPath) || !Files.isDirectory(rootPath)) {
@@ -177,7 +179,7 @@ public class DirectoryAnalysisController {
         AnalysisResponse response = new AnalysisResponse();
         response.setFolderPath(rootPath.toAbsolutePath().toString());
 
-        String patternGroupName = payload.get("patternGroup");
+        String patternGroupName = patternGroup;
         DiskAnalyzerConfigDto config = getDiskAnalyzerConfig();
         PatternGroupDto activeGroup = getActiveGroup(config, patternGroupName);
         Map<String, CategoryStats> catMap = response.getCategories();
@@ -192,8 +194,10 @@ public class DirectoryAnalysisController {
                     response.setTotalSize(response.getTotalSize() + size);
                     String matchedCat = getFileCategory(file.getFileName().toString().toLowerCase(), activeGroup);
                     CategoryStats stats = catMap.get(matchedCat);
-                    stats.setFileCount(stats.getFileCount() + 1);
-                    stats.setTotalSize(stats.getTotalSize() + size);
+                    if (stats != null) {
+                        stats.setFileCount(stats.getFileCount() + 1);
+                        stats.setTotalSize(stats.getTotalSize() + size);
+                    }
                 }
                 return FileVisitResult.CONTINUE;
             }
@@ -265,7 +269,7 @@ public class DirectoryAnalysisController {
 
                             CategoryStats stats = catMap.computeIfAbsent(matchedCat, k -> {
                                 CategoryStats s = new CategoryStats();
-                                s.setCategoryName(k);
+                                s.setCategory(k);
                                 s.setFileCount(0);
                                 s.setTotalSize(0L);
                                 return s;
@@ -282,8 +286,7 @@ public class DirectoryAnalysisController {
                             batch.add(record);
 
                             if (batch.size() >= BATCH_SIZE) {
-                                fileRecordRepository.saveAll(batch);
-                                batch.clear();
+                                flushAnalysisBatch(batch);
                                 reporter.reportProgress(0.0, "Analyzed " + response.getTotalFiles() + " files...");
                             }
                         }
@@ -297,8 +300,7 @@ public class DirectoryAnalysisController {
                 });
                 
                 if (!batch.isEmpty()) {
-                    fileRecordRepository.saveAll(batch);
-                    batch.clear();
+                    flushAnalysisBatch(batch);
                 }
 
                 if (!reporter.isCancelled()) {
@@ -313,6 +315,20 @@ public class DirectoryAnalysisController {
                 throw new RuntimeException("Disk analysis failed", e);
             }
         });
+    }
+
+    private void flushAnalysisBatch(List<AnalysisFileRecord> batch) {
+        if (batch.isEmpty()) return;
+        List<AnalysisFileRecord> copy = new ArrayList<>(batch);
+        batch.clear();
+        try {
+            sqliteWriteQueueService.executeWrite(() -> {
+                fileRecordRepository.saveAll(copy);
+                return null;
+            });
+        } catch (Exception e) {
+            logger.error("Failed to persist batched analysis file records", e);
+        }
     }
 
     @GetMapping("/{taskId}/files")
@@ -397,7 +413,6 @@ public class DirectoryAnalysisController {
     private boolean matchesPattern(String filename, List<String> patterns) {
         if (patterns == null) return false;
         for (String pattern : patterns) {
-            // Case-insensitive match or match directly
             if (pathMatcher.match(pattern.toLowerCase(), filename.toLowerCase())) {
                 return true;
             }

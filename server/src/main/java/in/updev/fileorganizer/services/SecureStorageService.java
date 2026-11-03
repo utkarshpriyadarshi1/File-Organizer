@@ -11,11 +11,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
+import java.util.HexFormat;
 
 @Service
 @RequiredArgsConstructor
 public class SecureStorageService {
     private static final Logger logger = LoggerFactory.getLogger(SecureStorageService.class);
+    private static final int BUFFER_SIZE = 65536; // 64 KB for fast streaming I/O
     private final EncryptionService encryptionService;
 
     public void secureCopy(Path source, Path destination, boolean encrypt, String password) throws Exception {
@@ -43,30 +45,41 @@ public class SecureStorageService {
             Files.delete(source);
             logger.info("Moved and encrypted file from {} to {}", source, destination);
         } else {
-            String sourceHash = getSha256(source);
-            Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
-            String destHash = getSha256(destination);
-            if (!sourceHash.equals(destHash)) {
-                throw new IOException("Integrity check failed during move: Destination hash does not match source hash.");
+            boolean sameStore = false;
+            try {
+                Path destParent = destination.getParent() != null ? destination.getParent() : destination;
+                sameStore = Files.getFileStore(source).equals(Files.getFileStore(destParent));
+            } catch (Exception e) {
+                // If FileStore comparison fails, default to conservative behavior
+                sameStore = false;
             }
-            logger.info("Moved file from {} to {}", source, destination);
+
+            if (sameStore) {
+                // Same volume move: atomic rename managed by filesystem kernel without data copying
+                Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
+                logger.debug("Fast atomic moved file from {} to {}", source, destination);
+            } else {
+                // Cross-volume move: copy + delete with SHA-256 data validation
+                String sourceHash = getSha256(source);
+                Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
+                String destHash = getSha256(destination);
+                if (!sourceHash.equals(destHash)) {
+                    throw new IOException("Integrity check failed during cross-volume move: Destination hash does not match source hash.");
+                }
+                logger.info("Cross-volume moved and verified file from {} to {}", source, destination);
+            }
         }
     }
 
     public String getSha256(Path file) throws Exception {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         try (FileInputStream fis = new FileInputStream(file.toFile())) {
-            byte[] byteArray = new byte[16384];
+            byte[] byteArray = new byte[BUFFER_SIZE];
             int bytesRead;
             while ((bytesRead = fis.read(byteArray)) != -1) {
                 digest.update(byteArray, 0, bytesRead);
             }
-            byte[] hashBytes = digest.digest();
-            StringBuilder sb = new StringBuilder();
-            for (byte b : hashBytes) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
+            return HexFormat.of().formatHex(digest.digest());
         }
     }
 }

@@ -313,7 +313,7 @@ const FolderSelectorDialog = ({ config }) => {
                                     return (
                                         <button
                                             key={folder.path}
-                                            onClick={() => isAccessible ? navigateTo(folder.path) : alert("Access Denied: This folder is system-protected and cannot be opened. To access it, try running the application as Administrator, or choose a different user directory.")}
+                                            onClick={() => isAccessible ? navigateTo(folder.path) : setError("Access Denied: This folder is system-protected and cannot be opened. To access it, try running the application as Administrator, or choose a different user directory.")}
                                             className={`w-full flex items-center justify-between p-3 rounded-2xl border border-transparent hover:border-slate-100 transition-all text-left group active:scale-[0.99] cursor-pointer ${
                                                 isAccessible ? "hover:bg-slate-50" : "opacity-50 cursor-not-allowed hover:bg-rose-50/20"
                                             }`}

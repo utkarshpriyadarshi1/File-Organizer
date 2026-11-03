@@ -22,6 +22,7 @@ public class MetadataExtractionService {
 
     private final DbFileRepository dbFileRepository;
     private final TagRepository tagRepository;
+    private final SqliteWriteQueueService sqliteWriteQueueService;
 
     public DbFile extractAndSaveMetadata(Long fileId) {
         Optional<DbFile> optDbFile = dbFileRepository.findById(fileId);
@@ -39,12 +40,17 @@ public class MetadataExtractionService {
             if (!actualFile.exists()) {
                 throw new IllegalArgumentException("Physical file not found: " + path);
             }
-            dbFile = new DbFile();
-            dbFile.setPath(path);
-            dbFile.setName(actualFile.getName());
-            dbFile.setSize(actualFile.length());
-            dbFile.setCreatedAt(java.time.LocalDateTime.now());
-            dbFile = dbFileRepository.save(dbFile);
+            DbFile newFile = new DbFile();
+            newFile.setPath(path);
+            newFile.setName(actualFile.getName());
+            newFile.setSize(actualFile.length());
+            newFile.setCreatedAt(java.time.LocalDateTime.now());
+            try {
+                dbFile = sqliteWriteQueueService.executeWrite(() -> dbFileRepository.save(newFile));
+            } catch (Exception e) {
+                logger.error("Failed to save new file entry for metadata extraction: {}", path, e);
+                dbFile = newFile;
+            }
         } else {
             dbFile = optDbFile.get();
         }
@@ -70,16 +76,13 @@ public class MetadataExtractionService {
                     if (desc != null && !desc.trim().isEmpty()) {
                         String metadataKey = directory.getName() + " - " + tagName;
                         
-                        // We can append this to the file's description
                         descriptionBuilder.append(metadataKey).append(": ").append(desc).append("\n");
 
-                        // We can also create a tag for important metadata like Year or Artist
                         if (tagName.equalsIgnoreCase("Expected File Name Extension") || 
                             tagName.equalsIgnoreCase("Detected File Type Name")) {
                             continue;
                         }
                         
-                        // E.g., tagging by Year
                         if (tagName.equalsIgnoreCase("Date/Time Original") || tagName.equalsIgnoreCase("Year")) {
                             if (desc.length() >= 4) {
                                 String year = desc.substring(0, 4);
@@ -87,7 +90,6 @@ public class MetadataExtractionService {
                             }
                         }
 
-                        // E.g., Audio Artist
                         if (tagName.equalsIgnoreCase("Artist") || tagName.equalsIgnoreCase("Lead performer(s)/Soloist(s)")) {
                             addTagToFile(dbFile, "Artist: " + desc);
                         }
@@ -101,24 +103,28 @@ public class MetadataExtractionService {
                 dbFile.setDescription(dbFile.getDescription() + "\n" + descriptionBuilder.toString());
             }
 
-            return dbFileRepository.save(dbFile);
+            return sqliteWriteQueueService.executeWrite(() -> dbFileRepository.save(dbFile));
 
         } catch (Exception e) {
             logger.warn("Could not extract metadata for file {}: {}", actualFile.getName(), e.getMessage());
-            throw new RuntimeException("Failed to extract metadata: " + e.getMessage());
+            throw new RuntimeException("Failed to extract metadata: " + e.getMessage(), e);
         }
     }
 
     private void addTagToFile(DbFile dbFile, String tagName) {
-        Optional<in.updev.fileorganizer.entities.Tag> existingTag = tagRepository.findByName(tagName);
-        in.updev.fileorganizer.entities.Tag tagToSave;
-        if (existingTag.isPresent()) {
-            tagToSave = existingTag.get();
-        } else {
-            in.updev.fileorganizer.entities.Tag newTag = new in.updev.fileorganizer.entities.Tag();
-            newTag.setName(tagName);
-            tagToSave = tagRepository.save(newTag);
+        try {
+            Optional<in.updev.fileorganizer.entities.Tag> existingTag = tagRepository.findByName(tagName);
+            in.updev.fileorganizer.entities.Tag tagToSave;
+            if (existingTag.isPresent()) {
+                tagToSave = existingTag.get();
+            } else {
+                in.updev.fileorganizer.entities.Tag newTag = new in.updev.fileorganizer.entities.Tag();
+                newTag.setName(tagName);
+                tagToSave = sqliteWriteQueueService.executeWrite(() -> tagRepository.save(newTag));
+            }
+            dbFile.getTags().add(tagToSave);
+        } catch (Exception e) {
+            logger.error("Failed to add tag to file: {}", tagName, e);
         }
-        dbFile.getTags().add(tagToSave);
     }
 }

@@ -89,7 +89,7 @@ public class SettingsController {
     }
 
     @PostMapping("/default-path")
-    public Map<String, String> setDefaultPathSetting(@RequestBody Map<String, String> payload) {
+    public Map<String, String> setDefaultPathSetting(@RequestBody Map<String, String> payload) throws Exception {
         String path = payload.get("path");
         logger.info("Request received to set default path setting: {}", path);
         if (path == null || path.trim().isEmpty()) {
@@ -97,11 +97,14 @@ public class SettingsController {
         }
 
         String targetPath = path.trim();
-        AppSetting setting = appSettingRepository.findByKey("default_path")
-                .orElse(new AppSetting());
-        setting.setKey("default_path");
-        setting.setValue(targetPath);
-        appSettingRepository.save(setting);
+        sqliteWriteQueueService.executeWrite(() -> {
+            AppSetting setting = appSettingRepository.findByKey("default_path")
+                    .orElse(new AppSetting());
+            setting.setKey("default_path");
+            setting.setValue(targetPath);
+            appSettingRepository.save(setting);
+            return null;
+        });
 
         Map<String, String> response = new HashMap<>();
         response.put("defaultPath", targetPath);
@@ -120,7 +123,6 @@ public class SettingsController {
             logger.error("Failed to parse disk analyzer config", e);
         }
         
-        // Return default configuration if none exists
         DiskAnalyzerConfigDto defaultConfig = new DiskAnalyzerConfigDto();
         List<CategoryConfigDto> cats = new ArrayList<>();
         cats.add(new CategoryConfigDto("Images", List.of("*.jpg", "*.jpeg", "*.png", "*.gif", "*.bmp", "*.webp", "*.svg", "*.tiff")));
@@ -138,10 +140,13 @@ public class SettingsController {
         logger.info("Request received to set disk analyzer config");
         try {
             String json = objectMapper.writeValueAsString(config);
-            AppSetting setting = appSettingRepository.findByKey("disk_analyzer_config").orElse(new AppSetting());
-            setting.setKey("disk_analyzer_config");
-            setting.setValue(json);
-            appSettingRepository.save(setting);
+            sqliteWriteQueueService.executeWrite(() -> {
+                AppSetting setting = appSettingRepository.findByKey("disk_analyzer_config").orElse(new AppSetting());
+                setting.setKey("disk_analyzer_config");
+                setting.setValue(json);
+                appSettingRepository.save(setting);
+                return null;
+            });
             return config;
         } catch (Exception e) {
             logger.error("Failed to save disk analyzer config", e);
@@ -168,10 +173,13 @@ public class SettingsController {
         logger.info("Request received to set performance config");
         try {
             String json = objectMapper.writeValueAsString(config);
-            AppSetting setting = appSettingRepository.findByKey("performance_config").orElse(new AppSetting());
-            setting.setKey("performance_config");
-            setting.setValue(json);
-            appSettingRepository.save(setting);
+            sqliteWriteQueueService.executeWrite(() -> {
+                AppSetting setting = appSettingRepository.findByKey("performance_config").orElse(new AppSetting());
+                setting.setKey("performance_config");
+                setting.setValue(json);
+                appSettingRepository.save(setting);
+                return null;
+            });
             return config;
         } catch (Exception e) {
             logger.error("Failed to save performance config", e);
@@ -186,7 +194,7 @@ public class SettingsController {
     }
 
     @PostMapping("/ignore-rules")
-    public IgnoreRule addIgnoreRule(@RequestBody Map<String, String> payload) {
+    public IgnoreRule addIgnoreRule(@RequestBody Map<String, String> payload) throws Exception {
         String pattern = payload.get("pattern");
         logger.info("Request received to add ignore rule: {}", pattern);
         if (pattern == null || pattern.trim().isEmpty()) {
@@ -196,13 +204,18 @@ public class SettingsController {
         if (existing.isPresent()) {
             return existing.get();
         }
-        return ignoreRuleRepository.save(IgnoreRule.builder().pattern(pattern.trim()).build());
+        return sqliteWriteQueueService.executeWrite(() -> 
+            ignoreRuleRepository.save(IgnoreRule.builder().pattern(pattern.trim()).build())
+        );
     }
 
     @DeleteMapping("/ignore-rules/{id}")
-    public String deleteIgnoreRule(@PathVariable Long id) {
+    public String deleteIgnoreRule(@PathVariable Long id) throws Exception {
         logger.info("Request received to delete ignore rule ID: {}", id);
-        ignoreRuleRepository.deleteById(id);
+        sqliteWriteQueueService.executeWrite(() -> {
+            ignoreRuleRepository.deleteById(id);
+            return null;
+        });
         return "Ignore rule deleted.";
     }
 

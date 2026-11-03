@@ -4,6 +4,7 @@ import in.updev.fileorganizer.entities.BackgroundTask;
 import in.updev.fileorganizer.repositories.BackgroundTaskRepository;
 import in.updev.fileorganizer.services.BackgroundTaskManager;
 import in.updev.fileorganizer.services.ReportSerializationService;
+import in.updev.fileorganizer.services.SqliteWriteQueueService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +23,7 @@ public class TaskController {
     private final BackgroundTaskManager backgroundTaskManager;
     private final BackgroundTaskRepository backgroundTaskRepository;
     private final ReportSerializationService reportSerializationService;
+    private final SqliteWriteQueueService sqliteWriteQueueService;
     private final in.updev.fileorganizer.services.TaskRestartService taskRestartService;
 
     @GetMapping("/active")
@@ -93,30 +95,36 @@ public class TaskController {
     }
 
     @PostMapping("/delete")
-    public String deleteTasksBulk(@RequestBody Map<String, List<String>> payload) {
+    public String deleteTasksBulk(@RequestBody Map<String, List<String>> payload) throws Exception {
         List<String> taskIds = payload.get("taskIds");
         logger.info("Received request to delete tasks in bulk. Task IDs: {}", taskIds);
-        if (taskIds != null) {
-            for (String id : taskIds) {
-                backgroundTaskRepository.deleteById(id);
-            }
+        if (taskIds != null && !taskIds.isEmpty()) {
+            sqliteWriteQueueService.executeWrite(() -> {
+                for (String id : taskIds) {
+                    backgroundTaskRepository.deleteById(id);
+                }
+                return null;
+            });
             logger.info("Deleted {} historical tasks", taskIds.size());
         }
         return "Tasks deleted.";
     }
 
     @DeleteMapping("/history")
-    public String clearAllHistory() {
+    public String clearAllHistory() throws Exception {
         logger.info("Received request to clear all task history");
-        backgroundTaskRepository.deleteAll();
+        sqliteWriteQueueService.executeWrite(() -> {
+            backgroundTaskRepository.deleteAll();
+            return null;
+        });
         logger.info("Successfully cleared all historical tasks");
         return "All history cleared.";
     }
 
     @PostMapping("/{id}/action")
-    @SuppressWarnings("unchecked")
     public String executeAction(@PathVariable String id, @RequestBody Map<String, Object> payload) {
         String actionType = (String) payload.get("actionType");
+        @SuppressWarnings("unchecked")
         List<String> targetPaths = (List<String>) payload.get("targetPaths");
         logger.info("Received request to execute reversal action. Task ID: {}, Action Type: {}, Target Paths count: {}", 
                 id, actionType, (targetPaths != null ? targetPaths.size() : 0));
@@ -138,4 +146,3 @@ public class TaskController {
         }
     }
 }
-

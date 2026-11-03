@@ -8,6 +8,8 @@ import in.updev.fileorganizer.entities.ErrorLog;
 import in.updev.fileorganizer.repositories.ErrorLogRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -17,10 +19,12 @@ import java.time.LocalDateTime;
 @Service
 @RequiredArgsConstructor
 public class TelemetryService {
+    private static final Logger logger = LoggerFactory.getLogger(TelemetryService.class);
 
     private final BackgroundTaskRepository taskRepository;
     private final DbFileRepository fileRepository;
     private final ErrorLogRepository errorLogRepository;
+    private final SqliteWriteQueueService sqliteWriteQueueService;
     
     private final LocalDateTime serverStartTime = LocalDateTime.now();
 
@@ -34,7 +38,7 @@ public class TelemetryService {
         long appCrashes = errorLogRepository.count();
         
         // Calculate average execution time
-        List<BackgroundTask> completed = taskRepository.findByStatusIn(java.util.List.of(TaskStatus.COMPLETED));
+        List<BackgroundTask> completed = taskRepository.findByStatusIn(List.of(TaskStatus.COMPLETED));
         long totalExecutionTime = 0;
         long tasksWithTime = 0;
         for (BackgroundTask task : completed) {
@@ -62,7 +66,13 @@ public class TelemetryService {
         String stackTrace = payload.getOrDefault("stackTrace", "");
         
         ErrorLog errorLog = new ErrorLog("FRONTEND_UI", errorMsg + "\n\nStack:\n" + stackTrace);
-        errorLogRepository.save(errorLog);
+        sqliteWriteQueueService.submitWrite(() -> {
+            try {
+                errorLogRepository.save(errorLog);
+            } catch (Exception e) {
+                logger.error("Failed to save frontend crash report to SQLite", e);
+            }
+        });
     }
     
     public Map<String, Object> getHeartbeat() {

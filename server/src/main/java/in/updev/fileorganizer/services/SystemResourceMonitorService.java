@@ -52,9 +52,10 @@ public class SystemResourceMonitorService {
             reason = String.format("Low Memory (Free: %d MB)", freeMemoryMb);
         }
 
-        // 2. Check Disk Space (Assume primary drive is where app runs, or generic root)
+        // 2. Check Disk Space (cross-platform volume root detection)
         if (!shouldPause) {
-            File root = new File("/");
+            File workingDir = new File(System.getProperty("user.dir", "."));
+            File root = workingDir.toPath().getRoot() != null ? workingDir.toPath().getRoot().toFile() : workingDir;
             long freeSpaceMb = root.getUsableSpace() / (1024 * 1024);
             if (freeSpaceMb < MIN_FREE_DISK_SPACE_MB) {
                 shouldPause = true;

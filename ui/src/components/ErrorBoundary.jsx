@@ -4,12 +4,14 @@ import { Button, Typography, Space, Card } from './common';
 import { BugOutlined, CopyOutlined, GithubOutlined, ReloadOutlined } from '@ant-design/icons';
 import { PageWrapper } from './wrappers';
 
+import { message } from 'antd';
+
 const { Title, Text, Paragraph } = Typography;
 
 class ErrorBoundary extends React.Component {
     constructor(props) {
         super(props);
-        this.state = { hasError: false, error: null, errorInfo: null };
+        this.state = { hasError: false, error: null, errorInfo: null, copied: false };
     }
 
     static getDerivedStateFromError(error) {
@@ -37,7 +39,10 @@ class ErrorBoundary extends React.Component {
     handleCopyReport = () => {
         const report = `### App Crash Report\n\n**Error:**\n\`\`\`text\n${this.state.error?.toString()}\n\`\`\`\n\n**Component Stack:**\n\`\`\`text\n${this.state.errorInfo?.componentStack}\n\`\`\`\n\n**App Version:** 1.0.0 (Local Build)`;
         navigator.clipboard.writeText(report).then(() => {
-            alert("Crash report copied to clipboard!");
+            message.success("Crash report copied to clipboard!");
+            this.setState({ copied: true });
+        }).catch(() => {
+            message.error("Failed to copy report to clipboard.");
         });
     }
 

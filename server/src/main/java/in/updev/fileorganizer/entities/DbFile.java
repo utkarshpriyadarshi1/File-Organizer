@@ -2,14 +2,17 @@ package in.updev.fileorganizer.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.LocalDateTime;
-import java.util.Set;
+import org.hibernate.annotations.BatchSize;
 
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 import java.io.Serializable;
 
 @Entity
 @Table(name = "files", indexes = {
-    @Index(name = "idx_dbfile_path", columnList = "path")
+    @Index(name = "idx_dbfile_path", columnList = "path"),
+    @Index(name = "idx_dbfile_active_path", columnList = "is_active, path")
 })
 @Getter
 @Setter
@@ -18,6 +21,7 @@ import java.io.Serializable;
 @Builder
 public class DbFile implements Serializable {
     private static final long serialVersionUID = 1L;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -56,11 +60,13 @@ public class DbFile implements Serializable {
     @Builder.Default
     private Boolean isActive = true;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
+    @BatchSize(size = 50)
     @JoinTable(
         name = "file_tags",
         joinColumns = @JoinColumn(name = "file_id"),
         inverseJoinColumns = @JoinColumn(name = "tag_id")
     )
-    private Set<Tag> tags;
+    @Builder.Default
+    private Set<Tag> tags = new HashSet<>();
 }

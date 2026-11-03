@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -37,6 +38,18 @@ public class WorkspaceExplorerController {
         private Long size;
         private String modified;
         private List<TreeNode> children;
+    }
+
+    private static class FileVisitItem {
+        final Path file;
+        final long size;
+        final Instant modifiedInstant;
+
+        FileVisitItem(Path file, long size, Instant modifiedInstant) {
+            this.file = file;
+            this.size = size;
+            this.modifiedInstant = modifiedInstant;
+        }
     }
 
     @GetMapping("/explorer")
@@ -147,7 +160,7 @@ public class WorkspaceExplorerController {
                 .children(new ArrayList<>())
                 .build();
 
-        List<Path> allFiles = new ArrayList<>();
+        List<FileVisitItem> allFiles = new ArrayList<>();
         Files.walkFileTree(rootPath, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
@@ -161,13 +174,14 @@ public class WorkspaceExplorerController {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                 if (attrs.isRegularFile()) {
-                    allFiles.add(file);
+                    allFiles.add(new FileVisitItem(file, attrs.size(), attrs.lastModifiedTime().toInstant()));
                 }
                 return FileVisitResult.CONTINUE;
             }
         });
 
-        for (Path file : allFiles) {
+        for (FileVisitItem item : allFiles) {
+            Path file = item.file;
             String fileName = file.getFileName().toString();
             int lastDot = fileName.lastIndexOf('.');
             String ext = lastDot > 0 ? fileName.substring(lastDot + 1).toLowerCase() : "no_ext";
@@ -180,11 +194,11 @@ public class WorkspaceExplorerController {
             }
             String fileType = probedType != null ? probedType : "unknown";
 
-            String lastModified = Files.getLastModifiedTime(file).toString();
-            String yearMonth = lastModified.substring(0, Math.min(7, lastModified.length()));
-            String year = lastModified.substring(0, Math.min(4, lastModified.length()));
-            String month = lastModified.length() > 7 ? lastModified.substring(5, 7) : "01";
-            String day = lastModified.length() > 10 ? lastModified.substring(8, 10) : "01";
+            LocalDateTime ldt = LocalDateTime.ofInstant(item.modifiedInstant, ZoneId.systemDefault());
+            String year = String.format("%04d", ldt.getYear());
+            String month = String.format("%02d", ldt.getMonthValue());
+            String day = String.format("%02d", ldt.getDayOfMonth());
+            String yearMonth = year + "-" + month;
 
             String resolvedLayout = pattern
                     .replace("{fileType}", fileType)
@@ -215,16 +229,13 @@ public class WorkspaceExplorerController {
                 currentNode = childNode;
             }
 
-            String modifiedStr = Files.getLastModifiedTime(file).toInstant()
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDateTime()
-                    .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            String modifiedStr = ldt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
             TreeNode fileNode = TreeNode.builder()
                     .name(fileName)
                     .path(file.toAbsolutePath().toString())
                     .type("file")
-                    .size(Files.size(file))
+                    .size(item.size)
                     .modified(modifiedStr)
                     .build();
             currentNode.getChildren().add(fileNode);

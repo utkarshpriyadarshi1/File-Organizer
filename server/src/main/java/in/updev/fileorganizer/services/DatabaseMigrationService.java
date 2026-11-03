@@ -23,6 +23,21 @@ public class DatabaseMigrationService implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         logger.info("Initializing dynamic database schema migration check...");
+        
+        // 1. Apply high-performance SQLite PRAGMAs
+        try {
+            jdbcTemplate.execute("PRAGMA journal_mode = WAL;");
+            jdbcTemplate.execute("PRAGMA synchronous = NORMAL;");
+            jdbcTemplate.execute("PRAGMA cache_size = -64000;");
+            jdbcTemplate.execute("PRAGMA temp_store = MEMORY;");
+            jdbcTemplate.execute("PRAGMA mmap_size = 268435456;");
+            jdbcTemplate.execute("PRAGMA busy_timeout = 10000;");
+            logger.info("SQLite performance PRAGMAs (WAL, synchronous=NORMAL, cache=64MB, mmap=256MB, busy_timeout=10s) applied.");
+        } catch (Exception e) {
+            logger.warn("Could not apply SQLite performance PRAGMAs: {}", e.getMessage());
+        }
+
+        // 2. Run schema.sql migrations and index creation
         try {
             String sqlContent = null;
             org.springframework.core.io.ClassPathResource classPathResource = new org.springframework.core.io.ClassPathResource("schema.sql");

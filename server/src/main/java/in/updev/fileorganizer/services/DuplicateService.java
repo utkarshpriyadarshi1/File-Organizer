@@ -6,6 +6,8 @@ import in.updev.fileorganizer.entities.FileHash;
 import in.updev.fileorganizer.repositories.DbFileRepository;
 import in.updev.fileorganizer.repositories.FileHashRepository;
 import in.updev.fileorganizer.repositories.IgnoreRuleRepository;
+import in.updev.fileorganizer.utils.FileUtils;
+import in.updev.fileorganizer.utils.FileUtils.FileEntry;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,11 +17,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.HexFormat;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,6 +31,7 @@ import java.util.stream.Collectors;
 public class DuplicateService {
     private static final Logger logger = LoggerFactory.getLogger(DuplicateService.class);
     private static final int PARTIAL_SAMPLE_SIZE = 16384; // 16 KB
+    private static final String EMPTY_FILE_HASH = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"; // SHA-256 of empty byte array
 
     private final DbFileRepository dbFileRepository;
     private final FileHashRepository fileHashRepository;
@@ -72,6 +77,9 @@ public class DuplicateService {
     }
 
     private String getPartialHash(Path path, long fileSize) {
+        if (fileSize == 0) {
+            return EMPTY_FILE_HASH;
+        }
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             if (fileSize <= PARTIAL_SAMPLE_SIZE * 2L) {
@@ -96,14 +104,7 @@ public class DuplicateService {
                     digest.update(footerBuffer);
                 }
             }
-            byte[] hashBytes = digest.digest();
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hashBytes) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) hexString.append('0');
-                hexString.append(hex);
-            }
-            return hexString.toString();
+            return HexFormat.of().formatHex(digest.digest());
         } catch (Exception e) {
             logger.warn("Could not compute partial hash for {}: {}", path, e.getMessage());
             return null;
@@ -145,6 +146,7 @@ public class DuplicateService {
         List<PendingIndexRecord> copy = new ArrayList<>(batch);
         batch.clear();
         sqliteWriteQueueService.submitWrite(() -> {
+            List<DbFile> filesToSave = new ArrayList<>();
             for (PendingIndexRecord item : copy) {
                 DbFile dbFile = item.existingFile != null ? item.existingFile : new DbFile();
                 dbFile.setPath(item.absolutePath);
@@ -155,8 +157,11 @@ public class DuplicateService {
                     dbFile.setCreatedAt(LocalDateTime.now());
                 }
                 dbFile.setIsActive(true);
-                DbFile savedFile = dbFileRepository.save(dbFile);
-                redisCacheService.cacheFile(savedFile);
+                filesToSave.add(dbFile);
+            }
+            List<DbFile> savedFiles = dbFileRepository.saveAll(filesToSave);
+            for (DbFile sf : savedFiles) {
+                redisCacheService.cacheFile(sf);
             }
         });
     }
@@ -172,46 +177,14 @@ public class DuplicateService {
                     .map(rule -> rule.getPattern().toLowerCase())
                     .collect(Collectors.toList());
 
-            // 1. Collect all files
-            List<Path> allFiles = new ArrayList<>();
-            Files.walkFileTree(rootPath, new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                    if (reporter.isCancelled()) {
-                        return FileVisitResult.TERMINATE;
-                    }
-                    String name = dir.getFileName() != null ? dir.getFileName().toString() : "";
-                    if (ignoredPatterns.contains(name.toLowerCase())) {
-                        return FileVisitResult.SKIP_SUBTREE;
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    if (reporter.isCancelled()) {
-                        return FileVisitResult.TERMINATE;
-                    }
-                    if (attrs.isRegularFile()) {
-                        allFiles.add(file);
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-                    if (reporter.isCancelled()) {
-                        return FileVisitResult.TERMINATE;
-                    }
-                    logger.warn("Skipping file/directory due to access restriction: {} ({})", file, exc.getMessage());
-                    Map<String, Object> errorItem = new HashMap<>();
-                    errorItem.put("path", file.toAbsolutePath().toString());
-                    errorItem.put("failed", true);
-                    errorItem.put("error", "Access Denied: " + exc.getMessage());
-                    reporter.appendResult(errorItem);
-                    return FileVisitResult.CONTINUE;
-                }
-            });
+            // 1. Collect all file entries with pre-read size and modified timestamps in a single pass
+            List<FileEntry> allFiles = FileUtils.getAllRegularFileEntries(rootPath, ignoredPatterns, (file, exc) -> {
+                Map<String, Object> errorItem = new HashMap<>();
+                errorItem.put("path", file.toAbsolutePath().toString());
+                errorItem.put("failed", true);
+                errorItem.put("error", "Access Denied: " + exc.getMessage());
+                reporter.appendResult(errorItem);
+            }, reporter::isCancelled);
 
             if (reporter.isCancelled()) {
                 return;
@@ -232,16 +205,11 @@ public class DuplicateService {
             int totalFiles = allFiles.size();
             reporter.reportProgress(0.0, "Discovered " + totalFiles + " files. Grouping by size...");
 
-            // Tier 1: Group by file size
-            Map<Long, List<Path>> filesBySize = new HashMap<>();
-            for (Path path : allFiles) {
+            // Tier 1: Group by file size using pre-read metadata (Zero extra stat calls)
+            Map<Long, List<FileEntry>> filesBySize = new HashMap<>();
+            for (FileEntry entry : allFiles) {
                 if (reporter.isCancelled()) break;
-                try {
-                    long size = Files.size(path);
-                    filesBySize.computeIfAbsent(size, k -> new ArrayList<>()).add(path);
-                } catch (IOException e) {
-                    logger.error("Failed to read size for file: {}", path, e);
-                }
+                filesBySize.computeIfAbsent(entry.getSize(), k -> new ArrayList<>()).add(entry);
             }
 
             Map<String, List<Map<String, Object>>> duplicateGroups = new HashMap<>();
@@ -249,19 +217,20 @@ public class DuplicateService {
             List<PendingIndexRecord> pendingIndices = new ArrayList<>();
             int processedCount = 0;
 
-            for (Map.Entry<Long, List<Path>> sizeEntry : filesBySize.entrySet()) {
+            for (Map.Entry<Long, List<FileEntry>> sizeEntry : filesBySize.entrySet()) {
                 if (reporter.isCancelled()) break;
 
                 long fileSize = sizeEntry.getKey();
-                List<Path> sameSizePaths = sizeEntry.getValue();
+                List<FileEntry> sameSizeEntries = sizeEntry.getValue();
 
-                if (sameSizePaths.size() == 1) {
+                if (sameSizeEntries.size() == 1) {
                     // Unique size: completely unique file
-                    Path path = sameSizePaths.get(0);
+                    FileEntry entry = sameSizeEntries.get(0);
+                    Path path = entry.getPath();
                     try {
                         String absolutePath = path.toAbsolutePath().toString();
                         LocalDateTime modifiedTime = LocalDateTime.ofInstant(
-                                Files.getLastModifiedTime(path).toInstant(),
+                                Instant.ofEpochMilli(entry.getLastModifiedMillis()),
                                 ZoneId.systemDefault()
                         );
 
@@ -271,7 +240,7 @@ public class DuplicateService {
                             if (existingFile.getSize().equals(fileSize) &&
                                     (existingFile.getModifiedAt() != null &&
                                             Math.abs(existingFile.getModifiedAt().atZone(ZoneId.systemDefault()).toEpochSecond() -
-                                                    modifiedTime.atZone(ZoneId.systemDefault()).toEpochSecond()) < 2) &&
+                                                    (entry.getLastModifiedMillis() / 1000)) < 2) &&
                                     Boolean.TRUE.equals(existingFile.getIsActive())) {
                                 needsUpdate = false;
                                 redisCacheService.cacheFile(existingFile);
@@ -292,31 +261,28 @@ public class DuplicateService {
                     }
                 } else {
                     // Tier 2: Size match found (>1 files with same size).
-                    // Compute 16KB header + 16KB footer partial hash.
-                    Map<String, List<Path>> filesByPartialHash = new HashMap<>();
-                    for (Path path : sameSizePaths) {
-                        if (reporter.isCancelled()) break;
-                        String partialHash = getPartialHash(path, fileSize);
-                        if (partialHash != null) {
-                            filesByPartialHash.computeIfAbsent(partialHash, k -> new ArrayList<>()).add(path);
-                        } else {
-                            // If partial hash failed, treat as isolated candidate
-                            filesByPartialHash.computeIfAbsent(UUID.randomUUID().toString(), k -> new ArrayList<>()).add(path);
-                        }
-                    }
+                    // Compute 16KB header + 16KB footer partial hash (parallelized across candidates for large sets)
+                    Map<String, List<FileEntry>> filesByPartialHash = new ConcurrentHashMap<>();
+                    sameSizeEntries.parallelStream().forEach(entry -> {
+                        if (reporter.isCancelled()) return;
+                        String partialHash = getPartialHash(entry.getPath(), fileSize);
+                        String key = partialHash != null ? partialHash : UUID.randomUUID().toString();
+                        filesByPartialHash.computeIfAbsent(key, k -> Collections.synchronizedList(new ArrayList<>())).add(entry);
+                    });
 
                     // Process partial hash groups
-                    for (Map.Entry<String, List<Path>> partialEntry : filesByPartialHash.entrySet()) {
+                    for (Map.Entry<String, List<FileEntry>> partialEntry : filesByPartialHash.entrySet()) {
                         if (reporter.isCancelled()) break;
 
-                        List<Path> candidatePaths = partialEntry.getValue();
-                        if (candidatePaths.size() == 1) {
+                        List<FileEntry> candidateEntries = partialEntry.getValue();
+                        if (candidateEntries.size() == 1) {
                             // Partial hash is unique: file cannot be a duplicate, skip full SHA-256!
-                            Path path = candidatePaths.get(0);
+                            FileEntry entry = candidateEntries.get(0);
+                            Path path = entry.getPath();
                             try {
                                 String absolutePath = path.toAbsolutePath().toString();
                                 LocalDateTime modifiedTime = LocalDateTime.ofInstant(
-                                        Files.getLastModifiedTime(path).toInstant(),
+                                        Instant.ofEpochMilli(entry.getLastModifiedMillis()),
                                         ZoneId.systemDefault()
                                 );
 
@@ -326,7 +292,7 @@ public class DuplicateService {
                                     if (existingFile.getSize().equals(fileSize) &&
                                             (existingFile.getModifiedAt() != null &&
                                                     Math.abs(existingFile.getModifiedAt().atZone(ZoneId.systemDefault()).toEpochSecond() -
-                                                            modifiedTime.atZone(ZoneId.systemDefault()).toEpochSecond()) < 2) &&
+                                                            (entry.getLastModifiedMillis() / 1000)) < 2) &&
                                             Boolean.TRUE.equals(existingFile.getIsActive())) {
                                         needsUpdate = false;
                                         redisCacheService.cacheFile(existingFile);
@@ -348,12 +314,13 @@ public class DuplicateService {
                         } else {
                             // Tier 3: Candidates match both size AND partial hash!
                             // Compute or retrieve full SHA-256 hash.
-                            for (Path path : candidatePaths) {
+                            for (FileEntry entry : candidateEntries) {
                                 if (reporter.isCancelled()) break;
+                                Path path = entry.getPath();
                                 try {
                                     String absolutePath = path.toAbsolutePath().toString();
                                     LocalDateTime modifiedTime = LocalDateTime.ofInstant(
-                                            Files.getLastModifiedTime(path).toInstant(),
+                                            Instant.ofEpochMilli(entry.getLastModifiedMillis()),
                                             ZoneId.systemDefault()
                                     );
 
@@ -364,7 +331,7 @@ public class DuplicateService {
                                         if (existingFile.getSize().equals(fileSize) &&
                                                 (existingFile.getModifiedAt() != null &&
                                                         Math.abs(existingFile.getModifiedAt().atZone(ZoneId.systemDefault()).toEpochSecond() -
-                                                                modifiedTime.atZone(ZoneId.systemDefault()).toEpochSecond()) < 2)) {
+                                                                (entry.getLastModifiedMillis() / 1000)) < 2)) {
 
                                             FileHash existingHash = existingHashesMap.get(existingFile.getId());
                                             if (existingHash != null) {
@@ -376,7 +343,7 @@ public class DuplicateService {
                                     }
 
                                     if (fullHash == null) {
-                                        fullHash = secureStorageService.getSha256(path);
+                                        fullHash = fileSize == 0 ? EMPTY_FILE_HASH : secureStorageService.getSha256(path);
                                         pendingHashes.add(new PendingHashRecord(path, absolutePath, fileSize, modifiedTime, fullHash, existingFile));
                                         if (pendingHashes.size() >= 50) {
                                             flushPendingHashBatch(pendingHashes);
@@ -459,12 +426,16 @@ public class DuplicateService {
         List<String> copy = new ArrayList<>(deletedBatch);
         deletedBatch.clear();
         sqliteWriteQueueService.submitWrite(() -> {
+            List<DbFile> filesToDeactivate = new ArrayList<>();
             for (String path : copy) {
                 dbFileRepository.findByPath(path).ifPresent(dbFile -> {
                     dbFile.setIsActive(false);
-                    dbFileRepository.save(dbFile);
+                    filesToDeactivate.add(dbFile);
                     redisCacheService.deleteFileCache(dbFile.getId());
                 });
+            }
+            if (!filesToDeactivate.isEmpty()) {
+                dbFileRepository.saveAll(filesToDeactivate);
             }
         });
     }
